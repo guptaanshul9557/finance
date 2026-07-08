@@ -184,7 +184,8 @@ public class PropertiesManager {
     			return "http://egov-finance:8080/";
     		}
     		else if(finCoeErpEnvName != null && !finCoeErpEnvName.isEmpty() && finCoeErpEnvName.equalsIgnoreCase("jk")  ){
-    			return httpProtocol+"://jmc-jk."+finCoeErpDomainName+"/";
+    			//return httpProtocol+"://jmc-jk."+finCoeErpDomainName+"/";
+    			return "http://egov-finance:8080/";
     		}
     		else if(finCoeErpEnvName != null && !finCoeErpEnvName.isEmpty() ){
     			return httpProtocol+"://"+tenantId+"-"+finCoeErpEnvName+"."+finCoeErpDomainName+"/";
