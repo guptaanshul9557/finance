@@ -19,6 +19,9 @@ import static org.egov.collection.util.Utils.jsonMerge;
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -242,6 +245,7 @@ public class PaymentValidator {
 	public List<Payment> validateAndEnrichPaymentsForUpdate(List<Payment> payments, RequestInfo requestInfo) {
 
 
+		
 
 		// Find the payment's tenantId from the incoming list
 		String tenantId = payments.isEmpty() ? null : payments.get(0).getTenantId();
@@ -267,6 +271,23 @@ public class PaymentValidator {
 			if (paymentsById.containsKey(payment.getId())) {
 
 				Payment paymentFromDb =  paymentsById.get(payment.getId());
+				
+	            boolean isAdmin = isAdminUser(requestInfo);
+	            if (!isAdmin) {
+	                Long transactionDate = paymentFromDb.getTransactionDate();
+	                if (transactionDate != null) {
+	                    LocalDate receiptDate = Instant.ofEpochMilli(transactionDate)
+	                            .atZone(ZoneId.systemDefault())
+	                            .toLocalDate();
+	                    LocalDate today = LocalDate.now();
+	                    if (!receiptDate.equals(today)) {
+	                        errorMap.put("UNAUTHORIZED_EDIT",
+	                                "You can only edit receipts created today. " +
+	                                "Admin role is required to edit older receipts.");
+	                        continue; 
+	                    }
+	                }
+	            }
 
 				Map<String,PaymentDetail> billIdToPaymentDetailDB = paymentFromDb.getPaymentDetails().stream().collect(Collectors.toMap(PaymentDetail::getBillId,Function.identity()));
 
@@ -647,6 +668,20 @@ public class PaymentValidator {
 
 		}
 
+	}
+	
+	private boolean isAdminUser(RequestInfo requestInfo) {
+	    if (requestInfo == null || requestInfo.getUserInfo() == null)
+	        return false;
+
+	    // Check if user has ADMIN or SUPERUSER role
+	    if (requestInfo.getUserInfo().getRoles() != null) {
+	        return requestInfo.getUserInfo().getRoles().stream()
+	                .anyMatch(role -> role.getCode() != null &&
+	                        (role.getCode().equalsIgnoreCase("EDIT_RECEIPT_ADMIN") ||
+	                         role.getCode().equalsIgnoreCase("EDIT_RECEIPT_USER")));
+	    }
+	    return false;
 	}
 
 }
