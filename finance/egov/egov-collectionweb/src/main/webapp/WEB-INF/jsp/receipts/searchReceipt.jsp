@@ -852,9 +852,9 @@ function exportTableToExcel() {
 					<input type="button" class="buttonsubmit"
                          value="Print PDF"
                          onclick="printResultTable()" />
-                     <input type="button" class="buttonsubmit"
+                <!--      <input type="button" class="buttonsubmit"
                        value="Export to Excel"
-                       onclick="exportTableToExcel()" />    
+                       onclick="exportTableToExcel()" />  -->   
                      <input type="button" class="buttonsubmit"
                        value="Export All Receipt Excel"
                        onclick="exportAllReportToExcel()" />
