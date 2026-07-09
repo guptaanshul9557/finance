@@ -52,12 +52,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+
+import org.egov.commons.CFinancialYear;
 import org.egov.commons.Fund;
 import org.egov.commons.UtilizationCertificate;
+import org.egov.commons.service.CFinancialYearService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Type;
 public class utilizationCertificateJsonAdaptor implements JsonSerializer<UtilizationCertificate>
 {
+	private CFinancialYearService cFinancialYearService;
+
+	public utilizationCertificateJsonAdaptor(CFinancialYearService cFinancialYearService) {
+		this.cFinancialYearService = cFinancialYearService;
+	}
+	
 	@Override
 	public JsonElement serialize(final UtilizationCertificate utilizationCertificate, final Type type,final JsonSerializationContext jsc) 
 	{
@@ -74,10 +84,13 @@ public class utilizationCertificateJsonAdaptor implements JsonSerializer<Utiliza
 			else
 				jsonObject.addProperty("purpose","");
 			
-			if(utilizationCertificate.getFinancialYearId() !=null)
-				jsonObject.addProperty("financialYear", utilizationCertificate.getFinancialYearId());
-			else
-				jsonObject.addProperty("financialYear","");
+			if(utilizationCertificate.getFinancialYearId() !=null) {
+				final CFinancialYear cFinancialYear = cFinancialYearService.findOne(utilizationCertificate.getFinancialYearId());
+			    String financialYear = cFinancialYear != null ? cFinancialYear.getFinYearRange() : null;
+				jsonObject.addProperty("financialYear", financialYear);
+			}
+			else {
+				jsonObject.addProperty("financialYear","");}
 			if(utilizationCertificate.getGrantAmount() !=null)
 				jsonObject.addProperty("grantAmount", utilizationCertificate.getGrantAmount());
 			else
@@ -95,6 +108,10 @@ public class utilizationCertificateJsonAdaptor implements JsonSerializer<Utiliza
 				jsonObject.addProperty("totalAvailableFunds", utilizationCertificate.getTotalAvailableFunds());
 			else
 				jsonObject.addProperty("totalAvailableFunds","");
+			if(utilizationCertificate.getCertificateDate()!=null)
+				jsonObject.addProperty("certificateDate", utilizationCertificate.getCertificateDate().toString());
+			else
+				jsonObject.addProperty("certificateDate","");
 			
 			jsonObject.addProperty("id", utilizationCertificate.getId());
 		} 

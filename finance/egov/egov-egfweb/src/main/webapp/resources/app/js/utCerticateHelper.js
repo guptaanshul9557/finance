@@ -264,6 +264,7 @@ function callAjaxSearch() {
             { data: "ucNumber", sClass: "text-right" },
 			{ data: "purpose", sClass: "text-right" },
             { data: "financialYear", sClass: "text-right" },
+			{ data: "certificateDate", sClass: "text-right" },
             { data: "grantAmount", sClass: "text-right" },
 			{ data: "previousBalance", sClass: "text-right" },
             { data: "utilizedAmount", sClass: "text-right" },

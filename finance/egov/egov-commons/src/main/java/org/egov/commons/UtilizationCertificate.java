@@ -166,7 +166,6 @@ public class UtilizationCertificate extends AbstractPersistable<Long> {
 	@Override
 	protected void setId(Long id) {
 		this.id=id;
-		
 	}
 	
 	public String getUcNumber() {

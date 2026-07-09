@@ -140,8 +140,11 @@ public class UtilizationCertificateController {
 	@GetMapping(value = "/edit/{id}")
 	public String edit(@PathVariable("id") final Long id, final Model model) {
 		final UtilizationCertificate utilizationCertificate = utCertificateService.findOne(id);
+		final CFinancialYear cFinancialYear = cFinancialYearService.findOne(utilizationCertificate.getFinancialYearId());
+	    String financialYear = cFinancialYear != null ? cFinancialYear.getFinYearRange() : null; 
 		prepareNewForm(model);
 		model.addAttribute("utilizationCertificate", utilizationCertificate);
+		model.addAttribute("financialYear", financialYear);
 		return UC_EDIT;
 	}
 
@@ -174,6 +177,9 @@ public class UtilizationCertificateController {
 	@GetMapping(value = "/result/{id}/{mode}")
 	public String result(@PathVariable("id") final Long id,@PathVariable("mode") @SafeHtml final String mode, final Model model) {
 		final UtilizationCertificate utilizationCertificate = utCertificateService.findOne(id);
+		final CFinancialYear cFinancialYear = cFinancialYearService.findOne(utilizationCertificate.getFinancialYearId());
+	    String financialYear = cFinancialYear != null ? cFinancialYear.getFinYearRange() : null; 
+	    model.addAttribute("financialYear", financialYear);
 		model.addAttribute("utilizationCertificate", utilizationCertificate);
 		model.addAttribute("mode", mode);
 		return  UC_RESULT;
@@ -200,7 +206,7 @@ public class UtilizationCertificateController {
 
 	public Object toSearchResultJson(final Object object) {
 		final GsonBuilder gsonBuilder = new GsonBuilder();
-		final Gson gson = gsonBuilder.registerTypeAdapter(UtilizationCertificate.class, new utilizationCertificateJsonAdaptor()).create();
+		final Gson gson = gsonBuilder.registerTypeAdapter(UtilizationCertificate.class, new utilizationCertificateJsonAdaptor(cFinancialYearService)).create();
 		return gson.toJson(object);
 	}
 

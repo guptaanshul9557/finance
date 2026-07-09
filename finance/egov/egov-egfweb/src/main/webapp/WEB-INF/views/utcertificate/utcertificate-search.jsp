@@ -95,6 +95,7 @@
           <th><spring:message text="UC Number"/></th>
           <th><spring:message text="Grant/Scheme"/></th>
           <th><spring:message text="Financial Year"/></th>
+          <th><spring:message text="Issued Date"/></th>
           <th><spring:message text="Grant Amount"/></th>
           <th><spring:message text="Previous Balance"/></th>
           <th><spring:message  text="Utilized Amount"/></th>
