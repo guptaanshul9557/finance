@@ -26,6 +26,7 @@ import org.egov.user.web.contract.Otp;
 import org.egov.user.web.contract.OtpValidateRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -71,9 +72,6 @@ public class UserService {
     private EncryptionDecryptionUtil encryptionDecryptionUtil;
     //private TokenStore tokenStore;
     private AddressRepository addressRepository;
-    
-    // CHANGED: TokenStore -> OAuth2AuthorizationService
-    private OAuth2AuthorizationService authorizationService;
 
     @Value("${egov.user.host}")
     private String userHost;
@@ -111,6 +109,9 @@ public class UserService {
     @Autowired
     private NotificationUtil notificationUtil;
 
+    @Autowired(required = false)
+    private ObjectProvider<OAuth2AuthorizationService> authorizationServiceProvider;
+
 	public UserService(UserRepository userRepository, OtpRepository otpRepository, FileStoreRepository fileRepository,
 			PasswordEncoder passwordEncoder, EncryptionDecryptionUtil encryptionDecryptionUtil,
 			@Value("${default.password.expiry.in.days}") int defaultPasswordExpiryInDays,
@@ -131,11 +132,6 @@ public class UserService {
 		this.pwdMaxLength = pwdMaxLength;
 		this.pwdMinLength = pwdMinLength;
 		this.addressRepository = addressRepository;
-	}
-
-	@Autowired(required = false)
-	public void setAuthorizationService(OAuth2AuthorizationService authorizationService) {
-		this.authorizationService = authorizationService;
 	}
 
     /**
