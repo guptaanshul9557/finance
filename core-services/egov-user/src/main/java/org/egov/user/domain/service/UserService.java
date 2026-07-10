@@ -113,7 +113,6 @@ public class UserService {
 
 	public UserService(UserRepository userRepository, OtpRepository otpRepository, FileStoreRepository fileRepository,
 			PasswordEncoder passwordEncoder, EncryptionDecryptionUtil encryptionDecryptionUtil,
-			OAuth2AuthorizationService authorizationService,
 			@Value("${default.password.expiry.in.days}") int defaultPasswordExpiryInDays,
 			@Value("${citizen.login.password.otp.enabled}") boolean isCitizenLoginOtpBased,
 			@Value("${employee.login.password.otp.enabled}") boolean isEmployeeLoginOtpBased,
@@ -128,11 +127,15 @@ public class UserService {
 		this.isEmployeeLoginOtpBased = isEmployeeLoginOtpBased;
 		this.fileRepository = fileRepository;
 		this.encryptionDecryptionUtil = encryptionDecryptionUtil;
-		this.authorizationService = authorizationService;
 		this.pwdRegex = pwdRegex;
 		this.pwdMaxLength = pwdMaxLength;
 		this.pwdMinLength = pwdMinLength;
 		this.addressRepository = addressRepository;
+	}
+
+	@Autowired(required = false)
+	public void setAuthorizationService(OAuth2AuthorizationService authorizationService) {
+		this.authorizationService = authorizationService;
 	}
 
     /**
