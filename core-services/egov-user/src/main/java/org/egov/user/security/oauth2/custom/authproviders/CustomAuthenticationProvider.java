@@ -71,6 +71,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         this.userService = userService;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String username = authentication.getName();
@@ -95,15 +96,16 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         }
         
         log.debug("Authenticating user: {} with tenantId: {} and userType: {}", username, tenantId, userType);
-        
-        try {
-            // Get user from database
-            log.info("Looking up user in database...");
-            RequestInfo requestInfo = RequestInfo.builder()
+        User user = null;
+        RequestInfo requestInfo = RequestInfo.builder()
                 .action("authenticate")
                 .ts(System.currentTimeMillis())
                 .build();
-            User user = userService.getUniqueUser(username, tenantId, UserType.fromValue(userType), requestInfo);
+        try {
+            // Get user from database
+            log.info("Looking up user in database...");
+            
+            user = userService.getUniqueUser(username, tenantId, UserType.fromValue(userType), requestInfo);
             if (user == null) {
                 log.error("User not found in database for username: {}, tenantId: {}, userType: {}", username, tenantId, userType);
                 throw new BadCredentialsException("User not found");
@@ -166,7 +168,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             }
             
             log.info("Password validation successful");
-
+            userService.resetFailedLoginAttempts(user);
             // CRITICAL FIX: Decrypt user data during authentication (like Dev-3.0)
             // This ensures both CITIZEN and EMPLOYEE data is decrypted before storing in token
             log.info("Decrypting user data after authentication with UserSelf key");
@@ -237,9 +239,11 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             log.error("DuplicateUserNameException for username: {}, tenantId: {}, userType: {} - {}", username, tenantId, userType, e.getMessage());
             throw new BadCredentialsException("Duplicate user found: " + e.getMessage());
         } catch (BadCredentialsException e) {
+            userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME),requestInfo);
             log.error("BadCredentialsException: {}", e.getMessage());
             throw e; // Re-throw as-is
         } catch (Exception e) {
+            userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME),requestInfo);
             log.error("Unexpected authentication error for user: {} - {}", username, e.getMessage(), e);
             throw new BadCredentialsException("Authentication failed: " + e.getMessage());
         }
