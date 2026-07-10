@@ -148,7 +148,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             	Map<String,Object> details=(Map<String, Object>) authentication.getDetails();
             	if (EmployeeFixedOTPEnabled && EmployeeFixedOTPPassword != null && !EmployeeFixedOTPPassword.isEmpty() && EmployeeFixedOTPPassword.equals((String)details.get("otp"))) {
                     log.info("Fixed OTP validation successful for citizen user: {}", username);
-                    isPasswordMatched = true;  // Skip external OTP service call
+                    isPasswordMatched = isPasswordMatch(false, password, user, authentication);  // Skip external OTP service call
                 } else {
                     log.info("Fixed OTP not enabled or not matching, validating via OTP service");
                     user = encryptionDecryptionUtil.decryptObject(user, "User", User.class, requestInfo);
