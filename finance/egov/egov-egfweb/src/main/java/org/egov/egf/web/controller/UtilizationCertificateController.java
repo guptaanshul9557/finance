@@ -112,7 +112,8 @@ public class UtilizationCertificateController {
 	}
 
 
-	@PostMapping(value = "/new")
+	//@PostMapping(value = "/new")
+	@GetMapping(value = "/new")
 	public String newForm(final Model model) {
 		 prepareNewForm(model);
 	     return UC_NEW;
@@ -185,7 +186,8 @@ public class UtilizationCertificateController {
 		return  UC_RESULT;
 	}
 	
-	@PostMapping(value = "/search/{mode}")
+	//@PostMapping(value = "/search/{mode}")
+	@GetMapping(value = "/search/{mode}")
 	public String search(@PathVariable("mode") @SafeHtml final String mode, final Model model) {
 		final UTCertificateSearchRequest uTCertificateSearchRequest = new UTCertificateSearchRequest();
 		prepareNewForm(model);

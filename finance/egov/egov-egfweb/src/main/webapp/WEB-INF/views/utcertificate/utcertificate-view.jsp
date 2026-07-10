@@ -49,6 +49,22 @@
 
 <%@ page contentType="text/html;charset=UTF-8" language="java"%>
 <%@ include file="/includes/taglibs.jsp"%>
+<script>
+function printUC() {
+
+    var url = "${pageContext.request.contextPath}/report/printUC-exportpdf.action?"
+            + "ucNumber=${utilizationCertificate.ucNumber}"
+            + "&financialYear=${financialYear}"
+            + "&purpose=${utilizationCertificate.purpose}"
+            + "&grantAmount=${utilizationCertificate.grantAmount}"
+            + "&previousBalance=${utilizationCertificate.previousBalance}"
+            + "&utilisedAmount=${utilizationCertificate.utilisedAmount}"
+            + "&totalAvailableFunds=${utilizationCertificate.totalAvailableFunds}"
+            + "&unutilisedBalance=${utilizationCertificate.unutilisedBalance}";
+
+    window.location.href = url;
+}
+</script>
 <div class="main-content">
   <div class="row">
     <div class="col-md-12">
@@ -110,5 +126,6 @@
       <c:if test="${mode == 'create'}">
         <a href="javascript:void(0)" class="btn btn-default" onclick="javascript:window.parent.postMessage('close','*');"><spring:message code='lbl.close'  text="Close"/></a>
       </c:if>
+      <a href="javascript:void(0)" class="btn btn-default" onclick="printUC()">Print UC</a>
       </div>
     </div>

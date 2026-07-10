@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.12.0.final using JasperReports Library version 6.12.1-ac0eebdb29e4c0985457bab279a6db744d661530  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="GFR_12C_Utilization_Certificate" pageWidth="595" pageHeight="842" columnWidth="515" leftMargin="40" rightMargin="40" topMargin="0" bottomMargin="40" uuid="7d6e0f5a-3b1a-4b8e-9c2a-1a2b3c4d5e6f">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<import value="java.math.BigDecimal"/>
+	<import value="org.egov.egf.model.*"/>
+	<import value="java.util.*"/>
+	<import value="java.lang.String"/>
+	<style name="Base" fontName="Times New Roman" fontSize="10" pdfFontName="Times-Roman" pdfEncoding="Cp1252"/>
+	<style name="BaseBold" fontName="Times New Roman" fontSize="10" isBold="true" pdfFontName="Times-Bold" pdfEncoding="Cp1252"/>
+	<style name="BaseItalic" fontName="Times New Roman" fontSize="10" isItalic="true" pdfFontName="Times-Italic" pdfEncoding="Cp1252"/>
+	<field name="ucNumber" class="java.lang.String">
+		<fieldDescription><![CDATA[ucNumber]]></fieldDescription>
+	</field>
+	<field name="financialYear" class="java.lang.String">
+		<fieldDescription><![CDATA[financialYear]]></fieldDescription>
+	</field>
+	<field name="purpose" class="java.lang.String">
+		<fieldDescription><![CDATA[purpose]]></fieldDescription>
+	</field>
+	<field name="signatoryName" class="java.lang.String">
+		<fieldDescription><![CDATA[signatoryName]]></fieldDescription>
+	</field>
+	<field name="certificateNumber" class="java.lang.String">
+		<fieldDescription><![CDATA[certificateNumber]]></fieldDescription>
+	</field>
+	<field name="signatoryDesignation" class="java.lang.String">
+		<fieldDescription><![CDATA[signatoryDesignation]]></fieldDescription>
+	</field>
+	<field name="status" class="java.lang.String">
+		<fieldDescription><![CDATA[status]]></fieldDescription>
+	</field>
+	<field name="certificateDate" class="java.util.Date">
+		<fieldDescription><![CDATA[certificateDate]]></fieldDescription>
+	</field>
+	<field name="grantAmount" class="java.math.BigDecimal">
+		<fieldDescription><![CDATA[grantAmount]]></fieldDescription>
+	</field>
+	<field name="previousBalance" class="java.math.BigDecimal">
+		<fieldDescription><![CDATA[previousBalance]]></fieldDescription>
+	</field>
+	<field name="utilisedAmount" class="java.math.BigDecimal">
+		<fieldDescription><![CDATA[utilisedAmount]]></fieldDescription>
+	</field>
+	<field name="totalAvailableFunds" class="java.math.BigDecimal">
+		<fieldDescription><![CDATA[totalAvailableFunds]]></fieldDescription>
+	</field>
+	<field name="unutilisedBalance" class="java.math.BigDecimal">
+		<fieldDescription><![CDATA[unutilisedBalance]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="190" splitType="Stretch">
+			<rectangle>
+				<reportElement style="Base" mode="Opaque" x="-40" y="0" width="418" height="79" forecolor="#CAEC8A" backcolor="#CAEC8A" uuid="0a1b2c3d-0000-4000-8000-000000000001"/>
+				<graphicElement>
+					<pen lineWidth="0.0" lineColor="#CAEC8A"/>
+				</graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement style="Base" mode="Opaque" x="378" y="0" width="117" height="42" forecolor="#76BC31" backcolor="#76BC31" uuid="0a1b2c3d-0000-4000-8000-000000000002"/>
+				<graphicElement>
+					<pen lineWidth="0.0" lineColor="#76BC31"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="BaseBold" x="378" y="9" width="117" height="24" forecolor="#FFFFFF" uuid="0a1b2c3d-0000-4000-8000-000000000003"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FORM GFR 12C]]></text>
+			</staticText>
+			<image>
+				<reportElement x="-22" y="10" width="48" height="52" uuid="0a1b2c3d-0000-4000-8000-000000000004"/>
+				<imageExpression><![CDATA[this.getClass().getResourceAsStream("/images/emblem.png")]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement style="BaseBold" x="40" y="9" width="330" height="17" uuid="0a1b2c3d-0000-4000-8000-000000000005"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[GENERAL FINANCIAL RULES 2017]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="BaseBold" x="40" y="28" width="330" height="14" uuid="0a1b2c3d-0000-4000-8000-000000000006"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Ministry of Finance]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="BaseBold" x="40" y="42" width="330" height="14" uuid="0a1b2c3d-0000-4000-8000-000000000007"/>
+				<textElement>
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Department of Expenditure]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="BaseBold" x="0" y="95" width="515" height="22" uuid="0a1b2c3d-0000-4000-8000-000000000008"/>
+				<textElement textAlignment="Center">
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[GFR 12 – C]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Base" x="0" y="118" width="515" height="16" uuid="0a1b2c3d-0000-4000-8000-000000000009"/>
+				<textElement textAlignment="Center">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[[(See Rule 239)]]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="BaseBold" x="0" y="155" width="515" height="16" uuid="0a1b2c3d-0000-4000-8000-000000000010"/>
+				<textElement textAlignment="Center">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FORM OF UTILIZATION CERTIFICATE (FOR STATE GOVERNMENTS)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="BaseBold" x="0" y="172" width="515" height="16" uuid="0a1b2c3d-0000-4000-8000-000000000011"/>
+				<textElement textAlignment="Center">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[(Where expenditure incurred by Govt. bodies only)]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="215" splitType="Stretch">
+			<frame>
+				<reportElement style="Base" x="0" y="10" width="515" height="205" uuid="5e6f7081-0005-4000-8000-000000000001"/>
+				<box>
+					<pen lineWidth="0.0"/>
+				</box>
+				<textField>
+					<reportElement style="Base" x="0" y="0" width="515" height="200" uuid="5e6f7081-0005-4000-8000-000000000002"/>
+					<textElement textAlignment="Justified" verticalAlignment="Top">
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Certified that out of Rs"+ $F{grantAmount} +" Of grants sanctioned during the year "+ $F{financialYear} +" in favour of Municipal Corporation under the Ministry/Department Letter No "+ $F{ucNumber} +" dated ......... given in the margin and Rs " +$F{previousBalance}+" on account of unspent balance of the previous year, a sum of Rs "+ $F{utilisedAmount}+ " has been utilized for the purpose of "+ $F{purpose}+" for which it was sanctioned and that the balance of Rs"+ $F{unutilisedBalance}+" remaining unutilized at the end of the year has been surrendered to Government (vide No. ...........................dated.......................)/will be adjusted towards the grants payable during the next year........................................"]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+		<band height="175" splitType="Stretch">
+			<staticText>
+				<reportElement style="Base" x="0" y="0" width="515" height="55" uuid="2b3c4d5e-0002-4000-8000-000000000001"/>
+				<textElement textAlignment="Justified" verticalAlignment="Top">
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[2. Certified that I have satisfied myself that the conditions on which the grants-in-aid was sanctioned have been duly fulfilled/ are being fulfilled and that I have exercised the following checks to see that the money was actually utilized for the propose for which it was sanctioned.]]></text>
+			</staticText>
+		</band>
+		<band height="75" splitType="Stretch">
+			<textField>
+				<reportElement style="Base" x="285" y="-102" width="230" height="18" uuid="3c4d5e6f-0003-4000-8000-000000000001"/>
+				<textFieldExpression><![CDATA["Signature: "+$F{signatoryName}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="Base" x="285" y="-82" width="230" height="18" uuid="3c4d5e6f-0003-4000-8000-000000000002"/>
+				<textFieldExpression><![CDATA["Designation: "+$F{signatoryDesignation}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="Base" x="285" y="-62" width="230" height="18" uuid="3c4d5e6f-0003-4000-8000-000000000003"/>
+				<textFieldExpression><![CDATA["Date: "+$F{certificateDate}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="70" splitType="Stretch">
+			<staticText>
+				<reportElement style="Base" x="0" y="0" width="515" height="65" uuid="4d5e6f70-0004-4000-8000-000000000001"/>
+				<textElement textAlignment="Justified" verticalAlignment="Top">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[PS: The UC shall disclose separately the actual expenditure incurred and loans and advances given to suppliers of stores and assets, to construction agencies and like in accordance with scheme guidelines and in furtherance to the scheme objectives, which do not constitute expenditure at the stage. These shall be treated as utilized grants but allowed to be carried forward.]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="40" splitType="Stretch">
+			<rectangle>
+				<reportElement style="Base" mode="Opaque" x="237" y="2" width="40" height="30" forecolor="#CAEC8A" backcolor="#CAEC8A" uuid="7081920a-0007-4000-8000-000000000001"/>
+				<graphicElement>
+					<pen lineWidth="0.0" lineColor="#CAEC8A"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement style="BaseBold" x="237" y="2" width="40" height="30" uuid="7081920a-0007-4000-8000-000000000002"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[168]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>
