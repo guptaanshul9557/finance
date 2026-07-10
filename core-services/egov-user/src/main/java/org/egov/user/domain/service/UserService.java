@@ -500,7 +500,7 @@ public class UserService {
             validatePassword(user.getPassword());
             user.setPassword(encryptPwd(user.getPassword()));
             user = encryptionDecryptionUtil.encryptObject(user, "User", User.class);
-            userRepository.update(user, existingUser,requestInfo.getUserInfo().getId(), requestInfo.getUserInfo().getUuid() );
+            userRepository.update(user, existingUser,user.getId(), user.getUuid());
         /* encrypt */
 
 
