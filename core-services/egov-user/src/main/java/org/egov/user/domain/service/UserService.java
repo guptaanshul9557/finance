@@ -536,6 +536,7 @@ public class UserService {
     
     
     public void removeTokensByUser(User user) {
+        OAuth2AuthorizationService authorizationService = authorizationServiceProvider.getIfAvailable();
         if (authorizationService instanceof EnhancedRedisOAuth2AuthorizationService) {
             ((EnhancedRedisOAuth2AuthorizationService) authorizationService)
                     .removeTokensByPrincipalName(user.getUsername());
