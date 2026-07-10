@@ -50,6 +50,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.egov.user.domain.service.EnhancedRedisOAuth2AuthorizationService;
 
 // REMOVED DEPRECATED IMPORTS:
 // import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -112,7 +113,7 @@ public class UserService {
 
 	public UserService(UserRepository userRepository, OtpRepository otpRepository, FileStoreRepository fileRepository,
 			PasswordEncoder passwordEncoder, EncryptionDecryptionUtil encryptionDecryptionUtil,
-			// REMOVED: OAuth2AuthorizationService authorizationService,
+			OAuth2AuthorizationService authorizationService,
 			@Value("${default.password.expiry.in.days}") int defaultPasswordExpiryInDays,
 			@Value("${citizen.login.password.otp.enabled}") boolean isCitizenLoginOtpBased,
 			@Value("${employee.login.password.otp.enabled}") boolean isEmployeeLoginOtpBased,
@@ -127,7 +128,7 @@ public class UserService {
 		this.isEmployeeLoginOtpBased = isEmployeeLoginOtpBased;
 		this.fileRepository = fileRepository;
 		this.encryptionDecryptionUtil = encryptionDecryptionUtil;
-		// REMOVED: this.authorizationService = authorizationService;
+		this.authorizationService = authorizationService;
 		this.pwdRegex = pwdRegex;
 		this.pwdMaxLength = pwdMaxLength;
 		this.pwdMinLength = pwdMinLength;
@@ -536,7 +537,14 @@ public class UserService {
     
     
     public void removeTokensByUser(User user) {
-        log.info("Token removal requested for user: {} - tokens will expire naturally", user.getUsername());
+        if (authorizationService instanceof EnhancedRedisOAuth2AuthorizationService) {
+            ((EnhancedRedisOAuth2AuthorizationService) authorizationService)
+                    .removeTokensByPrincipalName(user.getUsername());
+            log.info("Removed active OAuth2 authorizations for user {}", user.getUsername());
+        } else {
+            log.warn("Cannot remove tokens for user {} because authorizationService is not EnhancedRedisOAuth2AuthorizationService: {}",
+                    user.getUsername(), authorizationService != null ? authorizationService.getClass().getName() : "null");
+        }
     }
 
     /**
@@ -601,6 +609,7 @@ public class UserService {
         validatePassword(updatePasswordRequest.getNewPassword());
         user.updatePassword(encryptPwd(updatePasswordRequest.getNewPassword()));
         userRepository.update(user, user, user.getId() , user.getUuid());
+        removeTokensByUser(user);
     }
 
     /**
@@ -631,6 +640,7 @@ public class UserService {
         /* encrypted value is stored in DB*/
         user = encryptionDecryptionUtil.encryptObject(user, "User", User.class);
         userRepository.update(user, user, requestInfo.getUserInfo().getId(), requestInfo.getUserInfo().getUuid());
+        removeTokensByUser(user);
     }
 
 
@@ -705,9 +715,7 @@ public class UserService {
                         .build();
 
                 user = updateWithoutOtpValidation(userToBeUpdated, requestInfo);
-                
-                // REMOVED: removeTokensByUser(user); 
-                // Token removal will be handled when user tries to use expired/invalid tokens
+                removeTokensByUser(user);
                 
                 log.info("Locked account with uuid {} for {} minutes as exceeded max allowed attempts of {} within {} minutes",
                         user.getUuid(), accountUnlockCoolDownPeriod, maxInvalidLoginAttempts, maxInvalidLoginAttemptsPeriod);

@@ -83,13 +83,13 @@ public class UserTypeQueryBuilder {
 
     public static final String SELECT_FAILED_ATTEMPTS_BY_USER_SQL = "select user_uuid, ip, attempt_date, active from " +
             "eg_user_login_failed_attempts WHERE user_uuid = :user_uuid AND attempt_date >= :attempt_date AND active " +
-            "= 'true' ";
+            "= true";
 
     public static final String INSERT_FAILED_ATTEMPTS_SQL = " INSERT INTO eg_user_login_failed_attempts (user_uuid, " +
             "ip, attempt_date, active) VALUES ( :user_uuid, :ip , :attempt_date, :active ) ";
 
     public static final String UPDATE_FAILED_ATTEMPTS_SQL = " UPDATE eg_user_login_failed_attempts SET active = " +
-            "'false' WHERE user_uuid = :user_uuid";
+            "false WHERE user_uuid = :user_uuid";
 
     private static final String SELECT_USER_ROLE_QUERY = "SELECT distinct(user_id) from eg_userrole_v1 ur";
 
