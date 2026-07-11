@@ -1,6 +1,6 @@
 package org.egov.user.security;
 
-import org.egov.user.domain.service.RedisOAuth2AuthorizationService;
+import org.egov.user.domain.service.EnhancedRedisOAuth2AuthorizationService;
 import org.egov.user.security.oauth2.custom.CustomTokenEnhancer;
 import org.egov.user.security.oauth2.custom.CustomOpaqueTokenGenerator;
 import org.egov.user.security.oauth2.custom.CustomOpaqueRefreshTokenGenerator;
@@ -121,7 +121,7 @@ public class AuthorizationServerConfiguration {
 
     @Bean
     public OAuth2AuthorizationService authorizationService(RedisTemplate<String, Object> redisTemplate) {
-        return new RedisOAuth2AuthorizationService(redisTemplate);
+        return new EnhancedRedisOAuth2AuthorizationService(redisTemplate);
     }
 
     @Bean
