@@ -312,7 +312,7 @@ public class UserRepository {
         if(user.isDigilockerRegistration()) {
             namedParameterJdbcTemplate.update(userTypeQueryBuilder.getDigilockerUpdateQuery(), updateuserInputs);
         }else {
-            updateAuditDetails(oldUser, userId, uuid);
+            //updateAuditDetails(oldUser, userId, uuid);
             namedParameterJdbcTemplate.update(userTypeQueryBuilder.getUpdateUserQuery(), updateuserInputs);
             if (user.getRoles() != null && !CollectionUtils.isEmpty(user.getRoles()) && !oldUser.getRoles().equals(user.getRoles())) {
                 validateAndEnrichRoles(Collections.singletonList(user));
