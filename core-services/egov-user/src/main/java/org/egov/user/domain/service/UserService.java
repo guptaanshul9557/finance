@@ -697,6 +697,10 @@ public class UserService {
                     userRepository.fetchFailedAttemptsByUserAndTime(user.getUuid(),
                             System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(maxInvalidLoginAttemptsPeriod));
 
+            log.info("failed logins===={}", failedLoginAttempts.size());
+
+            log.info("time  ==== ",(System.currentTimeMillis() - 
+            TimeUnit.MINUTES.toMillis(maxInvalidLoginAttemptsPeriod)));
             if (failedLoginAttempts.size() + 1 >= maxInvalidLoginAttempts) {
                 User userToBeUpdated = user.toBuilder()
                         .accountLocked(true)
