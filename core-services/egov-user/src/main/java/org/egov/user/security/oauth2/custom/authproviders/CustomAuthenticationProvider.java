@@ -24,9 +24,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.security.oauth2.*;
-
-
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
