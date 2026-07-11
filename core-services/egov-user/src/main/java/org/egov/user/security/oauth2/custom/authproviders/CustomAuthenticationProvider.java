@@ -24,7 +24,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
@@ -117,7 +116,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             if (user.getAccountLocked() != null && user.getAccountLocked()) {
                 log.warn("Account is locked for user: {}", username);
                 if (!userService.isAccountUnlockAble(user)) {
-                    throw new BadCredentialsException("Account locked");
+                    
+				throw new Exception("Account locked");
                 }
                 // If account is unlockable, unlock it
                 log.info("Account is unlockable, attempting to unlock...");
@@ -168,7 +168,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             }
             
             log.info("Password validation successful");
-            userService.resetFailedLoginAttempts(user);
+            //userService.resetFailedLoginAttempts(user);
             // CRITICAL FIX: Decrypt user data during authentication (like Dev-3.0)
             // This ensures both CITIZEN and EMPLOYEE data is decrypted before storing in token
             log.info("Decrypting user data after authentication with UserSelf key");
@@ -239,11 +239,11 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             log.error("DuplicateUserNameException for username: {}, tenantId: {}, userType: {} - {}", username, tenantId, userType, e.getMessage());
             throw new BadCredentialsException("Duplicate user found: " + e.getMessage());
         } catch (BadCredentialsException e) {
-            userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME),requestInfo);
+            //userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME),requestInfo);
             log.error("BadCredentialsException: {}", e.getMessage());
             throw e; // Re-throw as-is
         } catch (Exception e) {
-            userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME),requestInfo);
+            //userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME),requestInfo);
             log.error("Unexpected authentication error for user: {} - {}", username, e.getMessage(), e);
             throw new BadCredentialsException("Authentication failed: " + e.getMessage());
         }

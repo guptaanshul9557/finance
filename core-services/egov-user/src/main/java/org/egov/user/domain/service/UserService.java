@@ -499,7 +499,8 @@ public class UserService {
             user.validateUserModification();
             validatePassword(user.getPassword());
             user.setPassword(encryptPwd(user.getPassword()));
-            user = encryptionDecryptionUtil.encryptObject(user, "User", User.class);
+
+            //user = encryptionDecryptionUtil.encryptObject(user, "User", User.class);
             userRepository.update(user, existingUser,user.getId(), user.getUuid());
         /* encrypt */
 
@@ -707,6 +708,10 @@ public class UserService {
                     userRepository.fetchFailedAttemptsByUserAndTime(user.getUuid(),
                             System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(maxInvalidLoginAttemptsPeriod));
 
+            log.info("failed logins===={}", failedLoginAttempts.size());
+
+            log.info("time  ==== ",(System.currentTimeMillis() - 
+            TimeUnit.MINUTES.toMillis(maxInvalidLoginAttemptsPeriod)));
             if (failedLoginAttempts.size() + 1 >= maxInvalidLoginAttempts) {
                 User userToBeUpdated = user.toBuilder()
                         .accountLocked(true)

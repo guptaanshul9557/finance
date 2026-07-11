@@ -95,8 +95,9 @@ public class CustomAuthenticationController {
             }
         } catch (BadCredentialsException e) {
             log.error("Authentication failed for user: {}", username, e);
+            String errorDescription = e.getMessage() != null ? e.getMessage() : "Invalid username or password";
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(createErrorResponse("invalid_grant", "Invalid username or password"));
+                .body(createErrorResponse("invalid_grant", errorDescription));
         } catch (Exception e) {
             log.error("Token generation failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -199,13 +200,19 @@ public class CustomAuthenticationController {
                     .build();
                 User user = userService.getUniqueUser(username, tenantId, UserType.fromValue(userType), requestInfo);
                 if (user != null) {
-                    userService.handleFailedLogin(user, getClientIpAddress(request), requestInfo);
+                    try {
+                        userService.handleFailedLogin(user, getClientIpAddress(request), requestInfo);
+                    } catch (AuthenticationException authEx) {
+                        throw authEx;
+                    }
                 }
+            } catch (AuthenticationException authEx) {
+                throw authEx;
             } catch (Exception ex) {
                 log.warn("Could not handle failed login for user: {} - {}", username, ex.getMessage());
             }
             
-            throw new BadCredentialsException("Invalid username or password");
+            throw e instanceof BadCredentialsException ? (BadCredentialsException) e : new BadCredentialsException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Unexpected error during password grant", e);
             throw new RuntimeException("Authentication failed", e);
@@ -360,11 +367,13 @@ public class CustomAuthenticationController {
                 if (user != null) {
                     userService.handleFailedLogin(user, getClientIpAddress(request), requestInfo);
                 }
+            } catch (AuthenticationException authEx) {
+                throw authEx;
             } catch (Exception ex) {
                 log.warn("Could not handle failed login for user: {} - {}", username, ex.getMessage());
             }
             
-            throw new BadCredentialsException("Invalid username or password");
+            throw e instanceof BadCredentialsException ? (BadCredentialsException) e : new BadCredentialsException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Unexpected error during password grant", e);
             throw new RuntimeException("Authentication failed", e);
