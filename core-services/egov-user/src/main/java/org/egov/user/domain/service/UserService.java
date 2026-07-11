@@ -499,7 +499,7 @@ public class UserService {
             user.validateUserModification();
             validatePassword(user.getPassword());
             user.setPassword(encryptPwd(user.getPassword()));
-            user = encryptionDecryptionUtil.encryptObject(user, "User", User.class);
+            //user = encryptionDecryptionUtil.encryptObject(user, "User", User.class);
             userRepository.update(user, existingUser,user.getId(), user.getUuid());
         /* encrypt */
 
