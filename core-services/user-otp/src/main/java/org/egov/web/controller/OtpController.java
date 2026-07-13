@@ -1,6 +1,9 @@
 package org.egov.web.controller;
 
 import lombok.extern.slf4j.Slf4j;
+
+import javax.validation.Valid;
+
 import org.egov.domain.service.OtpService;
 import org.egov.web.contract.OtpRequest;
 import org.egov.web.contract.OtpResponse;
@@ -24,7 +27,7 @@ public class OtpController {
 
     @PostMapping("/v1/_send")
     @ResponseStatus(HttpStatus.CREATED)
-    public OtpResponse sendOtp(@RequestBody OtpRequest otpRequest) {
+    public OtpResponse sendOtp(@Valid @RequestBody OtpRequest otpRequest) {
         otpService.sendOtp(otpRequest.toDomain());
         return OtpResponse.builder().
                 responseInfo(null).successful(true).build();

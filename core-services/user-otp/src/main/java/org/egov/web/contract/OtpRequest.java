@@ -13,15 +13,16 @@ public class OtpRequest {
     private Otp otp;
 
     public org.egov.domain.model.OtpRequest toDomain() {
-        return org.egov.domain.model.OtpRequest.builder()
-                .mobileNumber(getMobileNumber())
-                .tenantId(getTenantId())
-                .type(getType())
-                .userType(getUserType())
-                .userName(getUsername())
-                .build();
-    }
-
+    return org.egov.domain.model.OtpRequest.builder()
+            .mobileNumber(getMobileNumber())
+            .tenantId(getTenantId())
+            .type(otp != null && otp.getType() != null && !otp.getType().isEmpty()
+                    ? getType()
+                    : OtpRequestType.REGISTER)
+            .userType(getUserType())
+            .userName(getUsername() == null ? "" : getUsername())
+            .build();
+}
     private OtpRequestType getType() {
         return otp != null ? otp.getTypeOrDefault() : null;
     }

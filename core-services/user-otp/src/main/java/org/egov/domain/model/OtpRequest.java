@@ -7,6 +7,7 @@ import org.egov.domain.exception.InvalidOtpRequestException;
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 @Getter
+@Data
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode
@@ -14,10 +15,10 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 public class OtpRequest {
 	@Setter
     private String mobileNumber;
+	private String userName;
     private String tenantId;
     private OtpRequestType type;
     private String userType;
-	private String userName;
 
     public void validate() {
         if(isTenantIdAbsent()

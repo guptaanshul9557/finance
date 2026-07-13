@@ -1,8 +1,10 @@
 {
+  "requestInfo": {},
   "otp": {
     "mobileNumber": "",
+    "userName":"",
     "tenantId": "",
-    "type": "unknown",
-    "userType": "CITIZEN"
+    "type": "",
+    "userType": ""  
   }
 }

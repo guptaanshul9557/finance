@@ -21,20 +21,22 @@ public class Otp {
     private String type;
     private String userType;
 
-    @JsonIgnore
-    public OtpRequestType getTypeOrDefault() {
-        return isEmpty(type) ? OtpRequestType.REGISTER : mapToDomainType();
-    }
+
+@JsonIgnore
+public OtpRequestType getTypeOrDefault() {
+       return isEmpty(type) ? OtpRequestType.REGISTER : mapToDomainType();
+
+}
 
     private OtpRequestType mapToDomainType() {
-        if (USER_REGISTRATION.equalsIgnoreCase(type)) {
-            return OtpRequestType.REGISTER;
-        } else if (USER_LOGIN.equalsIgnoreCase(type)) {
-            return OtpRequestType.LOGIN;
-        } else if (PASSWORD_RESET.equalsIgnoreCase(type)) {
-            return OtpRequestType.PASSWORD_RESET;
-        }
-        return null;
+    if (USER_REGISTRATION.equalsIgnoreCase(type)) {
+        return OtpRequestType.REGISTER;
+    } else if (USER_LOGIN.equalsIgnoreCase(type)) {
+        return OtpRequestType.LOGIN;
+    } else if (PASSWORD_RESET.equalsIgnoreCase(type)) {
+        return OtpRequestType.PASSWORD_RESET;
     }
+    return null;
+}
 }
 

@@ -1,8 +1,10 @@
 {
   "otp": {
     "mobileNumber": "mobileNumber",
+    "userName":"userName",
     "tenantId": "tenantId",
-    "type": "register",
+    "type": "REGISTER",
     "userType": "CITIZEN"
+    
   }
 }
