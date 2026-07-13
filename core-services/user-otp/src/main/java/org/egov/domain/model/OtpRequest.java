@@ -22,10 +22,9 @@ public class OtpRequest {
 
     public void validate() {
         if(isTenantIdAbsent()
-				|| isMobileNumberAbsent()
+				
 				|| isInvalidType()
-				|| isMobileNumberNumeric()
-				|| isMobileNumberValidLength()) {
+				) {
             throw new InvalidOtpRequestException(this);
         }
     }
