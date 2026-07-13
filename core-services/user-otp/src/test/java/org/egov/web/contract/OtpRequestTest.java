@@ -11,7 +11,7 @@ public class OtpRequestTest {
 
     @Test
     public void test_should_map_from_contract_to_domain() {
-        final Otp otp = new Otp("mobileNumber", "userName","tenantId", "register", "CITIZEN");
+        final Otp otp = new Otp("mobileNumber", "userName","tenantId", "REGISTER", "CITIZEN");
         final OtpRequest request = new OtpRequest(null, otp);
 
         final org.egov.domain.model.OtpRequest domainOtpRequest = request.toDomain();
@@ -44,7 +44,7 @@ public class OtpRequestTest {
 
 	@Test
 	public void test_should_set_request_type_to_register_when_type_is_register() {
-		final Otp otp = new Otp("mobileNumber", "userName","tenantId", "regisTER", "CITIZEN");
+		final Otp otp = new Otp("mobileNumber", "userName","tenantId", "REGISTER", "CITIZEN");
 		final OtpRequest request = new OtpRequest(null, otp);
 
 		final org.egov.domain.model.OtpRequest domainOtpRequest = request.toDomain();
@@ -54,7 +54,7 @@ public class OtpRequestTest {
 
 	@Test
 	public void test_should_set_request_type_to_password_reset_when_type_is_passwordreset() {
-		final Otp otp = new Otp("mobileNumber","userName", "tenantId", "passwordRESET", "CITIZEN");
+		final Otp otp = new Otp("mobileNumber","userName", "tenantId", "PASSWORD_RESET", "CITIZEN");
 		final OtpRequest request = new OtpRequest(null, otp);
 
 		final org.egov.domain.model.OtpRequest domainOtpRequest = request.toDomain();
