@@ -10,8 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
-
 import javax.validation.constraints.NotNull;
+
 import java.util.Map;
 
 import static java.lang.String.format;

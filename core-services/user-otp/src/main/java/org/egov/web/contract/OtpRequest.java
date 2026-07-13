@@ -18,6 +18,7 @@ public class OtpRequest {
                 .tenantId(getTenantId())
                 .type(getType())
                 .userType(getUserType())
+                .userName(getUsername())
                 .build();
     }
 
@@ -35,6 +36,10 @@ public class OtpRequest {
 
     private String getTenantId() {
         return otp != null ? otp.getTenantId() : null;
+    }
+
+    private String getUsername() {
+        return otp != null ? otp.getUserName() : null;
     }
 }
 
