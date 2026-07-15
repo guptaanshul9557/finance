@@ -31,7 +31,7 @@ public class UserRepository {
 
     public User fetchUser(String mobileNumber, String tenantId, String userType, String type) {
         UserSearchRequest request = null;
-        if (userType !=null && userType.equals("EMPLOYEE") && type!=null && !type.equals("passwordreset")) {
+        if (userType !=null && userType.equals("EMPLOYEE") && type!=null && !type.equals("PASSWORD_RESET")) {
             request = new UserSearchRequest(mobileNumber, tenantId, userType,null);
         } else {
             request = new UserSearchRequest(null, tenantId, userType, mobileNumber);
