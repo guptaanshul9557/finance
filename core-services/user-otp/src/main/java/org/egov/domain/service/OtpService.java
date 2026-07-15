@@ -46,7 +46,7 @@ public class OtpService {
 
     private void sendOtpForUserRegistration(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getMobileNumber(), otpRequest.getTenantId(),
-                otpRequest.getUserType());
+                otpRequest.getUserType(),otpRequest.getType().toString());
 
         if (otpRequest.isRegistrationRequestType() && null != matchingUser)
             throw new UserAlreadyExistInSystemException();
@@ -59,14 +59,14 @@ public class OtpService {
 
      private void sendOtpForUserLogin(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
-                otpRequest.getUserType());
+                otpRequest.getUserType(),otpRequest.getType().toString());
 
         if (otpRequest.isRegistrationRequestType() && null != matchingUser)
             throw new UserAlreadyExistInSystemException();
         else if (otpRequest.isLoginRequestType() && null == matchingUser)
             throw new UserNotExistingInSystemException();
 
-        if(otpRequest.getMobileNumber() == null || otpRequest.getMobileNumber().isEmpty())
+        if((otpRequest.getMobileNumber() == null || otpRequest.getMobileNumber().isEmpty() ) && matchingUser!=null)
             otpRequest.setMobileNumber(matchingUser.getMobileNumber());
         final String otpNumber = otpRepository.fetchOtp(otpRequest);
         otpSMSSender.send(otpRequest, otpNumber);
@@ -74,7 +74,7 @@ public class OtpService {
 
     private void sendOtpForPasswordReset(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getMobileNumber(), otpRequest.getTenantId(),
-                otpRequest.getUserType());
+                otpRequest.getUserType(),otpRequest.getType().toString());
         if (null == matchingUser) {
             throw new UserNotFoundException();
         }
