@@ -509,7 +509,7 @@ public class SearchReceiptAction extends SearchFormAction {
 	                
 	                
 	                
-	                Optional<BillAccountDetail> igst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().equals("ACC_INTEREST_SMART_SAVER_IGST")).findFirst();
+	                Optional<BillAccountDetail> igst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("IGST")).findFirst();
                      BillAccountDetail orElseIgst = igst.orElse(null);
                      
                      if(orElseIgst!=null) {
@@ -517,14 +517,14 @@ public class SearchReceiptAction extends SearchFormAction {
                     	 
                      }
                      
-                     Optional<BillAccountDetail> cgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().equals("ACC_INTEREST_SMART_SAVER_CGST")).findFirst();
+                     Optional<BillAccountDetail> cgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("CGST")).findFirst();
                      BillAccountDetail orElseCgst = igst.orElse(null);
                      
                      if(orElseCgst!=null) {
                     	 dataRow.createCell(9).setCellValue(orElseCgst.getAmount().doubleValue()); 
                      }
                      
-                     Optional<BillAccountDetail> sgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().equals("ACC_INTEREST_SMART_SAVER_SGST")).findFirst();
+                     Optional<BillAccountDetail> sgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("SGST")).findFirst();
                      BillAccountDetail orElseSgst = igst.orElse(null);
                      
                      if(orElseSgst!=null) {
