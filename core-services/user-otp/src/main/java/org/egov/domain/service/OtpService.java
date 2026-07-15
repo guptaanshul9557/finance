@@ -46,7 +46,7 @@ public class OtpService {
 
     private void sendOtpForUserRegistration(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getMobileNumber(), otpRequest.getTenantId(),
-                otpRequest.getUserType(),otpRequest.getType().toString());
+                otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword());
 
         if (otpRequest.isRegistrationRequestType() && null != matchingUser)
             throw new UserAlreadyExistInSystemException();
@@ -58,9 +58,15 @@ public class OtpService {
     }
 
      private void sendOtpForUserLogin(OtpRequest otpRequest) {
-        final User matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
-                otpRequest.getUserType(),otpRequest.getType().toString());
+        User matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
+                otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword());
+if(matchingUser==null )  
+{
+            log.info("fetching user without password");
 
+    matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
+                otpRequest.getUserType(),otpRequest.getType().toString(),null);
+} 
         if (otpRequest.isRegistrationRequestType() && null != matchingUser)
             throw new UserAlreadyExistInSystemException();
         else if (otpRequest.isLoginRequestType() && null == matchingUser)
@@ -74,7 +80,7 @@ public class OtpService {
 
     private void sendOtpForPasswordReset(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getMobileNumber(), otpRequest.getTenantId(),
-                otpRequest.getUserType(),otpRequest.getType().toString());
+                otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword() );
         if (null == matchingUser) {
             throw new UserNotFoundException();
         }

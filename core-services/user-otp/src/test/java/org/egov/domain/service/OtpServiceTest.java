@@ -101,11 +101,13 @@ public class OtpServiceTest {
         final OtpRequest otpRequest = OtpRequest.builder()
                 .tenantId("tenant")
                 .mobileNumber("1234567890")
+				.userName("test")
+				.password("123456")
                 .type(OtpRequestType.PASSWORD_RESET)
                 .userType("CITIZEN")
                 .build();
 
-        lenient().when(userRepository.fetchUser(anyString(), anyString(), anyString(), anyString()))
+        lenient().when(userRepository.fetchUser(anyString(),anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(new User(1L, "foo@bar.com", "123"));
 
         otpService.sendOtp(otpRequest);
@@ -118,6 +120,8 @@ public class OtpServiceTest {
         final OtpRequest otpRequest = OtpRequest.builder()
                 .tenantId("tenant")
                 .mobileNumber(null)
+                .userName("test")
+                .password("123456")
                 .type(OtpRequestType.PASSWORD_RESET)
                 .userType("CITIZEN")
                 .build();
@@ -130,6 +134,7 @@ public class OtpServiceTest {
         final OtpRequest otpRequest = OtpRequest.builder()
                 .tenantId("tenant")
                 .mobileNumber("")
+				.password("123456")
                 .type(OtpRequestType.PASSWORD_RESET)
                 .userType("CITIZEN")
                 .build();
@@ -159,13 +164,15 @@ public class OtpServiceTest {
         final OtpRequest otpRequest = OtpRequest.builder()
                 .tenantId("tenant")
                 .mobileNumber("1234567890")
+				.userName("test")
+				.password("123456")
                 .type(OtpRequestType.PASSWORD_RESET)
                 .userType("CITIZEN")
                 .build();
 
         final String otpNumber = "otpNumber";
         when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
-        when(userRepository.fetchUser(anyString(), anyString(), anyString(), anyString()))
+        when(userRepository.fetchUser(anyString(),anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(new User(1L, "foo@bar.com", "1234"));
 
         otpService.sendOtp(otpRequest);
@@ -177,14 +184,14 @@ public class OtpServiceTest {
     public void test_should_send_email_otp_for_password_reset() {
         final OtpRequest otpRequest = OtpRequest.builder()
                 .tenantId("tenant")
-                .mobileNumber("1234567890")
+                .mobileNumber("1234567890").password("2223356")
                 .type(OtpRequestType.PASSWORD_RESET)
                 .userType("CITIZEN")
                 .build();
 
         final String otpNumber = "otpNumber";
         when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
-        when(userRepository.fetchUser(anyString(), anyString(), anyString(), anyString()))
+        when(userRepository.fetchUser(anyString(),anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(new User(1L, "foo@bar.com", "123"));
 
         otpService.sendOtp(otpRequest);

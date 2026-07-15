@@ -21,6 +21,7 @@ public class OtpRequest {
                     : OtpRequestType.REGISTER)
             .userType(getUserType())
             .userName(getUsername() == null ? "" : getUsername())
+            .password(getPassword())
             .build();
 }
     private OtpRequestType getType() {
@@ -42,6 +43,10 @@ public class OtpRequest {
     private String getUsername() {
         return otp != null ? otp.getUserName() : null;
     }
+
+    private String getPassword() {
+        return otp != null ? otp.getPassword() : null;
+    }       
 }
 
 

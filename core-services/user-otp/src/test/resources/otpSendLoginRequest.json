@@ -2,6 +2,7 @@
   "otp": {
     "mobileNumber": "mobileNumber",
     "userName":"userName",
+    "password":"password",
     "tenantId": "tenantId",
     "type": "LOGIN",
     "userType": "CITIZEN"

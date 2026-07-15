@@ -16,6 +16,7 @@ public class OtpRequest {
 	@Setter
     private String mobileNumber;
 	private String userName;
+	private String password;
     private String tenantId;
     private OtpRequestType type;
     private String userType;
