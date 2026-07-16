@@ -165,6 +165,8 @@ public class RestServiceAuthFilter implements Filter {
 		String adminToken = this.microserviceUtils.generateAdminToken(tenantId);
 		if (adminToken == null)
 			throw new AuthorizationException("SI token generation failed");
+		
+		userToken=adminToken;
 		session.setAttribute(MS_USER_TOKEN, userToken);
 		CustomUserDetails user = this.microserviceUtils.getUserDetails(userToken, adminToken);
 		session.setAttribute(MS_TENANTID_KEY, user.getTenantId());
@@ -217,8 +219,7 @@ public class RestServiceAuthFilter implements Filter {
 			HashMap<Object, Object> reqInfo = null;
 			reqInfo = (HashMap) reqMap.get("RequestInfo");
 
-//			String authToken = (String) reqInfo.get("authToken");
-			String authToken=null;
+			String authToken = (String) reqInfo.get("authToken");
 			if (authToken == null)
 				authToken = this.microserviceUtils.generateAdminToken(tenantId);
 			return authToken;
