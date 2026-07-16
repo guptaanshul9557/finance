@@ -32,12 +32,16 @@ public class ChallanQueryBuilder {
             "challan_createdTime,chaladdr.id as chaladdr_id," +
             "challan.accountId as uuid,challan.description as description  FROM {schema}.eg_echallan challan"
             +INNER_JOIN_STRING
-            +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id";
+            +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id"
+            +INNER_JOIN_STRING
+            +"{schema}.eg_challan_custid custid ON custid.accountid = challan.accountid";
 
     private static final String COUNT_QUERY = "SELECT COUNT(challan.id) " +
             "FROM {schema}.eg_echallan challan"
             +INNER_JOIN_STRING
-            +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id";
+            +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id"
+            +INNER_JOIN_STRING
+            +"{schema}.eg_challan_custid custid ON custid.accountid = challan.accountid";
 
 
 
@@ -146,6 +150,12 @@ public class ChallanQueryBuilder {
                 addClauseIfRequired(preparedStmtList, builder);
                 builder.append(" challan.additionaldetail->>'ward' = ? ");
                 preparedStmtList.add(criteria.getWard());
+            }
+            
+            if (criteria.getCustId() != null) {
+                addClauseIfRequired(preparedStmtList, builder);
+                builder.append(" custid.custid  = ? ");
+                preparedStmtList.add(criteria.getCustId());
             }
 
             if (criteria.getReceiptNumber() != null) {
