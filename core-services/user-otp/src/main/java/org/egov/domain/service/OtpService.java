@@ -60,13 +60,13 @@ public class OtpService {
      private void sendOtpForUserLogin(OtpRequest otpRequest) {
         User matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
                 otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword());
-if(matchingUser==null )  
-{
-            log.info("fetching user without password");
+// if(matchingUser==null )  
+// {
+//             log.info("fetching user without password");
 
-    matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
-                otpRequest.getUserType(),otpRequest.getType().toString(),null);
-} 
+//     matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
+//                 otpRequest.getUserType(),otpRequest.getType().toString(),null);
+// } 
         if (otpRequest.isRegistrationRequestType() && null != matchingUser)
             throw new UserAlreadyExistInSystemException();
         else if (otpRequest.isLoginRequestType() && null == matchingUser)
