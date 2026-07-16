@@ -217,7 +217,8 @@ public class RestServiceAuthFilter implements Filter {
 			HashMap<Object, Object> reqInfo = null;
 			reqInfo = (HashMap) reqMap.get("RequestInfo");
 
-			String authToken = (String) reqInfo.get("authToken");
+//			String authToken = (String) reqInfo.get("authToken");
+			String authToken=null;
 			if (authToken == null)
 				authToken = this.microserviceUtils.generateAdminToken(tenantId);
 			return authToken;
