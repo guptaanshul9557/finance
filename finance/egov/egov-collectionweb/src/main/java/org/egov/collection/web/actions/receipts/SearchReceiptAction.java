@@ -518,14 +518,14 @@ public class SearchReceiptAction extends SearchFormAction {
                      }
                      
                      Optional<BillAccountDetail> cgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("CGST")).findFirst();
-                     BillAccountDetail orElseCgst = igst.orElse(null);
+                     BillAccountDetail orElseCgst = cgst.orElse(null);
                      
                      if(orElseCgst!=null) {
                     	 dataRow.createCell(9).setCellValue(orElseCgst.getAmount().doubleValue()); 
                      }
                      
                      Optional<BillAccountDetail> sgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("SGST")).findFirst();
-                     BillAccountDetail orElseSgst = igst.orElse(null);
+                     BillAccountDetail orElseSgst = sgst.orElse(null);
                      
                      if(orElseSgst!=null) {
                     	 dataRow.createCell(10).setCellValue(orElseSgst.getAmount().doubleValue());
