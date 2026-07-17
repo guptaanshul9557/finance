@@ -205,6 +205,7 @@ public class DayBookReportAction extends BaseFormAction {
                 .setResultTransformer(Transformers.aliasToBean(DayBook.class));
         queryMapEntry.getValue().entrySet().forEach(entry -> query.setParameter(entry.getKey(), entry.getValue()));
         dayBookDisplayList = query.list();
+        dayBookDisplayList.sort((a, b) -> a.getVoucherdate().compareTo(b.getVoucherdate()));
         for (DayBook bean : dayBookDisplayList) {
             bean.setDebitamount(new BigDecimal(bean.getDebitamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());
             bean.setCreditamount(new BigDecimal(bean.getCreditamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());

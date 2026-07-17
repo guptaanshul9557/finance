@@ -60,6 +60,8 @@ public class ChallanRowMapper  implements ResultSetExtractor<List<Challan>> {
                 		.description(rs.getString("description"))
                 		.applicationStatus(StatusEnum.valueOf(rs.getString("applicationstatus")))
                         .receiptNumber(rs.getString("receiptnumber"))
+                        .custId(rs.getString("custid"))
+                        .ddnNumber(rs.getString("ddnnumber"))
                 		.filestoreid(rs.getString("filestoreid"))
                         .id(id)
                         .build();

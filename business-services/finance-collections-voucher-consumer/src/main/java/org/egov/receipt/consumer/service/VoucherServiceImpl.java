@@ -267,7 +267,7 @@ public class VoucherServiceImpl implements VoucherService {
 		String schemeCode = businessService.getScheme() != null & !StringUtils.isEmpty(businessService.getScheme())
 				? businessService.getScheme() : null;
 		voucher.getScheme().setCode(schemeCode);
-		voucher.setDescription(businessServiceName + " Receipt");
+		voucher.setDescription(receiptNumber);
 		// checking Whether manualReceipt date will be consider as
 		// voucherdate
 		if (billDetail.getManualReceiptDate() != null && billDetail.getManualReceiptDate().longValue() != 0

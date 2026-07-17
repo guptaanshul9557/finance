@@ -30,6 +30,7 @@ public class ChallanQueryBuilder {
     private static final String QUERY = "SELECT challan.*,chaladdr.*,challan.id as challan_id,challan.tenantid as challan_tenantId,challan.lastModifiedTime as " +
             "challan_lastModifiedTime,challan.createdBy as challan_createdBy,challan.lastModifiedBy as challan_lastModifiedBy,challan.createdTime as " +
             "challan_createdTime,chaladdr.id as chaladdr_id," +
+            "custid.custid as custid,custid.ddnnumber as ddnnumber, " +
             "challan.accountId as uuid,challan.description as description  FROM {schema}.eg_echallan challan"
             +INNER_JOIN_STRING
             +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id"

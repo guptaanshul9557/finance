@@ -183,6 +183,7 @@ public class JournalBookReportAction extends BaseFormAction {
                 .setResultTransformer(Transformers.aliasToBean(GeneralLedgerBean.class));
         queryMapEntry.getValue().entrySet().forEach(entry -> query.setParameter(entry.getKey(), entry.getValue()));
         journalBookDisplayList = query.list();
+        journalBookDisplayList.sort((a, b) -> a.getVoucherdate().compareTo(b.getVoucherdate()));
         for (GeneralLedgerBean bean : journalBookDisplayList) {
             bean.setDebitamount(new BigDecimal(bean.getDebitamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());
             bean.setCreditamount(new BigDecimal(bean.getCreditamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());
