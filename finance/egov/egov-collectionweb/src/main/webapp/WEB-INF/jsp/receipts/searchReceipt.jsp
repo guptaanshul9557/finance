@@ -166,7 +166,9 @@ function validateNew() {
 }
 
 function exportAllReportToExcel(){
-		    window.location.href = "/services/collection/receipts/exportAllReceiptExcel-report.action";
+		  //  window.location.href = "/services/collection/receipts/exportAllReceiptExcel-report.action";
+	     document.searchReceiptForm.action = "exportAllReceiptExcel-report.action";
+         document.searchReceiptForm.submit();
 	 }
 
 function exportTableToExcel() {
