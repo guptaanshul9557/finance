@@ -271,7 +271,7 @@ public class PaymentService {
 		                   .toEpochMilli() - 1;
 		
 		paymentSearchCriteria=paymentSearchCriteria.builder().fromDate(applicationProperties.getIsFromDate()?paymentSearchCriteria.getFromDate():fromDate)
-		                               .toDate(applicationProperties.getIsToDate()?paymentSearchCriteria.getFromDate():toDate)
+		                               .toDate(applicationProperties.getIsToDate()?paymentSearchCriteria.getToDate():toDate)
 		                               .businessServices(applicationProperties.getIsBusinessservice()?paymentSearchCriteria.getBusinessServices():null)
 		                               .receiptNumbers(null)
 		                               .tenantId(paymentSearchCriteria.getTenantId())

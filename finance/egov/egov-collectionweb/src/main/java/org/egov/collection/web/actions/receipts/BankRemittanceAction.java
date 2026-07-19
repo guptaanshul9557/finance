@@ -70,6 +70,7 @@ import org.apache.struts2.convention.annotation.ParentPackage;
 import org.apache.struts2.convention.annotation.Result;
 import org.apache.struts2.convention.annotation.Results;
 import org.apache.struts2.interceptor.validation.SkipValidation;
+import org.displaytag.pagination.PaginatedList;
 import org.egov.collection.bean.ReceiptBean;
 import org.egov.collection.constants.CollectionConstants;
 import org.egov.collection.entity.CollectionBankRemittanceReport;
@@ -80,16 +81,19 @@ import org.egov.commons.Bankaccount;
 import org.egov.commons.CFinancialYear;
 import org.egov.commons.dao.BankaccountHibernateDAO;
 import org.egov.commons.dao.FinancialYearDAO;
+import org.egov.infra.config.core.ApplicationThreadLocals;
 import org.egov.infra.exception.ApplicationRuntimeException;
 import org.egov.infra.microservice.models.BankAccountServiceMapping;
 import org.egov.infra.microservice.models.BusinessDetails;
 import org.egov.infra.microservice.models.BusinessService;
 import org.egov.infra.microservice.models.Receipt;
+import org.egov.infra.persistence.utils.Page;
 import org.egov.infra.utils.DateUtils;
 import org.egov.infra.validation.exception.ValidationError;
 import org.egov.infra.validation.exception.ValidationException;
 import org.egov.infra.web.struts.actions.BaseFormAction;
 import org.egov.infra.web.struts.annotation.ValidationErrorPage;
+import org.egov.infra.web.utils.EgovPaginatedList;
 import org.egov.utils.Constants;
 import org.hibernate.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,6 +166,44 @@ public class BankRemittanceAction extends BaseFormAction {
 //    for bank token number and token date 
     private String bankTokenNumber;
     private Date tokenDate;
+    
+    private Integer page=1;
+    
+    public Integer getPage() {
+		return page;
+	}
+
+	public void setPage(Integer page) {
+		this.page = page;
+	}
+
+	public String getTarget() {
+		return target;
+	}
+
+	public void setTarget(String target) {
+		this.target = target;
+	}
+
+	public PaginatedList getSearchResult() {
+		return searchResult;
+	}
+
+	public void setSearchResult(PaginatedList searchResult) {
+		this.searchResult = searchResult;
+	}
+
+	public String getCollectionVersion() {
+		return collectionVersion;
+	}
+
+	public void setCollectionVersion(String collectionVersion) {
+		this.collectionVersion = collectionVersion;
+	}
+
+	private String target = "new";
+    protected PaginatedList searchResult;
+    private String collectionVersion;
     
     private Long voucherId;
 
@@ -238,6 +280,15 @@ public class BankRemittanceAction extends BaseFormAction {
     		populateRemittanceList();
     		return NEW;
     	}
+    	target = "searchresult";
+    	collectionVersion = ApplicationThreadLocals.getCollectionVersion();
+    	
+    	Integer totalCount=0;
+    	
+    	Integer pageSize = 20;
+        Integer pageNo = (this.page != null && this.page > 0) ? this.page : 1;
+
+        Integer offset = (page - 1) * pageSize;
         isListData = true;
         remitAccountNumber = "";
         if (accountNumberId != null) {
@@ -261,12 +312,28 @@ public class BankRemittanceAction extends BaseFormAction {
             final CFinancialYear financialYear = financialYearDAO.getFinancialYearById(finYearId);
             resultList = remittanceService.findCashRemittanceDetailsForServiceAndFund("", StringUtils.join(serviceCodeList, ","),
                     StringUtils.join(fundCodeSet, ","), fromDate == null ? financialYear.getStartingDate() : fromDate,
-                    toDate == null ? financialYear.getEndingDate() : toDate, CollectionConstants.INSTRUMENT_NEW_STATUS);
-            if (fromDate != null && toDate != null)
-                pageSize = resultList.size();
-            else
-                pageSize = CollectionConstants.DEFAULT_PAGE_SIZE;
+                    toDate == null ? financialYear.getEndingDate() : toDate, CollectionConstants.INSTRUMENT_NEW_STATUS,offset,pageSize);
+            Boolean isCount=true;
+            totalCount = remittanceService.findCashRemittanceDetailsCountForServiceAndFund("", StringUtils.join(serviceCodeList, ","),
+                    StringUtils.join(fundCodeSet, ","), fromDate == null ? financialYear.getStartingDate() : fromDate,
+                    toDate == null ? financialYear.getEndingDate() : toDate, CollectionConstants.INSTRUMENT_NEW_STATUS,isCount);
+//            if (fromDate != null && toDate != null)
+//                pageSize = resultList.size();
+//            else
+//                pageSize = CollectionConstants.DEFAULT_PAGE_SIZE;
         }
+         if (searchResult == null) {
+			
+			Page page1 = new Page<ReceiptBean>(page, pageSize, resultList);
+			searchResult = new EgovPaginatedList(page1, totalCount.intValue());
+		} else {
+			searchResult.getList().clear();
+			searchResult.getList().addAll(resultList);
+		}
+
+		resultList = searchResult.getList();
+        
+        
         return NEW;
     }
 

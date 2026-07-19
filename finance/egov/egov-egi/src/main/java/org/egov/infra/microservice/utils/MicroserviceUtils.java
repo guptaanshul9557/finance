@@ -338,7 +338,7 @@ public class MicroserviceUtils {
 
     public String getTenentId() {
         environment.getProperty(CLIENT_ID);
-        String tenantId = ApplicationThreadLocals.getUserTenantId();
+        String tenantId = "pg."+ApplicationThreadLocals.getTenantID();
         // if (isNotBlank(clientId)) {
         // final StringBuilder stringBuilder = new StringBuilder();
         // stringBuilder.append(clientId).append('.').append(tenantId);
@@ -1013,11 +1013,58 @@ public class MicroserviceUtils {
         return this.getReceipt(criteria);
     }
     
+    public List<Receipt> getReceipts(String ids, String status, String serviceCodes, Date fromDate, Date toDate,Integer offset,Integer pageSize) {
+        ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                .receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .offset(offset)
+                .limit(pageSize)
+                .build();
+        return this.getReceipt(criteria);
+    }
+    public Integer getReceiptsCount(String ids, String status, String serviceCodes, Date fromDate, Date toDate,
+			Boolean isCount) {
+    	ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                .receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .isCountRequest(isCount)
+                .build();
+    	
+        return this.getReceiptCount(criteria);
+    	
+		
+	}
+    
+    public Integer getReceiptsAllCount(String status, String serviceCodes, Date fromDate, Date toDate,Boolean isCount) {
+        ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                //.receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .isCountRequest(isCount)
+                .build();
+        return this.getReceiptCount(criteria);
+    }
+
     public List<Receipt> getReceiptsAll(String status, String serviceCodes, Date fromDate, Date toDate) {
         ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
                 .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
                 //.receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
-                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId()).build();
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .build();
+        return this.getReceipt(criteria);
+    }
+    
+    
+    public List<Receipt> getReceiptsAll(String status, String serviceCodes, Date fromDate, Date toDate,Integer offset,Integer limit) {
+        ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                //.receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .offset(offset)
+                .limit(limit)
+                .build();
         return this.getReceipt(criteria);
     }
 
@@ -2136,6 +2183,8 @@ public class MicroserviceUtils {
         }
         return receipts;
 	}
+
+
 
 	
 

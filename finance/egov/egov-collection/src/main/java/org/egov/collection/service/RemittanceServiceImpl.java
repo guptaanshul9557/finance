@@ -591,6 +591,8 @@ public class RemittanceServiceImpl extends RemittanceService {
 
     /**
      * Method to find all the Cash instruments with status as :new and
+     * @param pageSize 
+     * @param offset 
      *
      * @return List of HashMap
      */
@@ -1211,6 +1213,101 @@ public class RemittanceServiceImpl extends RemittanceService {
         query.setParameter("voucherNumber", voucherHeaderId);
         return query.list();
     }
+
+    public Integer findCashRemittanceDetailsCountForServiceAndFund(final String boundaryIdList,
+            final String serviceCodes, final String fundCodes, final Date startDate, final Date endDate, String instrumentStatus,Boolean isCount) {
+		  List<Instrument> instruments = microserviceUtils.getInstruments(CollectionConstants.INSTRUMENTTYPE_NAME_CASH, TransactionType.Debit,
+	                instrumentStatus,startDate,endDate);
+	        List<String> receiptIds = new ArrayList<>();
+	        for (Instrument i : instruments) {
+	            if (i.getInstrumentVouchers() != null)
+	                for (InstrumentVoucher iv : i.getInstrumentVouchers()) {
+	                    receiptIds.add(iv.getReceiptHeaderId());
+	                }
+	        }
+	        List<ReceiptBean> resultList = new ArrayList<>();
+	       
+//	        List<Receipt> receipts = Collections.EMPTY_LIST;
+	        Integer count=0;
+	        switch (ApplicationThreadLocals.getCollectionVersion().toUpperCase()) {
+	        case "V2":
+	        case "VERSION2":   
+	            LOGGER.info("In V2/ VERSION2  with receipt Id==" + receiptIds.size());
+
+	        	if(!receiptIds.isEmpty())
+	            count = microserviceUtils.getReceiptsCount(StringUtils.join(receiptIds, ","), PaymentStatusEnum.NEW.name(), serviceCodes,startDate, endDate,isCount);
+	            else
+	            count = microserviceUtils.getReceiptsAllCount(PaymentStatusEnum.NEW.name(), serviceCodes,startDate, endDate,isCount);
+		
+	            break;
+
+	        default:
+	            count = microserviceUtils.getReceiptsCount(StringUtils.join(receiptIds, ","), CollectionConstants.RECEIPT_STATUS_APPROVED, serviceCodes,startDate, endDate,isCount);
+	            break;
+	        }
+	        	
+
+		return count;
+	}
+
+	public List<ReceiptBean> findCashRemittanceDetailsForServiceAndFund(String boundaryIdList, String serviceCodes, String fundCodes,
+			Date startDate, Date endDate, String instrumentStatus, Integer offset, Integer pageSize) {
+		
+		 List<Instrument> instruments = microserviceUtils.getInstruments(CollectionConstants.INSTRUMENTTYPE_NAME_CASH, TransactionType.Debit,
+	                instrumentStatus,startDate,endDate);
+	        List<String> receiptIds = new ArrayList<>();
+	        for (Instrument i : instruments) {
+	            if (i.getInstrumentVouchers() != null)
+	                for (InstrumentVoucher iv : i.getInstrumentVouchers()) {
+	                    receiptIds.add(iv.getReceiptHeaderId());
+	                }
+	        }
+	        List<ReceiptBean> resultList = new ArrayList<>();
+	      
+	        List<Receipt> receipts = Collections.EMPTY_LIST;
+	        switch (ApplicationThreadLocals.getCollectionVersion().toUpperCase()) {
+	        case "V2":
+	        case "VERSION2":   
+	            LOGGER.info("In V2/ VERSION2  with receipt Id==" + receiptIds.size());
+
+	        	 if(!receiptIds.isEmpty())
+	            receipts = microserviceUtils.getReceipts(StringUtils.join(receiptIds, ","), PaymentStatusEnum.NEW.name(), serviceCodes,startDate, endDate,offset,pageSize);
+	            else
+	            receipts = microserviceUtils.getReceiptsAll(PaymentStatusEnum.NEW.name(), serviceCodes,startDate, endDate,offset,pageSize);
+		
+	            break;
+
+	        default:
+	            receipts = microserviceUtils.getReceipts(StringUtils.join(receiptIds, ","), CollectionConstants.RECEIPT_STATUS_APPROVED, serviceCodes,startDate, endDate);
+	            break;
+	        }
+	        LOGGER.info("Outside Switch with receipt Id==" + receipts.size());
+
+
+	        
+	        for(Receipt receipt:receipts) {
+	        	ReceiptBean receiptb = new ReceiptBean();
+
+	            
+	            receiptb.setReceipts(receipt.getReceiptNumber());
+	            Long billDate = receipt.getBill().get(0).getBillDetails().get(0).getBillDate();
+
+	            String formattedDate = new SimpleDateFormat("dd/MM/yyyy")
+	                    .format(new Date(billDate));
+	            receiptb.setReceiptDate(formattedDate);
+	            receiptb.setService(receipt.getService());
+	            receiptb.setInstrumentType(receipt.getInstrument().getInstrumentType().getName());
+
+	            
+	            receiptb.setInstrumentAmount(receipt.getInstrument().getAmount());
+	            resultList.add(receiptb);	
+	        	
+	        }
+
+	        populateNames(resultList);
+
+	        return resultList;
+	}
 
 
 }

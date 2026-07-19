@@ -557,7 +557,7 @@
 						<input name="search" type="submit" class="buttonsubmit" id="search" value="Search" onclick="return searchDataToRemit()" />
 					</div>
 					<s:if test="%{!resultList.isEmpty()}">
-						<display:table name="resultList" id="currentRow" uid="currentRow" pagesize="${pageSize}" style="border:1px;width:100%;table-layout:fixed;" cellpadding="0" cellspacing="0" export="false" requestURI="">
+						<display:table name="searchResult" id="currentRow" uid="currentRow" pagesize="${pageSize}" style="border:1px;width:100%;table-layout:fixed;" cellpadding="0" cellspacing="0" export="false" requestURI="">
 							<display:column headerClass="bluebgheadtd" class="blueborderfortd" title="Select<input type='checkbox' name='selectAllReceipts' value='on' onClick='setCheckboxStatuses(this.checked);'/>" style="width:5%; text-align: center">
 								<c:set var="rowNumber" value="${currentRow_rowNum-1}" ></c:set>
 								<input type='checkbox' name='finalList[${rowNumber}].selected'  id='selected_${rowNumber}' value ="false" onClick="handleReceiptSelectionEvent()" />
