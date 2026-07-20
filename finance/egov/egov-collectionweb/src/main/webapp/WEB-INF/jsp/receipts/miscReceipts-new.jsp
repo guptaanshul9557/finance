@@ -70,6 +70,16 @@
 </style>
 
 <script type="text/javascript">
+function blockAngleBrackets(event) {
+    var ch = String.fromCharCode(event.which || event.keyCode);
+    if (ch === '<' || ch === '>') {
+        return false;
+    }
+    return true;
+}
+</script>
+
+<script type="text/javascript">
 var billscount=0;
 var multiplepayee="false";
 path="${pageContext.request.contextPath}";
@@ -827,7 +837,7 @@ var totaldbamt=0,totalcramt=0;
 					<td class="bluebox" style="width:30%"><s:textarea
 							name="referenceDesc" id="referenceDesc" value="%{referenceDesc}"
 							cols="50" rows="5" maxlength="500"
-							onkeyup="return ismaxlength(this)" /></td>
+							onkeyup="return ismaxlength(this)" onkeypress="return blockAngleBrackets(event);" /></td>
 				</tr>
 
 			</table>
