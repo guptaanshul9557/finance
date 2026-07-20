@@ -2149,7 +2149,10 @@ public class MicroserviceUtils {
                 .receiptNumbers(
                         receiptNos != null ? receiptNos.stream().collect(Collectors.toSet()) : Collections.EMPTY_SET)
                 .classification(classification)
-                .isReport(isReport).build();
+                .isReport(isReport)
+                .tenantId(this.getTenentId())
+                .build();
+		        
         return this.getReceiptReport(criteria);
 		
 	}
