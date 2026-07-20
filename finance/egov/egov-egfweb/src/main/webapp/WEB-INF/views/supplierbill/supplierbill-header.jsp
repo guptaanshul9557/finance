@@ -51,6 +51,35 @@
 <%@ taglib uri="http://www.springframework.org/tags" prefix="spring"%>
 <%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
 
+<script type="text/javascript">
+function validateCharacters(element) {
+    element.value = element.value.replace(/[^A-Za-z0-9.,;:& -]/g, '');
+}
+function blockSpecialCharacters(e) {
+    var ch = e.key;
+    // Allow control keys
+    if (e.ctrlKey || e.metaKey || ch.length > 1) {
+        return true;
+    }
+    // Allow only A-Z, a-z, 0-9, . , ; : & - and space
+    if (!/^[A-Za-z0-9.,;:& -]$/.test(ch)) {
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+
+function validatePaste(e) {
+    var pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^A-Za-z0-9.,;:& -]/.test(pastedText)) {
+        alert("Special characters are not allowed.");
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+</script>
+
 <div class="panel panel-primary" data-collapsed="0">
 	<div class="panel-heading">
 		
@@ -180,7 +209,9 @@
 		<label class="col-sm-2 control-label text-right"><spring:message code="lbl.narration" text="Narration"/>
 		</label>
 		<div class="col-sm-3 add-margin">
-			<form:textarea class="form-control patternvalidation" data-pattern="alphanumerichyphenbackslash" path="egBillregistermis.narration" id="narration" class="form-control" maxlength="1024" ></form:textarea>
+			<form:textarea path="egBillregistermis.narration" id="narration" class="form-control" maxlength="1024" onkeydown="return blockSpecialCharacters(event);"
+						    onpaste="return validatePaste(event);"
+                            oninput="return validateCharacters(event);" ></form:textarea>
 			<form:errors path="egBillregistermis.narration" cssClass="add-margin error-msg" />
 		</div>
 	</div>
