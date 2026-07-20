@@ -70,9 +70,28 @@
 </style>
 
 <script type="text/javascript">
-function blockAngleBrackets(event) {
-    var ch = String.fromCharCode(event.which || event.keyCode);
-    if (ch === '<' || ch === '>') {
+function validateCharacters(element) {
+    element.value = element.value.replace(/[^A-Za-z0-9.,;:& -]/g, '');
+}
+function blockSpecialCharacters(e) {
+    var ch = e.key;
+    // Allow control keys
+    if (e.ctrlKey || e.metaKey || ch.length > 1) {
+        return true;
+    }
+    // Allow only A-Z, a-z, 0-9, . , ; : & - and space
+    if (!/^[A-Za-z0-9.,;:& -]$/.test(ch)) {
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+
+function validatePaste(e) {
+    var pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^A-Za-z0-9.,;:& -]/.test(pastedText)) {
+        alert("Special characters are not allowed.");
+        e.preventDefault();
         return false;
     }
     return true;
@@ -837,7 +856,12 @@ var totaldbamt=0,totalcramt=0;
 					<td class="bluebox" style="width:30%"><s:textarea
 							name="referenceDesc" id="referenceDesc" value="%{referenceDesc}"
 							cols="50" rows="5" maxlength="500"
-							onkeyup="return ismaxlength(this)" onkeypress="return blockAngleBrackets(event);" /></td>
+							onkeyup="return ismaxlength(this)" 
+							onkeydown="return blockSpecialCharacters(event);"
+						    onpaste="return validatePaste(event);"
+                            oninput="return validateCharacters(event);"
+								 /></td>
+							
 				</tr>
 
 			</table>
