@@ -35,14 +35,14 @@ public class ChallanQueryBuilder {
             +INNER_JOIN_STRING
             +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id"
             +INNER_JOIN_STRING
-            +"{schema}.eg_challan_custid custid ON custid.accountid = challan.accountid";
+            +"{schema}.eg_challan_custid custid ON custid.custid = challan.custid";
 
     private static final String COUNT_QUERY = "SELECT COUNT(challan.id) " +
             "FROM {schema}.eg_echallan challan"
             +INNER_JOIN_STRING
             +"{schema}.eg_challan_address chaladdr ON chaladdr.echallanid = challan.id"
             +INNER_JOIN_STRING
-            +"{schema}.eg_challan_custid custid ON custid.accountid = challan.accountid";
+            +"{schema}.eg_challan_custid custid ON custid.custid = challan.custid";
 
 
 
@@ -155,7 +155,7 @@ public class ChallanQueryBuilder {
             
             if (criteria.getCustId() != null) {
                 addClauseIfRequired(preparedStmtList, builder);
-                builder.append(" custid.custid  = ? ");
+                builder.append(" challan.custid  = ? ");
                 preparedStmtList.add(criteria.getCustId());
             }
 

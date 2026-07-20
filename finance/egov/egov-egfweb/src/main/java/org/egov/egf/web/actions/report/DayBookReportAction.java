@@ -180,7 +180,7 @@ public class DayBookReportAction extends BaseFormAction {
 			                .append(" AND ca.GLCODE=gd.GLCODE AND voucherdate >=:startDate ")
 			                .append(" and voucherdate <= :endDate ")
                             .append(" and vh.status not in (4,5)  and vh.fundid =:fundId ")
-                            .append(" ORDER BY vdate,vouchernumber");
+                            .append(" ORDER BY vdate");
         params.put("startDate", startDate);
         params.put("endDate", endDate);
         params.put("fundId", Long.valueOf(fundId));
@@ -205,7 +205,6 @@ public class DayBookReportAction extends BaseFormAction {
                 .setResultTransformer(Transformers.aliasToBean(DayBook.class));
         queryMapEntry.getValue().entrySet().forEach(entry -> query.setParameter(entry.getKey(), entry.getValue()));
         dayBookDisplayList = query.list();
-        dayBookDisplayList.sort((a, b) -> a.getVoucherdate().compareTo(b.getVoucherdate()));
         for (DayBook bean : dayBookDisplayList) {
             bean.setDebitamount(new BigDecimal(bean.getDebitamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());
             bean.setCreditamount(new BigDecimal(bean.getCreditamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());

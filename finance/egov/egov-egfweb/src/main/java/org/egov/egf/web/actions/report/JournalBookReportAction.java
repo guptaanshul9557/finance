@@ -183,7 +183,6 @@ public class JournalBookReportAction extends BaseFormAction {
                 .setResultTransformer(Transformers.aliasToBean(GeneralLedgerBean.class));
         queryMapEntry.getValue().entrySet().forEach(entry -> query.setParameter(entry.getKey(), entry.getValue()));
         journalBookDisplayList = query.list();
-        journalBookDisplayList.sort((a, b) -> a.getVoucherdate().compareTo(b.getVoucherdate()));
         for (GeneralLedgerBean bean : journalBookDisplayList) {
             bean.setDebitamount(new BigDecimal(bean.getDebitamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());
             bean.setCreditamount(new BigDecimal(bean.getCreditamount()).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString());
@@ -253,7 +252,8 @@ public class JournalBookReportAction extends BaseFormAction {
                 .append(" AND vmis.functionid = fn.id AND vmis.voucherheaderid=vh.id AND vh.status NOT IN (4,5)")
                 .append(subQuery.toString())
                 .append(" and vh.voucherdate >=:startDate ")
-                .append(" and vh.voucherdate<=:endDate and vh.name in (:voucherName) ");
+                .append(" and vh.voucherdate<=:endDate and vh.name in (:voucherName) ")
+                .append(" ORDER BY vh.voucherdate ASC");
         params.put("startDate", startDate);
         params.put("endDate", endDate);
         queryMap.put(query.toString(), params);
