@@ -32,11 +32,11 @@ public class ChartOfAccountsController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "status", "FAILED",
-                            "message", e.getMessage()
-                    ));
+        	Map<String, String> errorResponse = new HashMap<>();
+        	errorResponse.put("status", "FAILED");
+        	errorResponse.put("message", e.getMessage());
+
+        	return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }
