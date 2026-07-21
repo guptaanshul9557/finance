@@ -88,7 +88,7 @@ public class CVoucherHeader extends StateAware implements java.io.Serializable {
 
     @SafeHtml
     @NotNull
-    @Length(max = 80)
+    @Length(max = 200)
     private String name;
 
     @SafeHtml
