@@ -264,7 +264,8 @@ public class CreateContractorBillController extends BaseBillController {
 			String approvalComment = "";
 			String approvalDesignation = "";
 			if (request.getParameter(APPROVAL_COMENT) != null)
-				approvalComment = request.getParameter(APPROVAL_COMENT);
+				approvalComment = financialUtils.sanitizeInput(request.getParameter(APPROVAL_COMENT));
+			
 			if (request.getParameter(APPROVAL_POSITION) != null && !request.getParameter(APPROVAL_POSITION).isEmpty())
 				approvalPosition = Long.valueOf(request.getParameter(APPROVAL_POSITION));
 			if (request.getParameter(APPROVAL_DESIGNATION) != null
