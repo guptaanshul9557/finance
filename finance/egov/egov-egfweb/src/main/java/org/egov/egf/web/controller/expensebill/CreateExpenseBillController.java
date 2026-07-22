@@ -243,7 +243,7 @@ public class CreateExpenseBillController extends BaseBillController {
 			String approvalComment = "";
 			String approvalDesignation = "";
 			if (request.getParameter("approvalComent") != null)
-				approvalComment = request.getParameter("approvalComent");
+				approvalComment = financialUtils.sanitizeInput(request.getParameter("approvalComent"));
 			if (request.getParameter(APPROVAL_POSITION) != null && !request.getParameter(APPROVAL_POSITION).isEmpty())
 				approvalPosition = Long.valueOf(request.getParameter(APPROVAL_POSITION));
 			if (request.getParameter(APPROVAL_DESIGNATION) != null
