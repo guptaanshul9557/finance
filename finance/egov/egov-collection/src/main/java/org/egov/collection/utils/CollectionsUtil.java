@@ -1082,5 +1082,11 @@ public class CollectionsUtil {
         } else
             return "";
     }
+    public String sanitizeInput(String input) {
+        if (input == null) {
+            return null;
+        }
+        return input.replaceAll("[^A-Za-z0-9.,;:& -]", "");
+    }
 
 }
