@@ -21,9 +21,14 @@ import static java.lang.String.format;
 @Slf4j
 public class OtpSMSRepository {
 
-    private static final String LOCALIZATION_KEY_REGISTER_SMS = "sms.register.otp.msg";
-    private static final String LOCALIZATION_KEY_LOGIN_SMS = "sms.login.otp.msg";
-    private static final String LOCALIZATION_KEY_PWD_RESET_SMS = "sms.pwd.reset.otp.msg";
+	private static final String LOCALIZATION_KEY_REGISTER_SMS = "sms.register.otp.msg";
+	private static final String LOCALIZATION_KEY_LOGIN_SMS = "sms.login.otp.msg";
+	private static final String LOCALIZATION_KEY_PWD_RESET_SMS = "sms.pwd.reset.otp.msg";
+    private static final String LOCALIZATION_KEY_LOGIN_EMP_SMS = "SMS_EMPLOYEE_TEMPLATE";
+    private static final String LOCALIZATION_KEY_LOGIN_CITIZEN_SMS = "SMS_CITIZEN_TEMPLATE";
+    private static final String USER_TYPE_EMPLOYEE = "EMPLOYEE";
+    private static final String USER_TYPE_CITIZEN = "CITIZEN";
+    
 
     @Value("${expiry.time.for.otp: 4000}")
     private long maxExecutionTime=2000L;
@@ -58,19 +63,23 @@ public class OtpSMSRepository {
 
     private String getMessageFormat(OtpRequest otpRequest) {
         String tenantId = getRequiredTenantId(otpRequest.getTenantId());
-        Map<String, String> localisedMsgs = localizationService.getLocalisedMessages(tenantId, "en_IN", "egov-user");
+        Map<String, String> localisedMsgs = localizationService.getLocalisedMessages(tenantId, "en_IN", "rainmaker-common");
         if (localisedMsgs.isEmpty()) {
             log.info("Localization Service didn't return any msgs so using default...");
             localisedMsgs.put(LOCALIZATION_KEY_REGISTER_SMS, "Dear Citizen, Your OTP to complete your mSeva Registration is %s.");
             localisedMsgs.put(LOCALIZATION_KEY_LOGIN_SMS, "Dear Citizen, Your Login OTP is %s.");
             localisedMsgs.put(LOCALIZATION_KEY_PWD_RESET_SMS, "Dear Citizen, Your OTP for recovering password is %s.");
+            localisedMsgs.put(LOCALIZATION_KEY_LOGIN_CITIZEN_SMS ,"Dear Citizen, Your Application Login OTP Is %s. Housing and Urban Development Department, Jammu & Kashmir");
+            localisedMsgs.put(LOCALIZATION_KEY_LOGIN_EMP_SMS, "Dear Employee, Your Application Login OTP is %s, Housing and Urban Development Department, Jammu & Kashmir");
         }
         String message = null;
 
         if (otpRequest.isRegistrationRequestType())
             message = localisedMsgs.get(LOCALIZATION_KEY_REGISTER_SMS);
-        else if (otpRequest.isLoginRequestType())
-            message = localisedMsgs.get(LOCALIZATION_KEY_LOGIN_SMS);
+        else if (otpRequest.isLoginRequestType() && otpRequest.getUserType().equalsIgnoreCase(USER_TYPE_EMPLOYEE))
+            message = localisedMsgs.get(LOCALIZATION_KEY_LOGIN_EMP_SMS);
+        else if (otpRequest.isLoginRequestType() && otpRequest.getUserType().equalsIgnoreCase(USER_TYPE_CITIZEN))
+            message = localisedMsgs.get(LOCALIZATION_KEY_LOGIN_CITIZEN_SMS );
         else
             message = localisedMsgs.get(LOCALIZATION_KEY_PWD_RESET_SMS);
 
