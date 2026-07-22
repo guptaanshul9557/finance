@@ -287,6 +287,8 @@ public class ReceiptAction extends BaseFormAction {
 	private String fund;
     private String wardNo;
     private String referenceDesc;
+    
+    
 
 	@Autowired
 	private transient FundHibernateDAO fundDAO;
@@ -747,9 +749,8 @@ public class ReceiptAction extends BaseFormAction {
 			receiptHeader.setModOfPayment(instrumentType);
 			receiptHeader.setWardNo(wardNo);
 			receiptHeader.setFund(fund);
-			receiptHeader.setReferenceDesc(referenceDesc);
+			receiptHeader.setReferenceDesc(collectionsUtil.sanitizeInput(referenceDesc));
 			
-
 			if (setInstrument) {
 				receiptInstrList = populateInstrumentDetails();
 				setInstrument = false;
@@ -1181,6 +1182,7 @@ public class ReceiptAction extends BaseFormAction {
 					header.setService(microserviceUtils.getBusinessServiceNameByCode(businessServiceCode));
 					receiptHeader.setReferencenumber(billDetail.getBillNumber());
 					header.setReferencenumber(billDetail.getBillNumber());
+					
 					receiptHeader.setReferenceDesc(additionalDetails.get("narration")!=null?additionalDetails.get("narration").asText():null);
 					header.setReferenceDesc(additionalDetails.get("narration")!=null?additionalDetails.get("narration").asText():null);
 					receiptHeader.setPaidBy(bill.getPaidBy());

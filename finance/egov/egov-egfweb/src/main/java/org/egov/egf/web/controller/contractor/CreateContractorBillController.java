@@ -228,6 +228,8 @@ public class CreateContractorBillController extends BaseBillController {
 			model.addAttribute("message", getLocalizedMessage(INVALID_APPROVER, null, null));
 			return CONTRACTORBILL_FORM;
 		}
+		egBillregister.setNarration(financialUtils.sanitizeInput(egBillregister.getNarration()));
+        egBillregister.setApprovalComent(financialUtils.sanitizeInput(egBillregister.getApprovalComent()));
 		egBillregister.setCreatedBy(ApplicationThreadLocals.getUserId());
 		if (StringUtils.isBlank(egBillregister.getExpendituretype()))
 			egBillregister.setExpendituretype(FinancialConstants.STANDARD_EXPENDITURETYPE_WORKS);

@@ -209,6 +209,8 @@ public class CreateExpenseBillController extends BaseBillController {
 			model.addAttribute("message", getLocalizedMessage(INVALID_APPROVER, null, null));
 			return EXPENSEBILL_FORM;
 		}
+		egBillregister.setNarration(financialUtils.sanitizeInput(egBillregister.getNarration()));
+        egBillregister.setApprovalComent(financialUtils.sanitizeInput(egBillregister.getApprovalComent()));
 		egBillregister.setCreatedBy(ApplicationThreadLocals.getUserId());
 		if (StringUtils.isBlank(egBillregister.getExpendituretype()))
 			egBillregister.setExpendituretype(FinancialConstants.STANDARD_EXPENDITURETYPE_CONTINGENT);
