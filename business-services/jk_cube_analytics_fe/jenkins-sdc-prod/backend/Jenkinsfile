@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'maven' // Use the name defined in the Maven installation configuration
+        jdk 'java-1.8'
+    }
+    environment {
+        DATE = new Date().format('ddMMyyyy')
+        BRANCH_NAME = "${env.GIT_BRANCH.replaceAll('origin/', '')}"
+    }
+    stages {
+        stage('Build') {
+            steps {
+                // Checkout the source code
+                checkout scm
+
+                // Build Docker
+                sh 'sudo docker build -f Dockerfile.cubejs --build-arg WORK_DIR=. -t kmhub/mis-dashboard-be:${BRANCH_NAME}-${DATE}-${BUILD_NUMBER} .'
+                }
+            }
+        stage('Push') {
+            steps {
+                // Push the Docker image to a registry
+                sh "sudo docker push kmhub/mis-dashboard-be:${BRANCH_NAME}-${DATE}-${BUILD_NUMBER}"
+                }
+            }  
+         }
+    }

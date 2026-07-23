@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: synmetrix-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: kmc-dev.ddns.net
+    http:
+      paths:
+      # Synmetrix Cube.js API endpoint
+      - path: /kmc_cube_analytics_fe/mis-dashboard-be(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: cubejs-service
+            port:
+              number: 4000
+      # Synmetrix Frontend Dashboard
+      - path: /kmc_cube_analytics_fe(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+      # Other services on this domain can be added here
+      # Example:
+      # - path: /kmc-reports(/|$)(.*)
+      #   pathType: Prefix
+      #   backend:
+      #     service:
+      #       name: reports-service
+      #       port:
+      #         number: 3000

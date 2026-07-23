@@ -1,0 +1,126 @@
+---
+# Cube.js Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cubejs-deployment
+  labels:
+    app: cubejs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cubejs
+  template:
+    metadata:
+      labels:
+        app: cubejs
+    spec:
+      containers:
+      - name: cubejs
+        image: your-registry/synmetrix-cubejs:latest
+        ports:
+        - containerPort: 4000
+        env:
+        - name: CUBEJS_DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: synmetrix-config
+              key: CUBEJS_DB_HOST
+        - name: CUBEJS_DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: synmetrix-config
+              key: CUBEJS_DB_PORT
+        - name: CUBEJS_DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: synmetrix-config
+              key: CUBEJS_DB_NAME
+        - name: CUBEJS_DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: synmetrix-config
+              key: CUBEJS_DB_USER
+        - name: CUBEJS_DB_SCHEMA
+          valueFrom:
+            configMapKeyRef:
+              name: synmetrix-config
+              key: CUBEJS_DB_SCHEMA
+        - name: CUBEJS_DB_TYPE
+          valueFrom:
+            configMapKeyRef:
+              name: synmetrix-config
+              key: CUBEJS_DB_TYPE
+        - name: CUBEJS_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: synmetrix-secrets
+              key: CUBEJS_DB_PASS
+        - name: CUBEJS_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: synmetrix-secrets
+              key: CUBEJS_API_SECRET
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 4000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 4000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: your-registry/synmetrix-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5

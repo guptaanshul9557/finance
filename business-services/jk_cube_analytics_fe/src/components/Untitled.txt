@@ -1,0 +1,32 @@
+{
+  "measures": [
+    "LotPayment.totalCaseCount"
+  ],
+  "dimensions": [
+    "LotPayment.party" // this will fetch based on the back below and date range
+  ],
+  "filters": [
+    {
+      "member": "LotPayment.bank",
+      "operator": "equals",
+      "values": [
+        "205 - LOCAL FUND A/C - L.F."
+      ]
+    }
+  ],
+  "timeDimensions": [
+    {
+      "dimension": "LotPayment.lotDate",
+      "dateRange": [
+        "2025-04-01",
+        "2026-03-31"
+      ]
+    }
+  ],
+  "order": {
+    "LotPayment.totalCaseCount": "desc"
+  },
+  "cacheMode": "stale-if-slow",
+  "timezone": "UTC"
+}
+--
