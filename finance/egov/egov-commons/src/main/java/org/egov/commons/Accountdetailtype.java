@@ -62,7 +62,9 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractPersistable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.envers.Audited;
 import org.hibernate.validator.constraints.Length;
@@ -91,6 +93,7 @@ public class Accountdetailtype extends AbstractPersistable<Integer> {
     @NotNull
     @Length(max = 50)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String description;
 
     @Length(max = 25)
