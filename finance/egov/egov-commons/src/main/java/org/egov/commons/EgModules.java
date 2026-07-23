@@ -47,9 +47,13 @@
  */
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class EgModules {
 	private Integer id;
 	private String name;
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
 	private String description;
 
 	public Integer getId() {

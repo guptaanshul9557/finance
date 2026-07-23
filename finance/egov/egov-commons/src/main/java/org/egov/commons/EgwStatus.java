@@ -50,6 +50,9 @@ package org.egov.commons;
 
 import java.util.Date;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class EgwStatus implements java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -58,6 +61,7 @@ public class EgwStatus implements java.io.Serializable {
 
     private String moduletype;
 
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in narration")
     private String description;
 
     private Date lastmodifieddate;
