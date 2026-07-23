@@ -1,0 +1,367 @@
+{
+  "screen_id": "common_collection",
+  "role_id": "admin",
+  "screen_name": "Common Collection",
+  "display_name": "Common Collection Dashboard",
+  "route": "/modules/common-collection",
+  "icon": "💰",
+  "color": "#4CAF50",
+  "enabled": true,
+  "enable_in_homescreen": true,
+  "enable_in_sidebar": false,
+  "cube_name": "TresCollReceiptHdr",
+  "table_name": "public.tres_coll_receipt_hdr",
+  "financial_year": {
+    "enabled": true,
+    "default_year": "2025-2026",
+    "available_years": ["2023-2024", "2024-2025", "2025-2026"]
+  },
+  "schema": {
+    "cube_name": "TresCollReceiptHdr",
+    "table_name": "public.tres_coll_receipt_hdr",
+    "sql": "SELECT * FROM public.tres_coll_receipt_hdr",
+    "measures": [
+      {
+        "name": "totalAmount",
+        "type": "sum",
+        "sql": "receipt_amount",
+        "title": "Total Amount",
+        "format": "currency"
+      },
+      {
+        "name": "totalReceipts",
+        "type": "count",
+        "sql": "id",
+        "title": "Total Receipts"
+      },
+      {
+        "name": "avgAmount",
+        "type": "avg",
+        "sql": "receipt_amount",
+        "title": "Average Amount",
+        "format": "currency"
+      }
+    ],
+    "dimensions": [
+      {
+        "name": "id",
+        "sql": "id",
+        "type": "number",
+        "primary_key": true,
+        "title": "ID"
+      },
+      {
+        "name": "receiptNo",
+        "sql": "receipt_no",
+        "type": "string",
+        "title": "Receipt Number"
+      },
+      {
+        "name": "receiptYear",
+        "sql": "receipt_year",
+        "type": "string",
+        "title": "Receipt Year"
+      },
+      {
+        "name": "receiptDate",
+        "sql": "receipt_date",
+        "type": "time",
+        "title": "Receipt Date"
+      },
+      {
+        "name": "departmentName",
+        "sql": "department_name",
+        "type": "string",
+        "title": "Department Name"
+      },
+      {
+        "name": "receiptAmount",
+        "sql": "receipt_amount",
+        "type": "number",
+        "title": "Receipt Amount"
+      },
+      {
+        "name": "instrumentType",
+        "sql": "instrument_type",
+        "type": "string",
+        "title": "Instrument Type"
+      },
+      {
+        "name": "counterNo",
+        "sql": "counter_no",
+        "type": "string",
+        "title": "Counter Number"
+      }
+    ],
+    "segments": []
+  },
+  "pre_aggregations": {
+    "enabled": true,
+    "cube_name": "TresCollReceiptHdr",
+    "dashboard_main": {
+      "type": "rollup",
+      "measures": [
+        "TresCollReceiptHdr.totalAmount",
+        "TresCollReceiptHdr.totalReceipts",
+        "TresCollReceiptHdr.avgAmount"
+      ],
+      "dimensions": [
+        "TresCollReceiptHdr.departmentName",
+        "TresCollReceiptHdr.receiptYear",
+        "TresCollReceiptHdr.instrumentType"
+      ],
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "granularity": "day",
+      "refresh_key": {
+        "every": "1 hour"
+      },
+      "build_range_start": {
+        "sql": "SELECT DATE('2023-04-01')"
+      },
+      "build_range_end": {
+        "sql": "SELECT NOW()"
+      }
+    },
+    "department_monthly": {
+      "type": "rollup",
+      "measures": [
+        "TresCollReceiptHdr.totalAmount",
+        "TresCollReceiptHdr.totalReceipts"
+      ],
+      "dimensions": ["TresCollReceiptHdr.departmentName"],
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "granularity": "month",
+      "partition_granularity": "year",
+      "refresh_key": {
+        "every": "6 hours"
+      }
+    },
+    "yearly_summary": {
+      "type": "rollup",
+      "measures": [
+        "TresCollReceiptHdr.totalAmount",
+        "TresCollReceiptHdr.totalReceipts",
+        "TresCollReceiptHdr.avgAmount"
+      ],
+      "dimensions": ["TresCollReceiptHdr.receiptYear"],
+      "refresh_key": {
+        "every": "24 hours"
+      }
+    },
+    "by_instrument_type": {
+      "type": "rollup",
+      "measures": [
+        "TresCollReceiptHdr.totalAmount",
+        "TresCollReceiptHdr.totalReceipts"
+      ],
+      "dimensions": [
+        "TresCollReceiptHdr.instrumentType",
+        "TresCollReceiptHdr.departmentName"
+      ],
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "granularity": "day",
+      "refresh_key": {
+        "every": "2 hours"
+      }
+    }
+  },
+  "kpis": [
+    {
+      "id": "totalAmount",
+      "label": "Total Collection",
+      "icon": "💵",
+      "color": "#4CAF50",
+      "format": "currency",
+      "measure": "TresCollReceiptHdr.totalAmount",
+      "is_drilling_required": true,
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "drilldown_path": [
+        {
+          "level": "month",
+          "label": "Monthly Breakdown",
+          "granularity": "month",
+          "dimension": null
+        },
+        {
+          "level": "department",
+          "label": "Department Breakdown",
+          "granularity": null,
+          "dimension": "TresCollReceiptHdr.departmentName"
+        },
+        {
+          "level": "day",
+          "label": "Daily Breakdown",
+          "granularity": "day",
+          "dimension": null
+        }
+      ]
+    },
+    {
+      "id": "totalReceipts",
+      "label": "Total Transactions",
+      "icon": "📝",
+      "color": "#2196F3",
+      "format": "number",
+      "measure": "TresCollReceiptHdr.totalReceipts",
+      "is_drilling_required": true,
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "drilldown_path": [
+        {
+          "level": "month",
+          "label": "Monthly Breakdown",
+          "granularity": "month",
+          "dimension": null
+        },
+        {
+          "level": "department",
+          "label": "Department Breakdown",
+          "granularity": null,
+          "dimension": "TresCollReceiptHdr.departmentName"
+        },
+        {
+          "level": "day",
+          "label": "Daily Breakdown",
+          "granularity": "day",
+          "dimension": null
+        }
+      ]
+    },
+    {
+      "id": "avgAmount",
+      "label": "Average Amount",
+      "icon": "📊",
+      "color": "#FF9800",
+      "format": "currency",
+      "measure": "TresCollReceiptHdr.avgAmount",
+      "is_drilling_required": true,
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "drilldown_path": [
+        {
+          "level": "month",
+          "label": "Monthly Breakdown",
+          "granularity": "month",
+          "dimension": null
+        },
+        {
+          "level": "department",
+          "label": "Department Breakdown",
+          "granularity": null,
+          "dimension": "TresCollReceiptHdr.departmentName"
+        },
+        {
+          "level": "day",
+          "label": "Daily Breakdown",
+          "granularity": "day",
+          "dimension": null
+        }
+      ]
+    },
+    {
+      "id": "pushReceipts",
+      "label": "Push 2.0 to 1.0/ Day",
+      "icon": "🔄",
+      "color": "#9C27B0",
+      "format": "number",
+      "measure": "TresCollReceiptHdr.totalAmount",
+      "is_drilling_required": true,
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "drilldown_path": [
+        {
+          "level": "month",
+          "label": "Monthly Breakdown",
+          "granularity": "month",
+          "dimension": null
+        },
+        {
+          "level": "department",
+          "label": "Department Breakdown",
+          "granularity": null,
+          "dimension": "TresCollReceiptHdr.departmentName"
+        },
+        {
+          "level": "day",
+          "label": "Daily Breakdown",
+          "granularity": "day",
+          "dimension": null
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "id": "department_breakdown",
+      "title": "Department-wise Collection",
+      "types": ["pie", "bar", "line"],
+      "default_type": "pie",
+      "measure": "TresCollReceiptHdr.totalAmount",
+      "dimension": "TresCollReceiptHdr.departmentName",
+      "enable_drilldown": true,
+      "time_dimension": "TresCollReceiptHdr.receiptDate",
+      "order": {
+        "measure": "TresCollReceiptHdr.totalAmount",
+        "direction": "desc"
+      }
+    }
+  ],
+  "table": {
+    "id": "collections_table",
+    "title": "Recent Receipts",
+    "page_size": 10,
+    "search_enabled": true,
+    "export_enabled": false,
+    "columns": [
+      {
+        "key": "TresCollReceiptHdr.receiptNo",
+        "label": "Receipt No",
+        "sortable": true,
+        "width": "150px",
+        "type": "text"
+      },
+      {
+        "key": "TresCollReceiptHdr.receiptYear",
+        "label": "Year",
+        "sortable": true,
+        "width": "100px",
+        "type": "text"
+      },
+      {
+        "key": "TresCollReceiptHdr.receiptDate",
+        "label": "Receipt Date",
+        "sortable": true,
+        "width": "130px",
+        "type": "date",
+        "format": "DD/MM/YYYY"
+      },
+      {
+        "key": "TresCollReceiptHdr.departmentName",
+        "label": "Department",
+        "sortable": true,
+        "width": "200px",
+        "type": "text"
+      },
+      {
+        "key": "TresCollReceiptHdr.receiptAmount",
+        "label": "Amount",
+        "sortable": true,
+        "width": "150px",
+        "type": "currency",
+        "align": "right"
+      },
+      {
+        "key": "TresCollReceiptHdr.instrumentType",
+        "label": "Instrument Type",
+        "sortable": false,
+        "width": "150px",
+        "type": "text"
+      },
+      {
+        "key": "TresCollReceiptHdr.counterNo",
+        "label": "Counter No",
+        "sortable": false,
+        "width": "120px",
+        "type": "text",
+        "align": "center"
+      }
+    ]
+  }
+}
