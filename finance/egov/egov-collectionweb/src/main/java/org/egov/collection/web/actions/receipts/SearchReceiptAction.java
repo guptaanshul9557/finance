@@ -100,8 +100,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -364,11 +366,32 @@ public class SearchReceiptAction extends SearchFormAction {
 	}
 
 	private byte[] generateReport(List<Receipt> receipts) {
+		
+		Long totalAmount=0L;
+		Long igstTotalAmount=0L;
+		Long cgstTotalAmount=0L;
+		Long sgstTotalAmount=0L;
+		
+//		Map<String,List<BillDetail>>  mapOfService=null;
+//		Map<Object,List<Receipt>> mapOfWard=null;
 
 	    HSSFWorkbook wb = new HSSFWorkbook();
 	    HSSFSheet sheet = wb.createSheet("Receipt Report");
+	    
+//	    HSSFSheet sheet1 = wb.createSheet("Services Report");
+//	    HSSFSheet sheet2 = wb.createSheet("Wards Report");
+	    
 
 	    HSSFRow rowhead = sheet.createRow(0);
+//	    HSSFRow rowhead1 = sheet1.createRow(0);
+//	    HSSFRow rowhead2 = sheet2.createRow(0);
+	    
+	    
+//	    rowhead1.createCell(0).setCellValue("Service");
+//	    rowhead1.createCell(0).setCellValue("Total");
+//	    rowhead2.createCell(0).setCellValue("Wards");
+//	    rowhead2.createCell(0).setCellValue("Total");
+	    
 
 	    rowhead.createCell(0).setCellValue("Receipt No.");
 	    rowhead.createCell(1).setCellValue("Receipt Date");
@@ -391,11 +414,14 @@ public class SearchReceiptAction extends SearchFormAction {
 	    int rowNum = 1;
 
 	    for (Receipt receipt : receipts) {
-
+	    	
+//	    	 mapOfService=receipts.stream().flatMap(rec->rec.getBill().stream()).flatMap(bill->bill.getBillDetails().stream()).collect(Collectors.groupingBy(billdetail->billdetail.getBusinessService(),Collectors.toList()));
+//	    	 mapOfWard=receipts.stream().collect(Collectors.groupingBy(rec->rec.getAdditionalDetails().get("wardNo"),Collectors.toList()));
+	    	
 	        for (org.egov.infra.microservice.models.Bill bill : receipt.getBill()) {
 
 	            for (BillDetail billDetail : bill.getBillDetails()) {
-
+	            	
 	                HSSFRow dataRow = sheet.createRow(rowNum++);
 
 	                JsonNode additionalDetails = receipt.getAdditionalDetails();
@@ -507,6 +533,9 @@ public class SearchReceiptAction extends SearchFormAction {
 	                                ? billDetail.getTotalAmount().doubleValue()
 	                                : 0);
 	                
+	                totalAmount=totalAmount+(long) (billDetail.getTotalAmount() != null
+                            ? billDetail.getTotalAmount().doubleValue()
+                            : 0);
 	                
 	                
 	                Optional<BillAccountDetail> igst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("IGST")).findFirst();
@@ -514,6 +543,7 @@ public class SearchReceiptAction extends SearchFormAction {
                      
                      if(orElseIgst!=null) {
                     	 dataRow.createCell(8).setCellValue(orElseIgst.getAmount().doubleValue());
+                    	 igstTotalAmount=(long) (igstTotalAmount+orElseIgst.getAmount().doubleValue());
                     	 
                      }
                      
@@ -522,6 +552,7 @@ public class SearchReceiptAction extends SearchFormAction {
                      
                      if(orElseCgst!=null) {
                     	 dataRow.createCell(9).setCellValue(orElseCgst.getAmount().doubleValue()); 
+                    	 cgstTotalAmount=(long) (cgstTotalAmount+orElseCgst.getAmount().doubleValue());
                      }
                      
                      Optional<BillAccountDetail> sgst = billDetail.getBillAccountDetails().stream().filter(bad->bad.getTaxHeadCode().contains("SGST")).findFirst();
@@ -529,7 +560,7 @@ public class SearchReceiptAction extends SearchFormAction {
                      
                      if(orElseSgst!=null) {
                     	 dataRow.createCell(10).setCellValue(orElseSgst.getAmount().doubleValue());
-    
+                    	 sgstTotalAmount=(long) (sgstTotalAmount+orElseSgst.getAmount().doubleValue());
                      }
                      
 	                
@@ -546,7 +577,20 @@ public class SearchReceiptAction extends SearchFormAction {
 	            }
 	        }
 	    }
-
+	    
+	    HSSFRow totalRow = sheet.createRow(rowNum++);
+	    totalRow.createCell(6).setCellValue("Total");
+	    totalRow.createCell(7).setCellValue(totalAmount);
+	    totalRow.createCell(8).setCellValue(igstTotalAmount);
+	    totalRow.createCell(9).setCellValue(cgstTotalAmount);
+	    totalRow.createCell(10).setCellValue(sgstTotalAmount);
+	    
+//	    rowNum=1;
+//	    Set<Map.Entry<String,List<BillDetail>>> set=mapOfService.entrySet();
+//	    for(Map.Entry<String, List<BillDetail>> billEntry:set) {
+//	    	List<BillDetail> billdetails=billEntry.getValue();
+//	    	String ser=billEntry.getKey();
+//	    }
 	    for (int i = 0; i < 12; i++) {
 	        sheet.autoSizeColumn(i);
 	    }

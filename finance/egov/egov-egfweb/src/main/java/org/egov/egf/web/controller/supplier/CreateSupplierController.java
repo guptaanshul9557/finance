@@ -56,6 +56,7 @@ import org.egov.commons.dao.EgwStatusHibernateDAO;
 import org.egov.egf.commons.bank.service.CreateBankService;
 import org.egov.egf.commons.bank.service.StateMasterService;
 import org.egov.egf.masters.services.SupplierService;
+import org.egov.egf.utils.FinancialUtils;
 import org.egov.egf.web.adaptor.SupplierJsonAdaptor;
 import org.egov.infra.admin.master.repository.CityRepository;
 import org.egov.infra.config.core.ApplicationThreadLocals;
@@ -112,6 +113,9 @@ public class CreateSupplierController {
 	private MessageSource messageSource;
 	@Autowired
 	private CityRepository cityRepository;
+	
+	@Autowired
+	private FinancialUtils financialUtils;
 
 	private void prepareNewForm(final Model model) {
 		model.addAttribute("banks", createBankService.getByIsActiveTrueOrderByName());
@@ -135,7 +139,16 @@ public class CreateSupplierController {
 			prepareNewForm(model);
 			return NEW;
 		}
+		
+		supplier.setCorrespondenceAddress(
+			    financialUtils.sanitizeInput(supplier.getCorrespondenceAddress()));
 
+		supplier.setPaymentAddress(
+			    financialUtils.sanitizeInput(supplier.getPaymentAddress()));
+
+		supplier.setNarration(
+			    financialUtils.sanitizeInput(supplier.getNarration()));
+        
 		supplierService.create(supplier);
 
 		redirectAttrs.addFlashAttribute("message", messageSource.getMessage("msg.supplier.success", null, null));
