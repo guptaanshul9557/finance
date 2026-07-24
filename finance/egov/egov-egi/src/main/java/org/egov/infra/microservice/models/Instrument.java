@@ -77,7 +77,7 @@ public class Instrument {
     private String branchName;
 
     private BankAccount bankAccount;
-
+    @SafeHtml
     private String ifscCode;
 
     private TransactionType transactionType;

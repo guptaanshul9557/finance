@@ -3,6 +3,8 @@ package org.egov.infra.microservice.models;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,6 +38,7 @@ public class DishonorReasonContract {
      */
     @NotBlank
     @Size(max = 250)
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String remarks;
     @NotBlank
     @Size(max = 250)

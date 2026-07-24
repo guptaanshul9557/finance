@@ -2,6 +2,8 @@ package org.egov.infra.microservice.models;
 
 import java.io.Serializable;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class BillDetailAdditional implements Serializable {
@@ -13,6 +15,7 @@ public class BillDetailAdditional implements Serializable {
     @SafeHtml
     private String businessReason;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String narration;
     @SafeHtml
     private String payeeaddress;
