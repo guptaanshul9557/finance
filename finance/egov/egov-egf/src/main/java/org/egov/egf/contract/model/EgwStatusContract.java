@@ -47,6 +47,8 @@
  */
 package org.egov.egf.contract.model;
 
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class EgwStatusContract {
@@ -56,6 +58,7 @@ public class EgwStatusContract {
     @SafeHtml
     private String code;
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String description;
 
     public Long getId() {
