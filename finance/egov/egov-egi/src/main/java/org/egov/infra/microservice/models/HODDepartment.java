@@ -42,6 +42,8 @@ package org.egov.infra.microservice.models;
 
 import javax.validation.constraints.NotNull;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class HODDepartment {
@@ -51,6 +53,7 @@ public class HODDepartment {
     @NotNull
     private Long department;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId;
 
     public HODDepartment(Long id, Long department, String tenantId) {

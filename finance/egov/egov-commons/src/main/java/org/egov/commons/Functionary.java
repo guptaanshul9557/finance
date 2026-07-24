@@ -50,6 +50,9 @@ package org.egov.commons;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class Functionary implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -57,6 +60,7 @@ public class Functionary implements java.io.Serializable {
 	private Integer id;
 
 	private BigDecimal code;
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	private Date createtimestamp;

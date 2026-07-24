@@ -49,6 +49,9 @@ package org.egov.commons;
 
 import java.util.Date;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class EgSurrenderedCheques implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -56,7 +59,7 @@ public class EgSurrenderedCheques implements java.io.Serializable {
 	private Integer id;
 
 	private Bankaccount bankaccount;
-
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String chequenumber;
 
 	private Date chequedate;

@@ -47,8 +47,10 @@
  */
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractAuditable;
 import org.egov.infra.persistence.validator.annotation.DateFormat;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.envers.AuditOverride;
 import org.hibernate.envers.AuditOverrides;
@@ -94,6 +96,7 @@ public class CFinancialYear extends AbstractAuditable {
     @NotNull
     @SafeHtml
     @Column(name="financialyear")
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String finYearRange;
 
   

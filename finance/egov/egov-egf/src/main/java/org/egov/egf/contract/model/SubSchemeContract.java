@@ -41,14 +41,20 @@ package org.egov.egf.contract.model;
 
 import java.util.Date;
 
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+import org.egov.utils.FinancialConstants;
+
 public class SubSchemeContract {
 
     private String id;
-
+    
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private SchemeContract scheme;
 
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String code;
 
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     private Date validFrom;
@@ -57,6 +63,7 @@ public class SubSchemeContract {
 
     private Boolean active;
 
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String departmentId;
 
     public SubSchemeContract(String id) {

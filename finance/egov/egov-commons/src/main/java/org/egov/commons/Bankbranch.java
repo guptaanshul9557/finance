@@ -97,6 +97,7 @@ public class Bankbranch extends AbstractPersistable<Integer> {
     @NotNull
     @Length(max = 50)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String branchcode;
 
     @NotNull

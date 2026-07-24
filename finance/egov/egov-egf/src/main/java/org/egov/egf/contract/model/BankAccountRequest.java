@@ -2,6 +2,9 @@ package org.egov.egf.contract.model;
 
 import java.io.Serializable;
 
+import javax.validation.constraints.Pattern;
+
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class BankAccountRequest implements Serializable {
@@ -11,10 +14,12 @@ public class BankAccountRequest implements Serializable {
      */
     private static final long serialVersionUID = 2946252349035262831L;
     @SafeHtml
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String tenantId;
     private Integer offset;
     private Integer pageSize;
     @SafeHtml
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String sortBy;
 
     public BankAccountRequest(final String tenantId, final Integer offset, final Integer pageSize,

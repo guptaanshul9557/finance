@@ -2,6 +2,8 @@ package org.egov.egf.contract.model;
 
 import java.io.Serializable;
 
+import javax.validation.constraints.Pattern;
+
 import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
@@ -14,14 +16,17 @@ public class Bank implements Serializable {
     private static final long serialVersionUID = -8344176995296804471L;
     private Integer id;
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in Code")
     private String code;
     @SafeHtml
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String name;
     @SafeHtml
     @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String description;
     private Boolean active;
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in type")
     private String type;
     private AuditDetails auditDetails;
 

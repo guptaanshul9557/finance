@@ -70,6 +70,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 
 import static org.egov.model.budget.BudgetGroup.SEQ_BUDGETGROUP;
 
@@ -87,6 +88,7 @@ public class BudgetGroup extends AbstractAuditable {
     @SafeHtml
     @Required(message = "Name should not be empty")
     @Length(max = 250)
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String name;
 
     @SafeHtml

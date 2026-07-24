@@ -91,11 +91,13 @@ public class CVoucherHeader extends StateAware implements java.io.Serializable {
     @SafeHtml
     @NotNull
     @Length(max = 200)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     @SafeHtml
     @NotNull
     @Length(max = 100)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String type;
 
     @SafeHtml

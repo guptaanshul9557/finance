@@ -50,6 +50,7 @@ package org.egov.commons;
 
 import static org.egov.commons.Accountdetailtype.SEQ_ACCOUNTDETAILTYPE;
 
+
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -88,6 +89,7 @@ public class Accountdetailtype extends AbstractPersistable<Integer> {
     @Length(max = 50)
     @SafeHtml
     @NotNull
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     @NotNull
@@ -98,15 +100,18 @@ public class Accountdetailtype extends AbstractPersistable<Integer> {
 
     @Length(max = 25)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tablename;
 
     @Length(max = 25)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String columnname;
 
     @Column(nullable = false, unique = true)
     @Length(max = 50)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String attributename;
 
     @NotNull

@@ -47,9 +47,13 @@
  */
 package org.egov.egf.contract.model;
 
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+import org.egov.utils.FinancialConstants;
+
 public class SchemeContract {
 
     private Long id;
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String code;
 
     public Long getId() {

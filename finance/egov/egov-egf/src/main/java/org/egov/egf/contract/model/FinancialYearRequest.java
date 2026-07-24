@@ -4,7 +4,11 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import javax.validation.constraints.Pattern;
+
 import org.egov.infra.microservice.models.RequestInfo;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,9 +20,11 @@ public class FinancialYearRequest implements Serializable {
     @JsonProperty("RequestInfo")
     private RequestInfo requestInfo;
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in type")
     private String teanantId;
     private List<Integer> ids;
     @SafeHtml
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String finYearRange;
     private Date startingDate;
     private Date endingDate;
@@ -28,6 +34,7 @@ public class FinancialYearRequest implements Serializable {
     private Integer pageSize;
     private Integer offset;
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in sortBy")
     private String sortBy;
 
     public FinancialYearRequest() {

@@ -47,7 +47,9 @@
  */
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractAuditable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
@@ -83,11 +85,13 @@ public class Fundsource extends AbstractAuditable {
     @Length(min = 1, max = 25)
     @NotNull
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String code;
 
     @Length(min = 1, max = 25)
     @NotNull
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     @Length(min = 1, max = 25)
@@ -143,6 +147,7 @@ public class Fundsource extends AbstractAuditable {
     @Length(min = 1, max = 25)
     @Column(name = "govt_order")
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String govtOrder;
 
     @Column(name = "govt_date")

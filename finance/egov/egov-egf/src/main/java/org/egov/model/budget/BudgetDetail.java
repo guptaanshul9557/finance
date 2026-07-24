@@ -56,9 +56,11 @@ import org.egov.commons.Scheme;
 import org.egov.commons.SubScheme;
 import org.egov.infra.admin.master.entity.Boundary;
 import org.egov.infra.admin.master.entity.Department;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.workflow.entity.State;
 import org.egov.infra.workflow.entity.StateAware;
 import org.egov.pims.commons.Position;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
 
@@ -123,6 +125,7 @@ public class BudgetDetail extends StateAware {
 
     @Column(name = "using_department")
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in usingDepartment")
     private String usingDepartment;
 
     @Column(name = "executing_department")

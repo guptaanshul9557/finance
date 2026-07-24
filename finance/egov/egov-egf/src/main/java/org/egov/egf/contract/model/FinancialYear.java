@@ -3,6 +3,9 @@ package org.egov.egf.contract.model;
 import java.io.Serializable;
 import java.util.Date;
 
+import javax.validation.constraints.Pattern;
+
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class FinancialYear implements Serializable {
@@ -11,6 +14,7 @@ public class FinancialYear implements Serializable {
 
 	private Long id;
 	@SafeHtml
+	@Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
 	private String finYearRange;
 	private Date startingDate;
 	private Date endingDate;

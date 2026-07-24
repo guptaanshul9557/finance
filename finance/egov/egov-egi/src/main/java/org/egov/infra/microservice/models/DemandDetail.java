@@ -43,6 +43,8 @@ import java.math.BigDecimal;
 
 import javax.validation.constraints.NotNull;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -51,14 +53,17 @@ public class DemandDetail {
 
     @SafeHtml
     @JsonProperty("id")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String id;
     
     @SafeHtml
     @JsonProperty("demandId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String demandId;
 
     @SafeHtml
     @NotNull @JsonProperty("taxHeadMasterCode")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String taxHeadMasterCode;
 
     @NotNull @JsonProperty("taxAmount")
@@ -75,6 +80,7 @@ public class DemandDetail {
 
     @SafeHtml
     @JsonProperty("tenantId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId;
 
     public String getId() {

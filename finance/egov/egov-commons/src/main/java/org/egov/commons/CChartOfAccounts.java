@@ -49,7 +49,10 @@
 package org.egov.commons;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractAuditable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.envers.AuditJoinTable;
 import org.hibernate.envers.AuditOverride;
 import org.hibernate.envers.AuditOverrides;
@@ -94,17 +97,20 @@ public class CChartOfAccounts extends AbstractAuditable {
     @SafeHtml
     @NotNull
     @Length(max = 50)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String glcode;
 
     @SafeHtml
     @NotNull
     @Length(max = 150)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     private Long purposeId;
 
     @SafeHtml
     @Column(name = "DESCRIPTION")
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String desc;
 
     private Boolean isActiveForPosting;

@@ -47,6 +47,7 @@
  */
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.validator.annotation.CompositeUnique;
 import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Required;
@@ -73,6 +74,7 @@ public class ContractorGrade extends BaseModel {
 
 	@Required(message = "contractorGrade.description.null")
 	@Length(max = 100, message = "contractorGrade.description.length")
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String description;
 
 	@Required(message = "contractorGrade.minAmount.null")

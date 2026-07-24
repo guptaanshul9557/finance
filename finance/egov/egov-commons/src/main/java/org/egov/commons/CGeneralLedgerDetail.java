@@ -50,12 +50,16 @@ package org.egov.commons;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class CGeneralLedgerDetail implements Serializable {
     private Long id;
     private CGeneralLedger generalLedgerId;
     private Integer detailKeyId;
     private Accountdetailtype detailTypeId;
     private BigDecimal amount;
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String detailKeyName;
 
     public Long getId() {

@@ -237,7 +237,7 @@ public class SchemeAction extends BaseFormAction {
 		} catch (final ValidationException e) {
 			LOGGER.error("Exception while creating Scheme" + e.getMessage());
 			throw new ValidationException(Arrays.asList(new ValidationError(AN_ERROR_OCCURED_CONTACT_ADMINISTRATOR,
-					AN_ERROR_OCCURED_CONTACT_ADMINISTRATOR)));
+					e.getMessage())));
 		}
 
 		addActionMessage(getText("Scheme Created Successfully"));

@@ -48,12 +48,17 @@
 
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
+
 public class Accountdetailkey implements java.io.Serializable {
 
     private static final long serialVersionUID = 6439557237219710418L;
 
     private Integer id;
     private Integer groupid;
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String detailname;
     private Integer detailkey;
     private Accountdetailtype accountdetailtype;
