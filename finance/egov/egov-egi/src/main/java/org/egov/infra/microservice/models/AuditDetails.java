@@ -2,7 +2,6 @@ package org.egov.infra.microservice.models;
 
 import java.io.Serializable;
 
-import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.microservice.utils.MicroserviceConstants;
 import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
