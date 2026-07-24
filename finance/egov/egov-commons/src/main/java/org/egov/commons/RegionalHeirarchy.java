@@ -48,7 +48,9 @@
 
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractAuditable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -85,6 +87,7 @@ public class RegionalHeirarchy extends AbstractAuditable {
     @Length(max = 512)
     @SafeHtml
     @NotNull
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
     
     @NotNull

@@ -372,25 +372,25 @@ public class SearchReceiptAction extends SearchFormAction {
 		Long cgstTotalAmount=0L;
 		Long sgstTotalAmount=0L;
 		
-//		Map<String,List<BillDetail>>  mapOfService=null;
-//		Map<Object,List<Receipt>> mapOfWard=null;
+		Map<String,List<BillDetail>>  mapOfService=null;
+		Map<Object,List<Receipt>> mapOfWard=null;
 
 	    HSSFWorkbook wb = new HSSFWorkbook();
 	    HSSFSheet sheet = wb.createSheet("Receipt Report");
 	    
-//	    HSSFSheet sheet1 = wb.createSheet("Services Report");
-//	    HSSFSheet sheet2 = wb.createSheet("Wards Report");
+	    HSSFSheet sheet1 = wb.createSheet("Services Report");
+	    HSSFSheet sheet2 = wb.createSheet("Wards Report");
 	    
 
 	    HSSFRow rowhead = sheet.createRow(0);
-//	    HSSFRow rowhead1 = sheet1.createRow(0);
-//	    HSSFRow rowhead2 = sheet2.createRow(0);
+	    HSSFRow rowhead1 = sheet1.createRow(0);
+	    HSSFRow rowhead2 = sheet2.createRow(0);
 	    
 	    
-//	    rowhead1.createCell(0).setCellValue("Service");
-//	    rowhead1.createCell(0).setCellValue("Total");
-//	    rowhead2.createCell(0).setCellValue("Wards");
-//	    rowhead2.createCell(0).setCellValue("Total");
+	    rowhead1.createCell(0).setCellValue("Service");
+	    rowhead1.createCell(0).setCellValue("Total");
+	    rowhead2.createCell(0).setCellValue("Wards");
+	    rowhead2.createCell(0).setCellValue("Total");
 	    
 
 	    rowhead.createCell(0).setCellValue("Receipt No.");
@@ -415,8 +415,8 @@ public class SearchReceiptAction extends SearchFormAction {
 
 	    for (Receipt receipt : receipts) {
 	    	
-//	    	 mapOfService=receipts.stream().flatMap(rec->rec.getBill().stream()).flatMap(bill->bill.getBillDetails().stream()).collect(Collectors.groupingBy(billdetail->billdetail.getBusinessService(),Collectors.toList()));
-//	    	 mapOfWard=receipts.stream().collect(Collectors.groupingBy(rec->rec.getAdditionalDetails().get("wardNo"),Collectors.toList()));
+	    	 mapOfService=receipts.stream().flatMap(rec->rec.getBill().stream()).flatMap(bill->bill.getBillDetails().stream()).collect(Collectors.groupingBy(billdetail->billdetail.getBusinessService(),Collectors.toList()));
+	    	 mapOfWard=receipts.stream().collect(Collectors.groupingBy(rec->rec.getAdditionalDetails().get("wardNo"),Collectors.toList()));
 	    	
 	        for (org.egov.infra.microservice.models.Bill bill : receipt.getBill()) {
 
@@ -585,12 +585,33 @@ public class SearchReceiptAction extends SearchFormAction {
 	    totalRow.createCell(9).setCellValue(cgstTotalAmount);
 	    totalRow.createCell(10).setCellValue(sgstTotalAmount);
 	    
-//	    rowNum=1;
-//	    Set<Map.Entry<String,List<BillDetail>>> set=mapOfService.entrySet();
-//	    for(Map.Entry<String, List<BillDetail>> billEntry:set) {
-//	    	List<BillDetail> billdetails=billEntry.getValue();
-//	    	String ser=billEntry.getKey();
-//	    }
+	    rowNum=1;
+	    Set<Map.Entry<String,List<BillDetail>>> serviceWiseSet=mapOfService.entrySet();
+	    for(Map.Entry<String, List<BillDetail>> billEntry:serviceWiseSet) {
+	    	HSSFRow dataRow = sheet1.createRow(rowNum++);
+	    	List<BillDetail> billdetails=billEntry.getValue();
+	    	BigDecimal serviceWiseTotal = billdetails.stream()
+	    	        .map(BillDetail::getTotalAmount)
+	    	        .reduce(BigDecimal.ZERO, BigDecimal::add);
+	    	String ser=billEntry.getKey();
+	    	dataRow.createCell(0).setCellValue(ser);
+	    	dataRow.createCell(1).setCellValue(serviceWiseTotal.doubleValue());
+	    }
+	    
+	    rowNum=1;
+	    Set<Map.Entry<Object,List<Receipt>>> wardWiseSet=mapOfWard.entrySet();
+	    for(Map.Entry<Object, List<Receipt>> wardEntry:wardWiseSet) {
+	    	HSSFRow dataRow = sheet2.createRow(rowNum++);
+	    	List<Receipt> recs=wardEntry.getValue();
+	    	BigDecimal wardWiseTotal=recs.stream()
+	    			.flatMap(r-> r.getBill().stream())
+	    			.flatMap(b->b.getBillDetails().stream())
+	    			.map(BillDetail::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+	    	String ward=(String) wardEntry.getKey();
+	    	dataRow.createCell(0).setCellValue(ward);
+	    	dataRow.createCell(1).setCellValue(wardWiseTotal.doubleValue());
+	    }
+	    
 	    for (int i = 0; i < 12; i++) {
 	        sheet.autoSizeColumn(i);
 	    }

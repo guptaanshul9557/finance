@@ -3,6 +3,8 @@ package org.egov.infra.microservice.models;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -14,12 +16,16 @@ public class EmployeeInfo {
     User UserObject;
     private Long id;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String uuid;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String code;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String employeeStatus;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String employeeType;
     private float dateOfAppointment;
     List < Assignment > assignments = new ArrayList < Assignment > ();

@@ -52,6 +52,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class Relationtype implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -60,8 +63,9 @@ public class Relationtype implements java.io.Serializable {
 
 	private String code;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
-
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String description;
 
 	private Boolean isactive;

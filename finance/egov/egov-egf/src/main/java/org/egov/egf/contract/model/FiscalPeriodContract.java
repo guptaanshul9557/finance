@@ -49,12 +49,15 @@ package org.egov.egf.contract.model;
 
 import java.util.Date;
 
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class FiscalPeriodContract {
 
     private Long id;
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in type")
     private String name;
     private FinancialYearContract financialYear;
     private Date startingDate;

@@ -32,15 +32,18 @@ public class BillAccountDetail {
     private String id = null;
     @SafeHtml
     @Size(max=64)
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     @JsonProperty("tenantId")
     private String tenantId = null;
     @SafeHtml
     @Size(max=64)
     @JsonProperty("billDetailId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String billDetailId = null;
     @SafeHtml
     @Size(max=64)
     @JsonProperty("demandDetailId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String demandDetailId = null;
 
     @JsonProperty("order")
@@ -58,6 +61,7 @@ public class BillAccountDetail {
     @SafeHtml
     @Size(max=64)
     @JsonProperty("taxHeadCode")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String taxHeadCode = null;
 
     @JsonProperty("additionalDetails")
@@ -70,12 +74,14 @@ public class BillAccountDetail {
     private AuditDetails auditDetails;
     
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String glcode;
 
     @SafeHtml
     @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String accountDescription;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String billDetail;
 
     private BigDecimal crAmountToBePaid = BigDecimal.ZERO;

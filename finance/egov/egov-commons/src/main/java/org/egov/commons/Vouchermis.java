@@ -61,7 +61,9 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.admin.master.entity.Boundary;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.Length;
 
 @Entity
@@ -82,7 +84,7 @@ public class Vouchermis implements java.io.Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "divisionid")
     private Boundary divisionid;
-
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String departmentcode;
     @Transient
     private String departmentName;

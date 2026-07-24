@@ -49,12 +49,16 @@ package org.egov.commons;
 
 import java.io.Serializable;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class FinancingInstitution implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private Integer id;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	public Integer getId() {

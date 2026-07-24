@@ -39,6 +39,8 @@
  */
 package org.egov.infra.microservice.models;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class InstrumentVoucher {
@@ -47,18 +49,21 @@ public class InstrumentVoucher {
      * instrumentHeaderId is the reference of the instrument attached to a voucher
      */
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String instrument;
 
     /*
      * voucherHeaderId is the reference of the voucher attached to a instrument.
      */
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String voucherHeaderId;
 
     /*
      * receiptHeaderId is the reference of the receipt attached to a instrument.
      */
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String receiptHeaderId;
 
     public String getInstrument() {

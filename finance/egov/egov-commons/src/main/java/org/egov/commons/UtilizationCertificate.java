@@ -68,7 +68,9 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractPersistable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
@@ -89,6 +91,7 @@ public class UtilizationCertificate extends AbstractPersistable<Long> {
     @Size(max = 50)
     @SafeHtml
     @Column(name = "uc_number", nullable = false, unique = true)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String ucNumber;
 
     @NotNull
@@ -118,6 +121,7 @@ public class UtilizationCertificate extends AbstractPersistable<Long> {
     @Size(max = 100)
     @SafeHtml
     @Column(name = "certificate_number")
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String certificateNumber;
 
     @Temporal(TemporalType.DATE)
@@ -127,6 +131,7 @@ public class UtilizationCertificate extends AbstractPersistable<Long> {
     @Size(max = 150)
     @SafeHtml
     @Column(name = "signatory_name")
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String signatoryName;
 
 	@Size(max = 200)
@@ -137,11 +142,13 @@ public class UtilizationCertificate extends AbstractPersistable<Long> {
     @Size(max = 200)
     @SafeHtml
     @Column(name = "signatory_designation")
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String signatoryDesignation;
 
     @Size(max = 20)
     @SafeHtml
     @Column(name = "status")
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String status;
 
     @Column(name = "created_by")

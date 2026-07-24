@@ -50,6 +50,9 @@ package org.egov.commons;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class SubScheme implements java.io.Serializable {
 
 	/**
@@ -61,8 +64,10 @@ public class SubScheme implements java.io.Serializable {
 
 	private Scheme scheme;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String code;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	private Date validfrom;

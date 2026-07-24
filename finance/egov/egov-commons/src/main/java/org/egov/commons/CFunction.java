@@ -57,7 +57,9 @@ import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractAuditable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
@@ -77,14 +79,17 @@ public class CFunction extends AbstractAuditable {
 
     @Length(max = 100, min = 2)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     @Length(max = 50, min = 2)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String code;
 
     @Length(max = 50)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String type;
 
     private int llevel;

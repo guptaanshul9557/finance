@@ -2,6 +2,8 @@ package org.egov.infra.microservice.models;
 
 import java.util.List;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class BusinessAccountDetails {
@@ -13,6 +15,7 @@ public class BusinessAccountDetails {
 
     private Double amount;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId;
 
     private List<BusinessAccountSubLedger> subledgerDetails;

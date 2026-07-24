@@ -90,11 +90,13 @@ public class Bank extends AbstractPersistable<Integer> {
 	@NotNull
 	@Length(max = 50)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String code;
 
 	@NotNull
 	@Length(max = 100)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	@JsonIgnore
@@ -110,6 +112,7 @@ public class Bank extends AbstractPersistable<Integer> {
 	@JsonIgnore
 	@Length(max = 50)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String type;
 
 	@JsonIgnore

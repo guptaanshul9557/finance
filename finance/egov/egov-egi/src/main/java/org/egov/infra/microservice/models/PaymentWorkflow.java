@@ -50,6 +50,8 @@ package org.egov.infra.microservice.models;
 
 import javax.validation.constraints.NotNull;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
 
@@ -72,6 +74,7 @@ public class PaymentWorkflow {
     @SafeHtml
     @NotNull
     @Length(min = 1)
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String paymentId;
 
     @NotNull
@@ -80,6 +83,7 @@ public class PaymentWorkflow {
     @SafeHtml
     @NotNull
     @Length(min = 1)
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId;
     @SafeHtml
     private String reason;

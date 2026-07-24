@@ -2,6 +2,8 @@ package org.egov.egf.contract.model;
 
 import java.io.Serializable;
 
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class Function implements Serializable {
@@ -12,8 +14,10 @@ public class Function implements Serializable {
 	private static final long serialVersionUID = 944845081085224791L;
 	private Long id;
 	@SafeHtml
+	@OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 	@SafeHtml
+	@OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String code;
 	private Integer level;
 	private Boolean active;

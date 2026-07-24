@@ -49,12 +49,15 @@ package org.egov.commons;
 
 import java.math.BigDecimal;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class EgNumbers implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private Long id;
-
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String vouchertype;
 
 	private BigDecimal vouchernumber;

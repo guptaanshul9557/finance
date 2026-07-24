@@ -49,14 +49,21 @@ package org.egov.model.budget;
 
 import java.math.BigDecimal;
 
+import javax.validation.constraints.Pattern;
+
+import org.egov.utils.FinancialConstants;
+
 public class BudgetApproval {
 
     private Long id;
     
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String department;
     
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String parent;
     
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String referenceBudget;
     
     private Long count;

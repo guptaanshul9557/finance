@@ -52,6 +52,8 @@ import java.math.BigDecimal;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -70,14 +72,17 @@ public class PaymentDetail {
     @SafeHtml
     @Size(max=64)
     @JsonProperty("id")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String id;
 
     @SafeHtml
     @Size(max=64)
     @JsonProperty("tenantId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId;
 
     @JsonProperty("totalDue")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private BigDecimal totalDue;
 
     @NotNull
@@ -87,11 +92,13 @@ public class PaymentDetail {
     @SafeHtml
     @Size(max=64)
     @JsonProperty("receiptNumber")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String receiptNumber;
     
     @SafeHtml
     @Size(max=64)
     @JsonProperty("manualReceiptNumber")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String manualReceiptNumber;
     
     @JsonProperty("manualReceiptDate")
@@ -102,16 +109,19 @@ public class PaymentDetail {
 
     @SafeHtml
     @JsonProperty("receiptType")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String receiptType = null;
 
     @SafeHtml
     @JsonProperty("businessService")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String businessService;
 
     @SafeHtml
     @NotNull
     @Size(max=64)
     @JsonProperty("billId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String billId;
 
     @JsonProperty("bill")

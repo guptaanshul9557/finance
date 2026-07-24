@@ -3,6 +3,9 @@ package org.egov.egf.contract.model;
 import java.io.Serializable;
 import java.util.Date;
 
+import javax.validation.constraints.Pattern;
+
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class AuditDetails implements Serializable {
@@ -12,6 +15,7 @@ public class AuditDetails implements Serializable {
      */
     private static final long serialVersionUID = -6546672411255429027L;
     @SafeHtml
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String tenantId;
     private Long createBy;
     private Long lastModifiedBy;

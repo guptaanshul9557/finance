@@ -51,7 +51,9 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractPersistable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 
 @Entity
 @Table(name = "state_master")
@@ -60,6 +62,7 @@ public class StateMaster extends AbstractPersistable<Long> {
 @Id
 	private Long id;
 
+@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	private String code;

@@ -46,8 +46,10 @@ import org.hibernate.validator.constraints.SafeHtml;
 public class InstrumentType {
 
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String id;
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
     @SafeHtml
     @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")

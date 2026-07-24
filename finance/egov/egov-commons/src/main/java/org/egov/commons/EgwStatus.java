@@ -59,6 +59,7 @@ public class EgwStatus implements java.io.Serializable {
 
     private Integer id;
 
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String moduletype;
 
     @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in narration")

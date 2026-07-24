@@ -50,12 +50,16 @@ package org.egov.commons;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class EgfAccountcodePurpose implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private Integer id;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	private Set chartofaccountses = new HashSet(0);

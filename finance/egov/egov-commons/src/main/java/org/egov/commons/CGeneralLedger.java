@@ -52,6 +52,8 @@ import javax.validation.constraints.Digits;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
 
@@ -73,6 +75,7 @@ public class CGeneralLedger implements Serializable {
     @SafeHtml
     @NotNull
     @Length(max = 50)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String glcode;
     @NotNull
     @Digits(fraction = 2, integer = 10)

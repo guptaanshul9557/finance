@@ -49,10 +49,12 @@ package org.egov.model.budget;
 
 import org.egov.commons.CFinancialYear;
 import org.egov.commons.EgwStatus;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Required;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.egov.infra.workflow.entity.State;
 import org.egov.infra.workflow.entity.StateAware;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
 
@@ -89,10 +91,12 @@ public class Budget extends StateAware {
     @Required(message = "Name should not be empty")
     @Length(max = 250, message = "Max 250 characters are allowed for description")
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String name;
 
     @SafeHtml
     @Length(max = 20)
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String isbere;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -106,6 +110,7 @@ public class Budget extends StateAware {
 
     @Length(max = 250, message = "Max 250 characters are allowed for description")
     @SafeHtml
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String description;
 
     @Column(name = "AS_ON_DATE")

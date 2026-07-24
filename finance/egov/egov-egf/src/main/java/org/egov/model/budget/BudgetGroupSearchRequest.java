@@ -48,6 +48,9 @@
 
 package org.egov.model.budget;
 
+import javax.validation.constraints.Pattern;
+
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
 
@@ -60,6 +63,7 @@ public class BudgetGroupSearchRequest {
 
 	@SafeHtml
 	@Length(max = 250)
+	@Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
 	private String name;
 
 	public String getName() {

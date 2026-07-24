@@ -62,9 +62,11 @@ public class Scheme implements java.io.Serializable {
 	private Integer id;
 
 	private Fund fund;
-
+    
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String code;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	private Date validfrom;
