@@ -285,6 +285,164 @@ public class TransactionSummaryService {
         return "Successfully generated and inserted " + queries.size() + " queries for JV.";
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public String generateGlCodeQueries(MultipartFile file) throws Exception {
+
+        List<String> queries = new ArrayList<>();
+        int recordCount = 0;
+
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+
+            Sheet sheet = workbook.getSheet("GLCODE");
+            if (sheet == null) {
+                sheet = workbook.getSheetAt(0); // fallback to the first sheet
+            }
+
+            DataFormatter formatter = new DataFormatter();
+            FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+
+            Map<String, Integer> columnMap = getColumnMap(sheet.getRow(0), formatter);
+
+            String[] requiredColumns = { "ulb", "glcode", "name" };
+            for (String column : requiredColumns) {
+                if (!columnMap.containsKey(column)) {
+                    throw new ExcelProcessingException(
+                            "Required column not found in '" + sheet.getSheetName() + "' sheet: '" + column
+                                    + "'. Please ensure exact columns exist.");
+                }
+            }
+
+            java.util.Set<String> processedCodes = new java.util.HashSet<>();
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+
+                Row row = sheet.getRow(i);
+                if (row == null || isRowEmpty(row, formatter, formulaEvaluator)) {
+                    continue;
+                }
+
+                String schema = getCellValue(row, columnMap.get("ulb"), formatter, formulaEvaluator);
+                String glCode = getCellValue(row, columnMap.get("glcode"), formatter, formulaEvaluator);
+                String name = getCellValue(row, columnMap.get("name"), formatter, formulaEvaluator);
+
+                // Safety check in case it interprets it as decimal based on formatting
+                if (glCode.endsWith(".0"))
+                    glCode = glCode.replace(".0", "");
+
+                if (schema.isEmpty() || glCode.isEmpty()) {
+                    continue;
+                }
+
+                recordCount++;
+
+                String type = "";
+                if (glCode.startsWith("1"))
+                    type = "I";
+                else if (glCode.startsWith("2"))
+                    type = "E";
+                else if (glCode.startsWith("3"))
+                    type = "L";
+                else if (glCode.startsWith("4"))
+                    type = "A";
+
+                String baseCode = "";
+                if (glCode.length() >= 1) {
+                    baseCode = glCode.substring(0, 1);
+                }
+
+                String majorCode = "";
+                if (glCode.length() >= 3) {
+                    majorCode = glCode.substring(0, 3);
+                    String key = schema + "-" + majorCode;
+
+                    if (!processedCodes.contains(key)) {
+                        String grandParentSql = "INSERT INTO " + schema + ".chartofaccounts "
+                                + "(id, glcode, \"name\", description, isactiveforposting, parentid, purposeid, operation, \"type\", \"class\", classification, functionreqd, budgetcheckreq, scheduleid, receiptscheduleid, receiptoperation, paymentscheduleid, paymentoperation, majorcode, fiescheduleid, fieoperation, createddate, createdby, lastmodifieddate, lastmodifiedby, \"version\") "
+                                + "SELECT nextval('" + schema + ".seq_chartofaccounts'), "
+                                + "'" + escapeSql(majorCode) + "', "
+                                + "'" + escapeSql(name) + "', "
+                                + "NULL, true, "
+                                + "(SELECT id FROM " + schema + ".chartofaccounts WHERE glcode='" + escapeSql(baseCode)
+                                + "' LIMIT 1), "
+                                + "NULL, NULL, "
+                                + "'" + type + "', "
+                                + "NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, " // Classification 1
+                                + "'" + escapeSql(majorCode) + "', "
+                                + "NULL, NULL, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, NULL, 0 "
+                                + "WHERE NOT EXISTS (SELECT 1 FROM " + schema + ".chartofaccounts WHERE glcode='"
+                                + escapeSql(majorCode) + "');";
+
+                        queries.add(grandParentSql);
+                        processedCodes.add(key);
+                    }
+                }
+
+                String parentGlCode = "";
+                if (glCode.length() >= 5) {
+                    parentGlCode = glCode.substring(0, 5);
+                    String key = schema + "-" + parentGlCode;
+
+                    if (!processedCodes.contains(key)) {
+                        String parentSql = "INSERT INTO " + schema + ".chartofaccounts "
+                                + "(id, glcode, \"name\", description, isactiveforposting, parentid, purposeid, operation, \"type\", \"class\", classification, functionreqd, budgetcheckreq, scheduleid, receiptscheduleid, receiptoperation, paymentscheduleid, paymentoperation, majorcode, fiescheduleid, fieoperation, createddate, createdby, lastmodifieddate, lastmodifiedby, \"version\") "
+                                + "SELECT nextval('" + schema + ".seq_chartofaccounts'), "
+                                + "'" + escapeSql(parentGlCode) + "', "
+                                + "'" + escapeSql(name) + "', "
+                                + "NULL, true, "
+                                + "(SELECT id FROM " + schema + ".chartofaccounts WHERE glcode='" + escapeSql(majorCode)
+                                + "' LIMIT 1), "
+                                + "NULL, NULL, "
+                                + "'" + type + "', "
+                                + "NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
+                                + "'" + escapeSql(majorCode) + "', "
+                                + "NULL, NULL, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, NULL, 0 "
+                                + "WHERE NOT EXISTS (SELECT 1 FROM " + schema + ".chartofaccounts WHERE glcode='"
+                                + escapeSql(parentGlCode) + "');";
+
+                        queries.add(parentSql);
+                        processedCodes.add(key);
+                    }
+                }
+
+                String sql = "INSERT INTO " + schema + ".chartofaccounts "
+                        + "(id, glcode, \"name\", description, isactiveforposting, parentid, purposeid, operation, \"type\", \"class\", classification, functionreqd, budgetcheckreq, scheduleid, receiptscheduleid, receiptoperation, paymentscheduleid, paymentoperation, majorcode, fiescheduleid, fieoperation, createddate, createdby, lastmodifieddate, lastmodifiedby, \"version\") "
+                        + "VALUES("
+                        + "nextval('" + schema + ".seq_chartofaccounts'), "
+                        + "'" + escapeSql(glCode) + "', "
+                        + "'" + escapeSql(name) + "', "
+                        + "NULL, true, "
+                        + (parentGlCode.isEmpty() ? "NULL, "
+                                : "(SELECT id FROM " + schema + ".chartofaccounts WHERE glcode='"
+                                        + escapeSql(parentGlCode) + "' LIMIT 1), ") // Dynamic parent ID lookup
+                        + "NULL, NULL, "
+                        + "'" + type + "', "
+                        + "NULL, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
+                        + "'" + escapeSql(majorCode) + "', "
+                        + "NULL, NULL, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, NULL, 0"
+                        + ");";
+
+                queries.add(sql);
+            }
+            try {
+                int batchSize = 500;
+                for (int startIndex = 0; startIndex < queries.size(); startIndex += batchSize) {
+                    List<String> chunk = queries.subList(startIndex, Math.min(startIndex + batchSize, queries.size()));
+                    jdbcTemplate.batchUpdate(chunk.toArray(new String[0]));
+                }
+            } catch (org.springframework.dao.DataAccessException e) {
+                String cause = e.getRootCause() != null ? e.getRootCause().getMessage() : e.getMessage();
+                throw new ExcelProcessingException("Database insertion failed for GLCODE sheet. Reason: " + cause, e);
+            }
+        } catch (ExcelProcessingException ex) {
+            throw ex;
+        } catch (Exception e) {
+            throw new ExcelProcessingException("Failed to process GLCODE sheet. Reason: " + e.getMessage(), e);
+        }
+
+        return "Successfully generated and inserted " + recordCount + " GL Code records (via " + queries.size()
+                + " sub-queries).";
+    }
+
     private Map<String, Integer> getColumnMap(Row headerRow, DataFormatter formatter) {
 
         if (headerRow == null) {

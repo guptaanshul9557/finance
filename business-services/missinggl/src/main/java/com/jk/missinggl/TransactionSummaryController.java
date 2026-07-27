@@ -42,4 +42,16 @@ public class TransactionSummaryController {
                     .body(e.getMessage());
         }
     }
+
+    @PostMapping(value = "/create-glcode", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> generateGlCodeQuery(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            return ResponseEntity.ok(service.generateGlCodeQueries(file));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
+        }
+    }
 }
