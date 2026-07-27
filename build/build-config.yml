@@ -20,6 +20,24 @@ config:
 # Business Services
   - name: "builds/upyog/business-services/billing-service"
     build:
+      - work-dir: "business-services/missinggl"
+        image-name: "missinggl"
+        dockerfile: "business-services/missinggl/Dockerfile"
+
+  - name: "builds/upyog/business-services/billing-service"
+    build:
+      - work-dir: "business-services/jk_cube_analytics_fe"
+        image-name: "mis-dashboard"
+        dockerfile: "business-services/jk_cube_analytics_fe/Dockerfile.frontend"
+
+  - name: "builds/upyog/business-services/billing-service"
+    build:
+      - work-dir: "business-services/jk_cube_analytics_fe"
+        image-name: "mis-dashboard-be"
+        dockerfile: "business-services/jk_cube_analytics_fe/Dockerfile.cubejs"
+        
+  - name: "builds/upyog/business-services/billing-service"
+    build:
       - work-dir: "business-services/billing-service"
         image-name: "billing-service"
         dockerfile: "build/maven/Dockerfile"
