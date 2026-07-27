@@ -22,7 +22,7 @@ config:
     build:
       - work-dir: "business-services/missinggl"
         image-name: "missinggl"
-        dockerfile: "business-services/missinggl/Dockerfile"
+        dockerfile: "build/maven/Dockerfile"
 
   - name: "builds/upyog/business-services/mis-dashboard"
     build:
