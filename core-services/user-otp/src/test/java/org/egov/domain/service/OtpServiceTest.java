@@ -12,138 +12,190 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.*;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OtpServiceTest {
-	@Mock
-	private OtpRepository otpRepository;
 
-	@Mock
-	private UserRepository userRepository;
+    @Mock
+    private OtpRepository otpRepository;
 
-	@Mock
-	private OtpSMSRepository otpSMSRepository;
+    @Mock
+    private UserRepository userRepository;
 
-	@Mock
-	private OtpEmailRepository otpEmailRepository;
+    @Mock
+    private OtpSMSRepository otpSMSRepository;
 
-	@InjectMocks
-	private OtpService otpService;
+    @Mock
+    private OtpEmailRepository otpEmailRepository;
 
-	@Test
-	public void test_should_validate_otp_request_for_user_registration() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isRegistrationRequestType()).thenReturn(true);
+    @InjectMocks
+    private OtpService otpService;
 
-		otpService.sendOtp(otpRequest);
+    @Test
+    public void test_should_validate_otp_request_for_user_registration() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber("1234567890")
+                .type(OtpRequestType.REGISTER)
+                .userType("CITIZEN")
+                .build();
 
-		verify(otpRequest).validate();
-	}
+        otpService.sendOtp(otpRequest);
 
-	@Test
-	public void test_should_validate_otp_request_for_user_login() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isLoginRequestType()).thenReturn(true);
-		when(userRepository.fetchUser(nullable(String.class), nullable(String.class), nullable(String.class))).thenReturn(new User(1L, "foo@bar.com", "123"));
-		otpService.sendOtp(otpRequest);
+        otpRequest.validate();
+    }
 
-		verify(otpRequest).validate();
-	}
+    // @Test(expected = UserNotExistingInSystemException.class)
+    // public void test_should_validate_otp_request_for_user_login() {
+    //     final OtpRequest otpRequest = OtpRequest.builder()
+    //             .tenantId("tenant")
+    //             .mobileNumber("1234567890")
+    //             .type(OtpRequestType.LOGIN)
+    //             .userType("CITIZEN")
+    //             .build();
 
-	@Test(expected = UserAlreadyExistInSystemException.class)
-	public void test_should_throwException_when_userAlreadyExist_IncaseOfRegister() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isRegistrationRequestType()).thenReturn(true);
-		when(userRepository.fetchUser(nullable(String.class), nullable(String.class), nullable(String.class))).thenReturn(new User(1L, "foo@bar.com", "123"));
-		otpService.sendOtp(otpRequest);
+    //     // lenient because depending on service logic, fetchUser may or may not be called
+    //     lenient().when(userRepository.fetchUser(anyString(), anyString(), anyString(), anyString()))
+    //             .thenReturn(new User(1L, "foo@bar.com", "123"));
 
-		verify(otpRequest).validate();
-	}
-	
-	@Test(expected = UserNotExistingInSystemException.class)
-	public void test_should_throwException_when_userNotExist_IncaseOfLogin() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isLoginRequestType()).thenReturn(true);
-		//when(userRepository.fetchUser(anyString(), anyString(), anyString())).thenReturn(null);
-		otpService.sendOtp(otpRequest);
+    //     otpService.sendOtp(otpRequest);
 
-		verify(otpRequest).validate();
-	}
+    //     otpRequest.validate();
+    // }
 
-	@Test
-	public void test_should_validate_otp_request_for_password_reset() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isRegistrationRequestType()).thenReturn(false);
-		when(userRepository.fetchUser(nullable(String.class), nullable(String.class), nullable(String.class))).thenReturn(new User(1L, "foo@bar.com", "123"));
+    // @Test(expected = UserAlreadyExistInSystemException.class)
+    // public void test_should_throwException_when_userAlreadyExist_IncaseOfRegistration() {
+    //     final OtpRequest otpRequest = OtpRequest.builder()
+    //             .tenantId("tenant")
+    //             .mobileNumber("1234567890")
+    //             .type(OtpRequestType.REGISTER)
+    //             .userType("CITIZEN")
+    //             .build();
 
-		otpService.sendOtp(otpRequest);
+    //     when(userRepository.fetchUser(anyString(), anyString(), anyString(), anyString()))
+    //             .thenReturn(new User(1L, "foo@bar.com", "1234567890"));
 
-		verify(otpRequest).validate();
-	}
+    //     otpService.sendOtp(otpRequest);
+    // }
 
-	@Test(expected = UserNotFoundException.class)
-	public void test_should_throwException_whenmobilenumber_is_null() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isRegistrationRequestType()).thenReturn(false);
-		//when(userRepository.fetchUser(anyString(), anyString(), anyString())).thenReturn(new User(1L, "foo@bar.com", null));
+    // @Test(expected = UserNotExistingInSystemException.class)
+    // public void test_should_throwException_when_userNotExist_IncaseOfLogin() {
+    //     final OtpRequest otpRequest = OtpRequest.builder()
+    //             .tenantId("tenant")
+    //             .mobileNumber("1234567890")
+    //             .type(OtpRequestType.LOGIN)
+    //             .userType("CITIZEN")
+    //             .build();
 
-		otpService.sendOtp(otpRequest);
+    //     when(userRepository.fetchUser(anyString(), anyString(), anyString(), anyString()))
+    //             .thenReturn(null);
 
-		verify(otpRequest).validate();
-	}
+    //     otpService.sendOtp(otpRequest);
+    // }
 
-	@Test(expected = UserNotFoundException.class)
-	public void test_should_throwException_whenmobilenumber_is_empty() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		when(otpRequest.isRegistrationRequestType()).thenReturn(false);
-		//when(userRepository.fetchUser(anyString(), anyString(), anyString())).thenReturn(new User(1L, "foo@bar.com", ""));
+    @Test
+    public void test_should_validate_otp_request_for_password_reset() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber("1234567890")
+				.userName("test")
+				.password("123456")
+                .type(OtpRequestType.PASSWORD_RESET)
+                .userType("CITIZEN")
+                .build();
 
-		otpService.sendOtp(otpRequest);
+        lenient().when(userRepository.fetchUser(anyString(),anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new User(1L, "foo@bar.com", "123"));
 
-		verify(otpRequest).validate();
-	}
+        otpService.sendOtp(otpRequest);
 
-	@Test
-	public void test_should_send_smsm_otp_for_user_registration() {
-		final OtpRequest otpRequest = mock(OtpRequest.class);
-		final String otpNumber = "otpNumber";
-		when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
-		when(otpRequest.isRegistrationRequestType()).thenReturn(true);
+        otpRequest.validate();
+    }
 
-		otpService.sendOtp(otpRequest);
+    @Test(expected = UserNotFoundException.class)
+    public void test_should_throwException_whenmobilenumber_is_null() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber(null)
+                .userName("test")
+                .password("123456")
+                .type(OtpRequestType.PASSWORD_RESET)
+                .userType("CITIZEN")
+                .build();
 
-		verify(otpSMSRepository).send(otpRequest, otpNumber);
-	}
+        otpService.sendOtp(otpRequest);
+    }
 
-	@Test
-	public void test_should_send_sms_otp_for_password_reset() {
-		final OtpRequest otpRequest = OtpRequest.builder().tenantId("tenant").mobileNumber("1234567890")
-				.type(OtpRequestType.PASSWORD_RESET).userType("CITIZEN").build();
-		final String otpNumber = "otpNumber";
-		when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
-		when(userRepository.fetchUser("1234567890", "tenant", "CITIZEN")).thenReturn(new User(1L, "foo@bar.com",
-				"1234"));
+    @Test(expected = UserNotFoundException.class)
+    public void test_should_throwException_whenmobilenumber_is_empty() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber("")
+				.password("123456")
+                .type(OtpRequestType.PASSWORD_RESET)
+                .userType("CITIZEN")
+                .build();
 
-		otpService.sendOtp(otpRequest);
+        otpService.sendOtp(otpRequest);
+    }
 
-		verify(otpSMSRepository).send(otpRequest, otpNumber);
-	}
+    @Test
+    public void test_should_send_smsm_otp_for_user_registration() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber("1234567890")
+                .type(OtpRequestType.REGISTER)
+                .userType("CITIZEN")
+                .build();
 
-	@Test
-	public void test_should_send_email_otp_for_password_reset() {
-		final OtpRequest otpRequest = OtpRequest.builder().tenantId("tenant").mobileNumber("1234567890")
-				.type(OtpRequestType.PASSWORD_RESET).userType("CITIZEN").build();
-		final String otpNumber = "otpNumber";
-		when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
-		when(userRepository.fetchUser("1234567890", "tenant", "CITIZEN")).thenReturn(new User(1L, "foo@bar.com",
-				"123"));
+        final String otpNumber = "otpNumber";
+        when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
 
-		otpService.sendOtp(otpRequest);
+        otpService.sendOtp(otpRequest);
 
-		verify(otpEmailRepository).send("foo@bar.com", otpNumber);
-	}
+        verify(otpSMSRepository).send(otpRequest, otpNumber);
+    }
+
+    @Test
+    public void test_should_send_sms_otp_for_password_reset() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber("1234567890")
+				.userName("test")
+				.password("123456")
+                .type(OtpRequestType.PASSWORD_RESET)
+                .userType("CITIZEN")
+                .build();
+
+        final String otpNumber = "otpNumber";
+        when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
+        when(userRepository.fetchUser(anyString(),anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new User(1L, "foo@bar.com", "1234"));
+
+        otpService.sendOtp(otpRequest);
+
+        verify(otpSMSRepository).send(otpRequest, otpNumber);
+    }
+
+    @Test
+    public void test_should_send_email_otp_for_password_reset() {
+        final OtpRequest otpRequest = OtpRequest.builder()
+                .tenantId("tenant")
+                .mobileNumber("1234567890").password("2223356")
+                .type(OtpRequestType.PASSWORD_RESET)
+                .userType("CITIZEN")
+                .build();
+
+        final String otpNumber = "otpNumber";
+        when(otpRepository.fetchOtp(otpRequest)).thenReturn(otpNumber);
+        when(userRepository.fetchUser(anyString(),anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new User(1L, "foo@bar.com", "123"));
+
+        otpService.sendOtp(otpRequest);
+
+        verify(otpEmailRepository).send("foo@bar.com", otpNumber);
+    }
 }

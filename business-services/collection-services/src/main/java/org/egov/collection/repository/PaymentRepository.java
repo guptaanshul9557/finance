@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.egov.collection.model.Payment;
 import org.egov.collection.model.PaymentDetail;
+import org.egov.collection.model.PaymentEditAudit;
 import org.egov.collection.model.PaymentSearchCriteria;
 import org.egov.collection.repository.querybuilder.PaymentQueryBuilder;
 import org.egov.collection.repository.rowmapper.BillRowMapper;
@@ -83,6 +84,29 @@ public class PaymentRepository {
             log.error("Failed to persist payment to database", e);
             throw new CustomException("PAYMENT_CREATION_FAILED", e.getMessage());
         }
+    }
+    
+ // for edit purpose 
+    
+    @Transactional
+    public void saveEditAudit(List<PaymentEditAudit> paymentEditAudits) {
+    	try {
+			
+    		if(CollectionUtils.isEmpty(paymentEditAudits)) 
+    			return;
+    		
+    		List<MapSqlParameterSource> editAuditSource = new ArrayList<>();
+    		
+    		for(PaymentEditAudit paymentEditAudit : paymentEditAudits) {
+    			editAuditSource.add(getParametersForPaymentEditAuditCreate(paymentEditAudit));
+    		}
+    		namedParameterJdbcTemplate.batchUpdate(INSERT_PAYMENT_EDIT_AUDIT_SQL, editAuditSource.toArray(new MapSqlParameterSource[0]));
+    		
+		} catch (Exception e) {
+			// TODO: handle exception
+			log.error("Failed to persist paymentedit audit to database" , e);
+			throw new CustomException("PAYMENT_EDIT_AUDIT_CREATION_FAILED" , e.getMessage());
+		}
     }
 
 
@@ -218,7 +242,7 @@ public class PaymentRepository {
             namedParameterJdbcTemplate.batchUpdate(COPY_PAYMENT_SQL, paymentSource.toArray(new MapSqlParameterSource[0]));
             namedParameterJdbcTemplate.batchUpdate(COPY_PAYMENTDETAIL_SQL, paymentDetailSource.toArray(new MapSqlParameterSource[0]));
             namedParameterJdbcTemplate.batchUpdate(COPY_BILL_SQL, billSource.toArray(new MapSqlParameterSource[0]));
-            namedParameterJdbcTemplate.batchUpdate(COPY_BILLDETAIL_SQL, billDetailSource.toArray(new MapSqlParameterSource[0]));
+//            namedParameterJdbcTemplate.batchUpdate(COPY_BILLDETAIL_SQL, billDetailSource.toArray(new MapSqlParameterSource[0]));
         }catch (Exception e){
             log.error("Failed to update receipt to database", e);
             throw new CustomException("RECEIPT_UPDATION_FAILED", "Unable to update receipt");
@@ -241,43 +265,14 @@ public class PaymentRepository {
 
     }
 
-    public List<String> fetchPaymentIds(PaymentSearchCriteria criteria) {
-		/*
-		 * Map<String, Object> preparedStatementValues = new HashMap<>();
-		 * preparedStatementValues.put("offset", paymentSearchCriteria.getOffset());
-		 * preparedStatementValues.put("limit", paymentSearchCriteria.getLimit());
-		 * 
-		 * return namedParameterJdbcTemplate.
-		 * query("SELECT id from egcl_payment ORDER BY createdtime offset " + ":offset "
-		 * + "limit :limit", preparedStatementValues, new
-		 * SingleColumnRowMapper<>(String.class));
-		 */
-    		Map<String, Object> params = new HashMap<>();
-    	    StringBuilder query = new StringBuilder("SELECT id FROM egcl_payment WHERE 1=1 ");
-    	    if (criteria.getTenantId() != null) {
-    	        query.append(" AND tenantid = :tenantId ");
-    	        params.put("tenantId", criteria.getTenantId());
-    	    }
-    	    if (criteria.getFromDate() != null) {
-    	        query.append(" AND transactiondate >= :fromDate ");
-    	        params.put("fromDate", criteria.getFromDate());
-    	    }
-    	    if (criteria.getToDate() != null) {
-    	        query.append(" AND transactiondate  <= :toDate ");
-    	        params.put("toDate", criteria.getToDate());
-    	    }
-    	    query.append(" ORDER BY createdtime ");
-    	    query.append(" OFFSET :offset LIMIT :limit ");
+    public List<String> fetchPaymentIds(PaymentSearchCriteria paymentSearchCriteria) {
 
-    	    params.put("offset", criteria.getOffset());
-    	    params.put("limit", criteria.getLimit());
+        Map<String, Object> preparedStatementValues = new HashMap<>();
+        preparedStatementValues.put("offset", paymentSearchCriteria.getOffset());
+        preparedStatementValues.put("limit", paymentSearchCriteria.getLimit());
 
-    	    return namedParameterJdbcTemplate.query(
-    	        query.toString(),
-    	        params,
-    	        new SingleColumnRowMapper<>(String.class)
-    	    );
-    }
+        return namedParameterJdbcTemplate.query("SELECT id from egcl_payment ORDER BY createdtime offset " + ":offset " + "limit :limit", preparedStatementValues, new SingleColumnRowMapper<>(String.class));   
+}
     
     public List<String> fetchPaymentIdsByReceipt(PaymentSearchCriteria criteria) {
         Map<String, Object> params = new HashMap<>();
@@ -374,4 +369,35 @@ public class PaymentRepository {
 				emptyAddtlParameterSource.toArray(new MapSqlParameterSource[0]));
 
 	}
+
+          public Long getPaymentCounts(PaymentSearchCriteria paymentSearchCriteria) {
+               Map<String, Object> preparedStatementValues = new HashMap<>();
+       String query = paymentQueryBuilder.getPaymentCountQuery(paymentSearchCriteria, preparedStatementValues);
+       return namedParameterJdbcTemplate.queryForObject(query, preparedStatementValues, Long.class);
+
+       }
+
+
+
+
+       public List<Payment> getPaymentsReport(PaymentSearchCriteria paymentSearchCriteria) {
+               Map<String, Object> preparedStatementValues = new HashMap<>();
+       String query = paymentQueryBuilder.getPaymentReportQuery(paymentSearchCriteria, preparedStatementValues);
+       List<Payment> payments = namedParameterJdbcTemplate.query(query, preparedStatementValues, paymentRowMapper);
+        if (!CollectionUtils.isEmpty(payments)) {
+            Set<String> billIds = new HashSet<>();
+            for (Payment payment : payments) {
+                billIds.addAll(payment.getPaymentDetails().stream().map(detail -> detail.getBillId()).collect(Collectors.toSet()));
+            }
+            Map<String, Bill> billMap = getBills(billIds);
+            for (Payment payment : payments) {
+                payment.getPaymentDetails().forEach(detail -> {
+                    detail.setBill(billMap.get(detail.getBillId()));
+                });
+            }
+            payments.sort(reverseOrder(Comparator.comparingLong(Payment::getTransactionDate)));
+        }
+
+        return payments;
+       }
 }

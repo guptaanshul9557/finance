@@ -50,6 +50,35 @@
 <%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="/WEB-INF/tags/cdn.tld" prefix="cdn" %>
+
+<script type="text/javascript">
+function validateCharacters(element) {
+    element.value = element.value.replace(/[^A-Za-z0-9.,;:& -]/g, '');
+}
+function blockSpecialCharacters(e) {
+    var ch = e.key;
+    // Allow control keys
+    if (e.ctrlKey || e.metaKey || ch.length > 1) {
+        return true;
+    }
+    // Allow only A-Z, a-z, 0-9, . , ; : & - and space
+    if (!/^[A-Za-z0-9.,;:& -]$/.test(ch)) {
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+
+function validatePaste(e) {
+    var pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^A-Za-z0-9.,;:& -]/.test(pastedText)) {
+        alert("Special characters are not allowed.");
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+</script>
 <form:hidden path="" name="stateType" id="stateType" value="${stateType}"/>	
 <form:hidden path="" id="workFlowAction" name="workFlowAction"/>	
 <div class="panel panel-primary" data-collapsed="0" >	
@@ -124,7 +153,9 @@
 					<div class="show-row form-group col-sm-12">
 						<label class="col-sm-3 control-label text-right" style="padding-right: 20px;"><spring:message code="lbl.comments" text="Comments"/></label>
 						<div class="col-sm-8 add-margin" style="padding-left: 10px;">
-							<form:textarea class="form-control" path="approvalComent"  id="approvalComent" name="approvalComent" />
+							<form:textarea class="form-control" path="approvalComent"  id="approvalComent" name="approvalComent" onkeydown="return blockSpecialCharacters(event);"
+						    onpaste="return validatePaste(event);"
+                            oninput="return validateCharacters(event);" />
 						</div>
 					</div>
 				</div>

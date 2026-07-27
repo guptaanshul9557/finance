@@ -180,6 +180,7 @@ public class ReceiptAction extends BaseFormAction {
 	 * for view/print/cancel purposes
 	 */
 	private ReceiptHeader[] receipts;
+	private List<ReceiptHeader> lReceipts;
 	private transient ReceiptHeaderService receiptHeaderService;
 	private transient CollectionService collectionService;
 	private transient CollectionsUtil collectionsUtil;
@@ -211,6 +212,7 @@ public class ReceiptAction extends BaseFormAction {
 	private Boolean bankAllowed = Boolean.TRUE;
 	private Boolean onlineAllowed = Boolean.TRUE;
 	private Boolean isReceiptCancelEnable = Boolean.TRUE;
+	
 	/**
 	 * An instance of <code>InstrumentHeader</code> representing the cash instrument
 	 * details entered by the user during receipt creation
@@ -285,6 +287,8 @@ public class ReceiptAction extends BaseFormAction {
 	private String fund;
     private String wardNo;
     private String referenceDesc;
+    
+    
 
 	@Autowired
 	private transient FundHibernateDAO fundDAO;
@@ -745,9 +749,8 @@ public class ReceiptAction extends BaseFormAction {
 			receiptHeader.setModOfPayment(instrumentType);
 			receiptHeader.setWardNo(wardNo);
 			receiptHeader.setFund(fund);
-			receiptHeader.setReferenceDesc(referenceDesc);
+			receiptHeader.setReferenceDesc(collectionsUtil.sanitizeInput(referenceDesc));
 			
-
 			if (setInstrument) {
 				receiptInstrList = populateInstrumentDetails();
 				setInstrument = false;
@@ -1116,20 +1119,47 @@ public class ReceiptAction extends BaseFormAction {
 	 * @return Result page ("view")
 	 */
 	private String viewReceipts(final boolean printReceipts) {
+	    List<String> receiptNos=new ArrayList<String>();
+		Set<String> setOfService=new HashSet<String>();
+		
+		int i=0;
+		for (String val : selectedReceipts) {
+			if(val.contains("|")) {
+				String[] parts = val.split("\\|");
+			    receiptNos.add(parts[0]);
+			    setOfService.add(parts[1]+"."+parts[2]);
+			    i++;
+			}
+		}
+		
+		List<BusinessService> businessServices = microserviceUtils.getBusinessServiceByBusinessServices(setOfService);
+		
+		String serviceTypes=businessServices.stream().map(bs->bs.getCode()).collect(Collectors.joining(","));
+		
 		if (selectedReceipts == null || selectedReceipts.length == 0)
 			throw new ApplicationRuntimeException("No receipts selected to view!");
-		if (StringUtils.isEmpty(serviceTypeId) || serviceTypeId.equals("-1"))
+		if (StringUtils.isEmpty(serviceTypes))
 			throw new ApplicationRuntimeException("Service Type is missing");
-
+		
+       
 		receipts = new ReceiptHeader[selectedReceipts.length];
 		String sTypeId;
-		if(getServiceTypeId().contains(".")) 
-			sTypeId=getServiceTypeId();
-		else
-			sTypeId=getServiceCategory()+"."+getServiceTypeId();
+		List<Receipt> receiptlist;
+		if(serviceTypeId!=null) {
+			if(getServiceTypeId().contains(".")) 
+				sTypeId=getServiceTypeId();
+			else
+				sTypeId=getServiceCategory()+"."+getServiceTypeId();
+			
+		receiptlist = this.microserviceUtils.searchReciepts(null, null, null, sTypeId,
+					Arrays.asList(selectedReceipts),null,null);
+		}else {
+		String receiptNosComma=receiptNos.stream().collect(Collectors.joining(","));
+		receiptlist = this.microserviceUtils.searchReciepts(null, null, null, serviceTypes,
+					Arrays.asList(receiptNosComma),null,null);
+		}
 		
-		List<Receipt> receiptlist = this.microserviceUtils.searchReciepts(null, null, null, sTypeId,
-				Arrays.asList(selectedReceipts));
+		lReceipts=new ArrayList<ReceiptHeader>();
 
 		receiptlist.stream().forEach(receipt -> {
 			
@@ -1144,24 +1174,42 @@ public class ReceiptAction extends BaseFormAction {
 					header.setWardNo(additionalDetails.get("wardNo").asText());
 					header.setFund(additionalDetails.get("fundName").asText());
 					receiptHeader.setReceiptnumber(billDetail.getReceiptNumber());
+					header.setReceiptnumber(billDetail.getReceiptNumber());
 					receiptHeader.setReceiptdate(new Date(billDetail.getReceiptDate()));
+					header.setReceiptdate(new Date(billDetail.getReceiptDate()));
 					String businessServiceCode = billDetail.getBusinessService();
 					receiptHeader.setService(microserviceUtils.getBusinessServiceNameByCode(businessServiceCode));
+					header.setService(microserviceUtils.getBusinessServiceNameByCode(businessServiceCode));
 					receiptHeader.setReferencenumber(billDetail.getBillNumber());
+					header.setReferencenumber(billDetail.getBillNumber());
+					
 					receiptHeader.setReferenceDesc(additionalDetails.get("narration")!=null?additionalDetails.get("narration").asText():null);
+					header.setReferenceDesc(additionalDetails.get("narration")!=null?additionalDetails.get("narration").asText():null);
 					receiptHeader.setPaidBy(bill.getPaidBy());
+					header.setPaidBy(bill.getPaidBy());
 					receiptHeader.setPayeeName(bill.getPayerName());
+					header.setPayeeName(bill.getPayerName());
 					receiptHeader.setPayeeAddress(bill.getPayerAddress());
+					header.setPayeeAddress(bill.getPayerAddress());
 					totalAmountPaid = totalAmountPaid.add(billDetail.getAmountPaid());
                     			receiptHeader.setTotalAmount(totalAmountPaid);
+                    			header.setTotalAmount(totalAmountPaid);
 					receiptHeader.setCurretnStatus(billDetail.getStatus());
+					header.setCurretnStatus(billDetail.getStatus());
 					receiptHeader.setCurrentreceipttype(billDetail.getReceiptType());
+					header.setCurrentreceipttype(billDetail.getReceiptType());
 					receiptHeader.setManualreceiptnumber(billDetail.getManualReceiptNumber());
+					header.setManualreceiptnumber(billDetail.getManualReceiptNumber());
 					receiptHeader.setModOfPayment(receipt.getInstrument().getInstrumentType().getName());
+					header.setModOfPayment(receipt.getInstrument().getInstrumentType().getName());
 					receiptHeader.setConsumerCode(billDetail.getConsumerCode());
+					header.setConsumerCode(billDetail.getConsumerCode());
 					receiptHeader.setManualreceiptnumber(billDetail.getManualReceiptNumber());
-					if (billDetail.getManualReceiptDate() != 0)
+					header.setManualreceiptnumber(billDetail.getManualReceiptNumber());
+					if (billDetail.getManualReceiptDate() != 0) {
 						receiptHeader.setManualreceiptdate(new Date(billDetail.getManualReceiptDate()));
+					    header.setManualreceiptdate(new Date(billDetail.getManualReceiptDate()));
+					}
 					JsonNode jsonNode = billDetail.getAdditionalDetails();
 					BillDetailAdditional additional = null;
 					try {
@@ -1184,26 +1232,43 @@ public class ReceiptAction extends BaseFormAction {
 						}
 
 						receiptHeader.setReceiptMisc(rcptMisc);
-						if (null != additional.getNarration())
+						header.setReceiptMisc(rcptMisc);
+						if (null != additional.getNarration()) {
 							receiptHeader.setReferenceDesc(additional.getNarration());
-						if (null != additional.getPayeeaddress())
+						    header.setReferenceDesc(additional.getNarration());
+						}
+						if (null != additional.getPayeeaddress()) {
 							receiptHeader.setPayeeAddress(additional.getPayeeaddress());
+							header.setPayeeAddress(additional.getPayeeaddress());
+						}
 					}
 
 					if (ApplicationThreadLocals.getCollectionVersion().toUpperCase().equalsIgnoreCase("V1")) {
-						if (billDetail.getCollectionType().equals(CollectionType.COUNTER))
+						if (billDetail.getCollectionType().equals(CollectionType.COUNTER)) {
 							receiptHeader.setCollectiontype(CollectionConstants.COLLECTION_TYPE_COUNTER);
-						else if (billDetail.getCollectionType().equals(CollectionType.FIELD))
+							header.setCollectiontype(CollectionConstants.COLLECTION_TYPE_COUNTER);
+						}
+						else if (billDetail.getCollectionType().equals(CollectionType.FIELD)) {
 							receiptHeader.setCollectiontype(CollectionConstants.COLLECTION_TYPE_FIELDCOLLECTION);
-						else if (billDetail.getCollectionType().equals(CollectionType.ONLINE))
+							header.setCollectiontype(CollectionConstants.COLLECTION_TYPE_FIELDCOLLECTION);
+						}
+						else if (billDetail.getCollectionType().equals(CollectionType.ONLINE)) {
 							receiptHeader.setCollectiontype(CollectionConstants.COLLECTION_TYPE_ONLINECOLLECTION);
+							header.setCollectiontype(CollectionConstants.COLLECTION_TYPE_ONLINECOLLECTION);
+						}
+							
 					}
 
 					if (billDetail.getReceiptType().equalsIgnoreCase(CollectionConstants.RECEIPT_M_TYPE_MISCELLANEOUS)
-							|| billDetail.getReceiptType().equalsIgnoreCase(CollectionConstants.RECEIPT_M_TYPE_ADHOC))
+							|| billDetail.getReceiptType().equalsIgnoreCase(CollectionConstants.RECEIPT_M_TYPE_ADHOC)) {
+						
 						receiptHeader.setReceipttype(CollectionConstants.RECEIPT_TYPE_ADHOC);
-					else if (billDetail.getReceiptType().equalsIgnoreCase(CollectionConstants.RECEIPT_M_TYPE_BILLBASED))
+						header.setReceipttype(CollectionConstants.RECEIPT_TYPE_ADHOC);
+					}
+					else if (billDetail.getReceiptType().equalsIgnoreCase(CollectionConstants.RECEIPT_M_TYPE_BILLBASED)) {
 						receiptHeader.setReceipttype(CollectionConstants.RECEIPT_TYPE_BILL);
+						header.setReceipttype(CollectionConstants.RECEIPT_TYPE_BILL);
+					}
 
 					Set<ReceiptDetail> receiptdetailslist = new HashSet<>();
 					billDetail.getBillAccountDetails().forEach(billAccountDetail -> {
@@ -1233,6 +1298,7 @@ public class ReceiptAction extends BaseFormAction {
 						receiptdetailslist.add(receiptDetail);
 					});
 					receiptHeader.setReceiptDetails(receiptdetailslist);
+					header.setReceiptDetails(receiptdetailslist);
 					receiptHeader.setReceiptHeader(header);
 					InstrumentHeader instrumentHeader = new InstrumentHeader();
 
@@ -1269,19 +1335,23 @@ public class ReceiptAction extends BaseFormAction {
 					}
 
 					receiptHeader.addInstrument(instrumentHeader);
+					header.addInstrument(instrumentHeader);
 					EmployeeInfo empInfo = this.microserviceUtils
 							.getEmployeeById(Long.parseLong(receipt.getAuditDetails().getCreatedBy()));
-					if (null != empInfo && empInfo.getUser().getUserName() != null)
+					if (null != empInfo && empInfo.getUser().getUserName() != null) {
 						receiptHeader.setCreatedUser(empInfo.getUser().getName());
+						header.setCreatedUser(empInfo.getUser().getName());
+					}
 					receipts[0] = receiptHeader;
-
+					lReceipts.add(header);
 				};
 			});
 
 		});
 
 		try {
-			reportId = collectionCommon.generateReport(receipts, printReceipts);
+			ReceiptHeader[] res = lReceipts.toArray(new ReceiptHeader[0]);
+			reportId = collectionCommon.generateReport(res, printReceipts);
 		} catch (final ApplicationRuntimeException e) {
 			final String errMsg = "Error during report generation!";
 			LOGGER.error(errMsg, e);

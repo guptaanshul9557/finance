@@ -75,6 +75,9 @@ public class UserService {
                 throw new CustomException("INVALID USER RESPONSE", "The user created has uuid as null");
             }
             setOwnerFields(userInfo, userDetailResponse, requestInfo);
+			if (challan.getAccountId() == null) {
+				challan.setAccountId(userInfo.getUuid());
+			}
 		/*}
 		else {
             UserDetailResponse userDetailResponse = userExists(userInfo,challan,requestInfo);

@@ -69,5 +69,5 @@ public interface VoucherService {
 			throws VoucherCustomException;
 	VoucherResponse processReversalVoucher(List<InstrumentContract> instruments, RequestInfo requestInfo);
 	
-	public VoucherAndMisResponse createReceiptVoucherForScheduler(ReceiptReq req, FinanceMdmsModel finSerMdms, String collectionVersion, paymentDetails payRequest) throws Exception;
+	//public VoucherAndMisResponse createReceiptVoucherForScheduler(ReceiptReq req, FinanceMdmsModel finSerMdms, String collectionVersion, paymentDetails payRequest) throws Exception;
 }

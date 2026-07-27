@@ -97,6 +97,7 @@ public class Bankbranch extends AbstractPersistable<Integer> {
     @NotNull
     @Length(max = 50)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String branchcode;
 
     @NotNull
@@ -144,6 +145,7 @@ public class Bankbranch extends AbstractPersistable<Integer> {
 
     @Length(max = 250)
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in narration")
     private String narration;
 
     @Length(max = 50)

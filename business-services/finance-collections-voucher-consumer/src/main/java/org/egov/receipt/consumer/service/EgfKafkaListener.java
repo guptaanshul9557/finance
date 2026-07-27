@@ -266,7 +266,7 @@ public class EgfKafkaListener {
 		if(request instanceof PaymentRequest){
 			PaymentRequest payReq = (PaymentRequest)request;
 			Set<String> voucherNumbers = payReq.getPayment().getPaymentDetails().stream().map(PaymentDetail::getReceiptNumber).collect(Collectors.toSet());
-			voucherIntegrationLog.setReferenceNumber(voucherNumbers.toString());
+			voucherIntegrationLog.setReferenceNumber(String.join(",", voucherNumbers));
 			voucherIntegrationLog.setTenantId(payReq.getPayment().getTenantId());
 		}else{
 			ReceiptReq request1 = (ReceiptReq)request;

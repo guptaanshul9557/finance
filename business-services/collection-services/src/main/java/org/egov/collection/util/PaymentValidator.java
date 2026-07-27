@@ -19,6 +19,10 @@ import static org.egov.collection.util.Utils.jsonMerge;
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +37,7 @@ import org.egov.collection.config.ApplicationProperties;
 import org.egov.collection.config.CollectionServiceConstants;
 import org.egov.collection.model.Payment;
 import org.egov.collection.model.PaymentDetail;
+import org.egov.collection.model.PaymentEditAudit;
 import org.egov.collection.model.PaymentRequest;
 import org.egov.collection.model.PaymentSearchCriteria;
 import org.egov.collection.model.enums.InstrumentStatusEnum;
@@ -64,393 +69,539 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentValidator {
 
 
-    private PaymentRepository paymentRepository;
-
-    private PaymentWorkflowService paymentWorkflowService;
-
-    private ApplicationProperties applicationProperties;
-    
-    private ServiceRequestRepository serviceRequestRepository;
-
-
-    @Autowired
-    public PaymentValidator(PaymentRepository paymentRepository, PaymentWorkflowService paymentWorkflowService,
-                            ApplicationProperties applicationProperties,ServiceRequestRepository serviceRequestRepository) {
-        this.paymentRepository = paymentRepository;
-        this.paymentWorkflowService = paymentWorkflowService;
-        this.applicationProperties = applicationProperties;
-        this.serviceRequestRepository=serviceRequestRepository;
-    }
-
-
-    public Payment validatePaymentForCreate(PaymentRequest paymentRequest) {
-        Map<String, String> errorMap = new HashMap<>();
-        Payment payment = paymentRequest.getPayment();
-        List<PaymentDetail> paymentDetails = paymentRequest.getPayment().getPaymentDetails();
-        validateUserInfo(paymentRequest.getRequestInfo(), errorMap);
-        validateInstrument(paymentRequest.getPayment(),errorMap);
-        Set<String> billIds = payment.getPaymentDetails().stream().map(PaymentDetail :: getBillId).collect(Collectors.toSet());
-        
-        PaymentSearchCriteria criteria = PaymentSearchCriteria.builder().tenantId(payment.getTenantId())
-                .offset(0).limit(applicationProperties.getReceiptsSearchDefaultLimit()).billIds(billIds).build();
-
-        List<Payment> payments = paymentRepository.fetchPayments(criteria);
-        if (!payments.isEmpty()) {
-            validateIPaymentForBillPresent(payments,errorMap);
-        }
-
-        validateIFSCCode(paymentRequest);
-        // Loop through all bill details [one for each service], and perform various
-        // validations
-        for (PaymentDetail paymentDetail : paymentDetails) {
-
-            if (StringUtils.isEmpty(paymentDetail.getBusinessService())) {
-                errorMap.put("INVALID_BUSINESS_DETAILS", "Business details code cannot be empty");
-            }
-
-            validatePaymentDetailAgainstBill(payment.getPaymentMode().toString(),paymentDetail,errorMap);
-        }
-
-        if (!errorMap.isEmpty())
-            throw new CustomException(errorMap);
-
-        return paymentRequest.getPayment();
-    }
-
-
-    public void validateUserInfo(RequestInfo requestInfo, Map<String, String> errorMap) {
-    	
-        if (null == requestInfo) {
-            errorMap.put("INVALID_REQUEST_INFO", "RequestInfo cannot be null");
-        } else {
-            if (null == requestInfo.getUserInfo()) {
-                errorMap.put("INVALID_USER_INFO", "UserInfo within RequestInfo cannot be null");
-            } else {
-                if (StringUtils.isEmpty(requestInfo.getUserInfo().getUuid())) {
-                    errorMap.put("INVALID_USER_ID", "UUID of the user within RequestInfo cannot be null");
-                }
-            }
-        }
-    }
-
-
-    /**
-     * Validations if no transaction exists for this bill No existing receipt should
-     * be in approved or pending status
-     * <p>
-     * If not, proceed with validateIfReceiptForBillAbsent validations *
-     *
-     *  @param payments   List of payment Details
-     * @param errorMap   Map of errors occurred during validations
-     */
-    private void validateIPaymentForBillPresent(List<Payment> payments, Map<String, String> errorMap) {
-        log.info("receipt present");
-        for (Payment payment : payments) {
-            String paymentStatus = payment.getInstrumentStatus().toString();
-            if (paymentStatus.equalsIgnoreCase(APPROVED.toString())
-                    || paymentStatus.equalsIgnoreCase(APPROVAL_PENDING.toString())
-                    || paymentStatus.equalsIgnoreCase(REMITTED.toString())) {
-                errorMap.put("BILL_ALREADY_PAID", "Bill has already been paid or is in pending state");
-                return;
-            }
-        }
-        // validateIfReceiptForBillAbsent(errorMap, billDetail);
-    }
-
-
-    private void validateInstrument(Payment payment, Map<String, String> errorMap) {
-
-        String paymentMode = payment.getPaymentMode().toString();
-        if (!PaymentModeEnum.contains(paymentMode)) {
-            throw new CustomException("INVALID_PAYMENTMODE", "Invalid payment mode provided");
-        }
+	private PaymentRepository paymentRepository;
+
+	private PaymentWorkflowService paymentWorkflowService;
+
+	private ApplicationProperties applicationProperties;
+
+	private ServiceRequestRepository serviceRequestRepository;
+
+
+	@Autowired
+	public PaymentValidator(PaymentRepository paymentRepository, PaymentWorkflowService paymentWorkflowService,
+			ApplicationProperties applicationProperties,ServiceRequestRepository serviceRequestRepository) {
+		this.paymentRepository = paymentRepository;
+		this.paymentWorkflowService = paymentWorkflowService;
+		this.applicationProperties = applicationProperties;
+		this.serviceRequestRepository=serviceRequestRepository;
+	}
+
+
+	public Payment validatePaymentForCreate(PaymentRequest paymentRequest) {
+		Map<String, String> errorMap = new HashMap<>();
+		Payment payment = paymentRequest.getPayment();
+		List<PaymentDetail> paymentDetails = paymentRequest.getPayment().getPaymentDetails();
+		validateUserInfo(paymentRequest.getRequestInfo(), errorMap);
+		validateInstrument(paymentRequest.getPayment(),errorMap);
+		Set<String> billIds = payment.getPaymentDetails().stream().map(PaymentDetail :: getBillId).collect(Collectors.toSet());
+
+		PaymentSearchCriteria criteria = PaymentSearchCriteria.builder().tenantId(payment.getTenantId())
+				.offset(0).limit(applicationProperties.getReceiptsSearchDefaultLimit()).billIds(billIds).build();
+
+		List<Payment> payments = paymentRepository.fetchPayments(criteria);
+		if (!payments.isEmpty()) {
+			validateIPaymentForBillPresent(payments,errorMap);
+		}
+
+		validateIFSCCode(paymentRequest);
+		// Loop through all bill details [one for each service], and perform various
+		// validations
+		for (PaymentDetail paymentDetail : paymentDetails) {
 
-        if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.CHEQUE.name())
-                || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.DD.name())
-                || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_NEFT.name())
-                || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_RTGS.name())
-                || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.POSTAL_ORDER.name())) {
+			if (StringUtils.isEmpty(paymentDetail.getBusinessService())) {
+				errorMap.put("INVALID_BUSINESS_DETAILS", "Business details code cannot be empty");
+			}
+
+			validatePaymentDetailAgainstBill(payment.getPaymentMode().toString(),paymentDetail,errorMap);
+		}
 
-            if (isNull(payment.getInstrumentDate()))
-                errorMap.put("INVALID_INST_DATE", "Instrument Date Input is mandatory for cheque and DD");
+		if (!errorMap.isEmpty())
+			throw new CustomException(errorMap);
 
-            if (StringUtils.isEmpty(payment.getInstrumentNumber()))
-                errorMap.put("INVALID_INST_NUMBER", "Instrument Number is mandatory for Cheque, DD, Card");
+		return paymentRequest.getPayment();
+	}
 
-            if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.CHEQUE.name())
-                    || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.DD.name()))
-                validateChequeDD(payment, errorMap);
 
-            if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_NEFT.name())
-                    || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_RTGS.name())
-                    || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.POSTAL_ORDER.name()))
-                validateNEFTAndRTGS(payment, errorMap);
+	public void validateUserInfo(RequestInfo requestInfo, Map<String, String> errorMap) {
 
-        }
+		if (null == requestInfo) {
+			errorMap.put("INVALID_REQUEST_INFO", "RequestInfo cannot be null");
+		} else {
+			if (null == requestInfo.getUserInfo()) {
+				errorMap.put("INVALID_USER_INFO", "UserInfo within RequestInfo cannot be null");
+			} else {
+				if (StringUtils.isEmpty(requestInfo.getUserInfo().getUuid())) {
+					errorMap.put("INVALID_USER_ID", "UUID of the user within RequestInfo cannot be null");
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * Validations if no transaction exists for this bill No existing receipt should
+	 * be in approved or pending status
+	 * <p>
+	 * If not, proceed with validateIfReceiptForBillAbsent validations *
+	 *
+	 *  @param payments   List of payment Details
+	 * @param errorMap   Map of errors occurred during validations
+	 */
+	private void validateIPaymentForBillPresent(List<Payment> payments, Map<String, String> errorMap) {
+		log.info("receipt present");
+		for (Payment payment : payments) {
+			String paymentStatus = payment.getInstrumentStatus().toString();
+			if (paymentStatus.equalsIgnoreCase(APPROVED.toString())
+					|| paymentStatus.equalsIgnoreCase(APPROVAL_PENDING.toString())
+					|| paymentStatus.equalsIgnoreCase(REMITTED.toString())) {
+				errorMap.put("BILL_ALREADY_PAID", "Bill has already been paid or is in pending state");
+				return;
+			}
+		}
+		// validateIfReceiptForBillAbsent(errorMap, billDetail);
+	}
 
-        if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.CARD.name()) || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.ONLINE.name())
-                || paymentMode.equalsIgnoreCase(ONLINE_NEFT.name()) || paymentMode.equalsIgnoreCase(ONLINE_RTGS.name())) {
-            if (org.apache.commons.lang3.StringUtils.isEmpty(payment.getTransactionNumber()))
-                errorMap.put("INVALID_TXN_NUMBER", "Transaction Number is mandatory for Card and online payment");
 
-            if (org.apache.commons.lang3.StringUtils.isEmpty(payment.getInstrumentNumber()))
-                errorMap.put("INVALID_INSTRUMENT_NUMBER", "Instrument Number is mandatory for Card");
+	private void validateInstrument(Payment payment, Map<String, String> errorMap) {
 
-        }
+		String paymentMode = payment.getPaymentMode().toString();
+		if (!PaymentModeEnum.contains(paymentMode)) {
+			throw new CustomException("INVALID_PAYMENTMODE", "Invalid payment mode provided");
+		}
 
-    }
+		if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.CHEQUE.name())
+				|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.DD.name())
+				|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_NEFT.name())
+				|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_RTGS.name())
+				|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.POSTAL_ORDER.name())) {
 
+			if (isNull(payment.getInstrumentDate()))
+				errorMap.put("INVALID_INST_DATE", "Instrument Date Input is mandatory for cheque and DD");
 
-    private void validateNEFTAndRTGS(Payment payment, Map<String, String> errorMap){
+			if (StringUtils.isEmpty(payment.getInstrumentNumber()))
+				errorMap.put("INVALID_INST_NUMBER", "Instrument Number is mandatory for Cheque, DD, Card");
 
-        DateTime instrumentDate = new DateTime(payment.getInstrumentDate());
-        if (instrumentDate.isAfter(System.currentTimeMillis())) {
-            errorMap.put(RECEIPT_NEFT_OR_RTGS_DATE, RECEIPT_NEFT_OR_RTGS_DATE_MESSAGE);
-        }
-    }
+			if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.CHEQUE.name())
+					|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.DD.name()))
+				validateChequeDD(payment, errorMap);
 
+			if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_NEFT.name())
+					|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.OFFLINE_RTGS.name())
+					|| paymentMode.equalsIgnoreCase(InstrumentTypesEnum.POSTAL_ORDER.name()))
+				validateNEFTAndRTGS(payment, errorMap);
 
-    private void validateChequeDD(Payment payment, Map<String, String> errorMap) {
+		}
 
-        DateTime instrumentDate = new DateTime(payment.getInstrumentDate());
+		if (paymentMode.equalsIgnoreCase(InstrumentTypesEnum.CARD.name()) || paymentMode.equalsIgnoreCase(InstrumentTypesEnum.ONLINE.name())
+				|| paymentMode.equalsIgnoreCase(ONLINE_NEFT.name()) || paymentMode.equalsIgnoreCase(ONLINE_RTGS.name())) {
+			if (org.apache.commons.lang3.StringUtils.isEmpty(payment.getTransactionNumber()))
+				errorMap.put("INVALID_TXN_NUMBER", "Transaction Number is mandatory for Card and online payment");
 
-        if (payment.getTransactionDate()!=null) {
-            if (instrumentDate.isAfter(payment.getTransactionDate())) {
-                errorMap.put(RECEIPT_CHEQUE_OR_DD_DATE, RECEIPT_CHEQUE_OR_DD_DATE_MESSAGE);
-            }
+			if (org.apache.commons.lang3.StringUtils.isEmpty(payment.getInstrumentNumber()))
+				errorMap.put("INVALID_INSTRUMENT_NUMBER", "Instrument Number is mandatory for Card");
 
-            Days daysDiff = Days.daysBetween(instrumentDate, new DateTime(payment.getTransactionDate()));
-            if (daysDiff.getDays() > Integer.valueOf(INSTRUMENT_DATE_DAYS)) {
-                errorMap.put("CHEQUE_DD_DATE_WITH_MANUAL_RECEIPT_DATE",
-                        CHEQUE_DD_DATE_WITH_MANUAL_RECEIPT_DATE_MESSAGE);
-            }
+		}
 
-        } else {
-            Days daysDiff = Days.daysBetween(instrumentDate, new DateTime());
-            if (daysDiff.getDays() > Integer.valueOf(INSTRUMENT_DATE_DAYS)) {
-                errorMap.put("CHEQUE_DD_DATE_WITH_RECEIPT_DATE", CHEQUE_DD_DATE_WITH_RECEIPT_DATE_MESSAGE);
-            }
-            if (instrumentDate.isAfter(new DateTime().getMillis())) {
-                errorMap.put("CHEQUE_DD_DATE_WITH_FUTURE_DATE", CHEQUE_DD_DATE_WITH_FUTURE_DATE_MESSAGE);
-            }
-        }
+	}
 
-    }
 
-    public List<Payment> validateAndEnrichPaymentsForUpdate(List<Payment> payments, RequestInfo requestInfo) {
+	private void validateNEFTAndRTGS(Payment payment, Map<String, String> errorMap){
 
-        Map<String, String> errorMap = new HashMap<>();
+		DateTime instrumentDate = new DateTime(payment.getInstrumentDate());
+		if (instrumentDate.isAfter(System.currentTimeMillis())) {
+			errorMap.put(RECEIPT_NEFT_OR_RTGS_DATE, RECEIPT_NEFT_OR_RTGS_DATE_MESSAGE);
+		}
+	}
 
 
-        Set<String> paymentIds = payments.stream().map(Payment::getId).collect(Collectors.toSet());
+	private void validateChequeDD(Payment payment, Map<String, String> errorMap) {
 
-        List<Payment> paymentsFromDb = paymentRepository.fetchPayments(PaymentSearchCriteria
-                .builder()
-                .ids(paymentIds)
-                .offset(0).limit(applicationProperties.getReceiptsSearchDefaultLimit())
-                .instrumentStatus(InstrumentStatusEnum.statusesByCategory(InstrumentStatusEnum.Category.OPEN))
-                .build());
+		DateTime instrumentDate = new DateTime(payment.getInstrumentDate());
 
-        Map<String, Payment> paymentsById = paymentsFromDb.stream()
-                .collect(Collectors.toMap(Payment::getId, Function.identity()));
+		if (payment.getTransactionDate()!=null) {
+			if (instrumentDate.isAfter(payment.getTransactionDate())) {
+				errorMap.put(RECEIPT_CHEQUE_OR_DD_DATE, RECEIPT_CHEQUE_OR_DD_DATE_MESSAGE);
+			}
 
-        for (Payment payment : payments) {
-            if (paymentsById.containsKey(payment.getId())) {
+			Days daysDiff = Days.daysBetween(instrumentDate, new DateTime(payment.getTransactionDate()));
+			if (daysDiff.getDays() > Integer.valueOf(INSTRUMENT_DATE_DAYS)) {
+				errorMap.put("CHEQUE_DD_DATE_WITH_MANUAL_RECEIPT_DATE",
+						CHEQUE_DD_DATE_WITH_MANUAL_RECEIPT_DATE_MESSAGE);
+			}
 
-                Payment paymentFromDb =  paymentsById.get(payment.getId());
+		} else {
+			Days daysDiff = Days.daysBetween(instrumentDate, new DateTime());
+			if (daysDiff.getDays() > Integer.valueOf(INSTRUMENT_DATE_DAYS)) {
+				errorMap.put("CHEQUE_DD_DATE_WITH_RECEIPT_DATE", CHEQUE_DD_DATE_WITH_RECEIPT_DATE_MESSAGE);
+			}
+			if (instrumentDate.isAfter(new DateTime().getMillis())) {
+				errorMap.put("CHEQUE_DD_DATE_WITH_FUTURE_DATE", CHEQUE_DD_DATE_WITH_FUTURE_DATE_MESSAGE);
+			}
+		}
 
-                Map<String,PaymentDetail> billIdToPaymentDetailDB = paymentFromDb.getPaymentDetails().stream().collect(Collectors.toMap(PaymentDetail::getBillId,Function.identity()));
+	}
 
-                paymentFromDb.setAdditionalDetails(jsonMerge(paymentFromDb.getAdditionalDetails(),
-                        payment.getAdditionalDetails()));
+	public List<Payment> validateAndEnrichPaymentsForUpdate(List<Payment> payments, RequestInfo requestInfo) {
 
-                if (paymentFromDb.getPaymentMode().toString().equalsIgnoreCase(InstrumentTypesEnum.CHEQUE.toString())
-                        || paymentFromDb.getPaymentMode().toString().equalsIgnoreCase(InstrumentTypesEnum.DD.toString())){
-                    validateChequeDD(payment, errorMap);
-                }
 
-                for(PaymentDetail paymentDetail : payment.getPaymentDetails()) {
+		
 
-                    Bill bill = paymentDetail.getBill();
+		// Find the payment's tenantId from the incoming list
+		String tenantId = payments.isEmpty() ? null : payments.get(0).getTenantId();
 
-                    Bill billFromDB = billIdToPaymentDetailDB.get(bill.getId()).getBill();
+		Map<String, String> errorMap = new HashMap<>();
 
-                    Map<String,BillDetail> idToBillDetailDBMap = billFromDB.getBillDetails().stream().collect(Collectors.toMap(BillDetail::getId,Function.identity()));
+		List<PaymentEditAudit> paymentEditAudits = new ArrayList<>();
 
-                    if (!isEmpty(bill.getPaidBy()))
-                        billFromDB.setPaidBy(bill.getPaidBy());
+		Set<String> paymentIds = payments.stream().map(Payment::getId).collect(Collectors.toSet());
 
-                    if (!isEmpty(bill.getPayerAddress()))
-                        billFromDB.setPayerAddress(bill.getPayerAddress());
+		List<Payment> paymentsFromDb = paymentRepository.fetchPayments(PaymentSearchCriteria
+				.builder()
+				.ids(paymentIds)
+				.tenantId(tenantId)
+				.offset(0).limit(applicationProperties.getReceiptsSearchDefaultLimit())
+				.instrumentStatus(InstrumentStatusEnum.statusesByCategory(InstrumentStatusEnum.Category.OPEN))
+				.build());
 
-                    if (!isEmpty(bill.getPayerEmail()))
-                        billFromDB.setPayerEmail(bill.getPayerEmail());
+		Map<String, Payment> paymentsById = paymentsFromDb.stream()
+				.collect(Collectors.toMap(Payment::getId, Function.identity()));
 
-                    if (!isEmpty(bill.getPayerName())) {
-                        billFromDB.setPayerName(bill.getPayerName());
-                    }
+		for (Payment payment : payments) {
+			if (paymentsById.containsKey(payment.getId())) {
 
-                    Map<String,BillDetail> idToBillDetailMap = billFromDB.getBillDetails().stream().collect(Collectors.toMap(BillDetail::getId,Function.identity()));
+				Payment paymentFromDb =  paymentsById.get(payment.getId());
+				
+	            boolean isAdmin = isAdminUser(requestInfo);
+	            if (!isAdmin) {
+	                Long transactionDate = paymentFromDb.getTransactionDate();
+	                if (transactionDate != null) {
+	                    LocalDate receiptDate = Instant.ofEpochMilli(transactionDate)
+	                            .atZone(ZoneId.systemDefault())
+	                            .toLocalDate();
+	                    LocalDate today = LocalDate.now();
+	                    if (!receiptDate.equals(today)) {
+	                        errorMap.put("UNAUTHORIZED_EDIT",
+	                                "You can only edit receipts created today. " +
+	                                "Admin role is required to edit older receipts.");
+	                        continue; 
+	                    }
+	                }
+	            }
 
+				Map<String,PaymentDetail> billIdToPaymentDetailDB = paymentFromDb.getPaymentDetails().stream().collect(Collectors.toMap(PaymentDetail::getBillId,Function.identity()));
 
-                    for(BillDetail billDetail : bill.getBillDetails()){
+				String oldPayerName = paymentFromDb.getPayerName();
+				String oldPayerAddress = paymentFromDb.getPayerAddress();
+				String oldWard = getAdditionalDetailField(paymentFromDb.getAdditionalDetails(), "wardNo");
+				String oldNarration = getAdditionalDetailField(paymentFromDb.getAdditionalDetails(), "narration");
 
-                        BillDetail billDetailFromDb = idToBillDetailDBMap.get(billDetail.getId());
+				paymentFromDb.setAdditionalDetails(jsonMerge(paymentFromDb.getAdditionalDetails(),
+						payment.getAdditionalDetails()));
 
-                    if (!StringUtils.isEmpty(billDetail.getVoucherHeader()))
-                        billDetailFromDb.setVoucherHeader(billDetail.getVoucherHeader());
 
-                    billDetailFromDb.setAdditionalDetails(
-                            jsonMerge(billDetailFromDb.getAdditionalDetails(), billDetail.getAdditionalDetails()));
+				// for payername and payerAddress
 
+				if (!isEmpty(payment.getPayerName()))
+					paymentFromDb.setPayerName(payment.getPayerName());
 
+				if (!isEmpty(payment.getPayerAddress()))
+					paymentFromDb.setPayerAddress(payment.getPayerAddress());
 
-                    // If change to manual receipt date or manual receipt number, and instrument is
-                    // Cheque / DD revalidate
-                    
-                    if (!isEmpty(billDetail.getManualReceiptNumber()))
-                        billDetailFromDb.setManualReceiptNumber(billDetail.getManualReceiptNumber());
+				String newWard = getAdditionalDetailField(paymentFromDb.getAdditionalDetails(), "ward");
+				String newNarration = getAdditionalDetailField(paymentFromDb.getAdditionalDetails(), "narration");
 
-                    if (!isNull(billDetail.getManualReceiptDate()) && billDetail.getManualReceiptDate() != 0L)
-                        billDetailFromDb.setManualReceiptDate(billDetail.getManualReceiptDate());
+				String modifiedFields = buildModifiedFieldsDescription(
+						oldPayerName, paymentFromDb.getPayerName(),
+						oldPayerAddress, paymentFromDb.getPayerAddress(),
+						oldWard, newWard,
+						oldNarration, newNarration);
 
-                    // Temporary code block below, to enable backward compatibility with previous
-                    // API
+				/*   if (modifiedFields != null) {
+                    String modifiedBy = requestInfo.getUserInfo() != null
+                            ? requestInfo.getUserInfo().getUuid() : null;
+                    Long modifiedTime = System.currentTimeMillis();*/
 
-                    if (!isEmpty(payment.getInstrumentStatus())
-                            && payment.getInstrumentStatus().toString().equalsIgnoreCase(REMITTED.toString())) {
-                        InstrumentStatusEnum instrumentStatusInDB = paymentFromDb.getInstrumentStatus();
-                        if (!isNull(instrumentStatusInDB) && !instrumentStatusInDB.equals(REMITTED)) {
-                            if (instrumentStatusInDB.isCategory(InstrumentStatusEnum.Category.OPEN)) {
-                                paymentFromDb.setInstrumentStatus(REMITTED);
-                                billDetailFromDb.setVoucherHeader(billDetail.getVoucherHeader());
-                                paymentFromDb.setPaymentStatus(PaymentStatusEnum.DEPOSITED);
-                            } else {
-                                errorMap.put("PAYMENT_WORKFLOW_INVALID_PAYMENT",
-                                        "Payment not found in the system or not in editable state, "
-                                                + payment.getId());
-                            }
-                        }
-                    }
-                }
-            }
-                paymentWorkflowService.updateAuditDetails(paymentFromDb, requestInfo);
+				if (modifiedFields != null) {
+					String modifiedBy = requestInfo.getUserInfo() != null
+							? requestInfo.getUserInfo().getId().toString() : null;
 
-            } else {
-                log.error("Receipt not found with receipt number {} or not in editable status ",
-                        payment.getId());
-                errorMap.put("RECEIPT_UPDATE_NOT_FOUND",
-                        "Receipt not found in the system or not in editable state, " + payment.getId());
-            }
-        }
+					log.info("USER ID = {}", requestInfo.getUserInfo().getId());
+					log.info("USER UUID = {}", requestInfo.getUserInfo().getUuid());
+					log.info("MODIFIED BY = {}", modifiedBy);
 
-        if (!errorMap.isEmpty())
-            throw new CustomException(errorMap);
-        else
-            return paymentsFromDb;
+					Long modifiedTime = System.currentTimeMillis();
 
-    }
+					for (PaymentDetail paymentDetailFromDb : paymentFromDb.getPaymentDetails()) {
+						paymentEditAudits.add(PaymentEditAudit.builder()
+								.id(java.util.UUID.randomUUID().toString())
+								.paymentId(paymentFromDb.getId())
+								.receiptNumber(paymentDetailFromDb.getReceiptNumber())
+								.modifiedFields(modifiedFields)
+								.modifiedBy(modifiedBy)
+								.modifiedTime(modifiedTime)
+								.build());
+					}
+				}
 
+				if (paymentFromDb.getPaymentMode().toString().equalsIgnoreCase(InstrumentTypesEnum.CHEQUE.toString())
+						|| paymentFromDb.getPaymentMode().toString().equalsIgnoreCase(InstrumentTypesEnum.DD.toString())){
+					validateChequeDD(payment, errorMap);
+				}
 
-    /**
-     * Validates the paymentDetail with the bill
-     *
-     * @param paymentMode
-     *            The payment mode
-     * @param paymentDetail
-     *            The payment detail for the bill
-     * @param errorMap
-     *            Error map to catch errors
-     */
-    private void validatePaymentDetailAgainstBill(String paymentMode, PaymentDetail paymentDetail,
-                                                  Map<String, String> errorMap) {
+				for(PaymentDetail paymentDetail : payment.getPaymentDetails()) {
 
-        Bill bill = paymentDetail.getBill();
+					Bill bill = paymentDetail.getBill();
 
-        // If IsAdvanceAllowed is null it is interpretated as not allowed
-        Boolean isAdvanceAllowed = !(bill.getIsAdvanceAllowed() == null || !bill.getIsAdvanceAllowed());
+					Bill billFromDB = billIdToPaymentDetailDB.get(bill.getId()).getBill();
 
-        // Total amount to be paid should be same in bill and paymentDetail
-        if (paymentDetail.getTotalDue().compareTo(bill.getTotalAmount()) != 0)
-            errorMap.put("INVALID_PAYMENTDETAIL",
-                    "The amount to be paid is mismatching with bill for paymentDetial with bill id: " + bill.getId());
+					Map<String,BillDetail> idToBillDetailDBMap = billFromDB.getBillDetails().stream().collect(Collectors.toMap(BillDetail::getId,Function.identity()));
 
+					if (!isEmpty(bill.getPaidBy()))
+						billFromDB.setPaidBy(bill.getPaidBy());
 
-        // If advance is not allowed bill total amount should be positive integer
-        if(!isAdvanceAllowed && !Utils.isPositiveInteger(paymentDetail.getBill().getTotalAmount()))
-            errorMap.put("INVALID_BILL_AMOUNT","The bill amount of bill: "+paymentDetail.getBill().getId()+" is fractional or less than zero");
+					if (!isEmpty(bill.getPayerAddress()))
+						billFromDB.setPayerAddress(bill.getPayerAddress());
 
-        // Amount to be paid should be greater than minimum collection amount
-        if (bill.getMinimumAmountToBePaid() != null
-                && paymentDetail.getTotalAmountPaid().compareTo(bill.getMinimumAmountToBePaid()) == -1)
-            errorMap.put("INVALID_PAYMENTDETAIL",
-                    "The amount to be paid cannot be less than minimum amount to be paid");
+					if (!isEmpty(bill.getPayerEmail()))
+						billFromDB.setPayerEmail(bill.getPayerEmail());
 
-        // In case of partial payment checks if it is allowed in bill
-        if ((bill.getPartPaymentAllowed() == null || !bill.getPartPaymentAllowed())
-                && paymentDetail.getTotalAmountPaid().compareTo(bill.getTotalAmount()) == -1)
-            errorMap.put("INVALID_PAYMENTDETAIL", "The amount to be paid is less than amount due");
+					if (!isEmpty(bill.getPayerName())) {
+						billFromDB.setPayerName(bill.getPayerName());
+					}
 
-        // In case of advance payment checks if it is allowed in bill
-        if ((bill.getIsAdvanceAllowed() == null || !bill.getIsAdvanceAllowed())
-                && paymentDetail.getTotalAmountPaid().compareTo(bill.getTotalAmount()) == 1)
-            errorMap.put("INVALID_PAYMENTDETAIL", "The amount to be paid is more than amount due");
+					Map<String,BillDetail> idToBillDetailMap = billFromDB.getBillDetails().stream().collect(Collectors.toMap(BillDetail::getId,Function.identity()));
 
-        // Checks if the payment mode is allowed by the bill
-        if (!CollectionUtils.isEmpty(bill.getCollectionModesNotAllowed())
-                && bill.getCollectionModesNotAllowed().contains(paymentMode))
-            errorMap.put("INVALID_PAYMENTDETAIL",
-                    "The paymentMode: " + paymentMode + " is not allowed for the bill: " + bill.getId());
 
-        // Checks if the amount paid is positive integer
-        if (!Utils.isPositiveInteger(paymentDetail.getTotalAmountPaid()))
-            errorMap.put("INVALID_PAYMENTDETAIL",
-                    "The amount paid for the paymentDetail with bill number: " + paymentDetail.getBillId());
+					for(BillDetail billDetail : bill.getBillDetails()){
 
-        // Zero amount payment is allowed only if bill amount is not positive
-        if (paymentDetail.getTotalAmountPaid().compareTo(BigDecimal.ZERO) == 0
-                && bill.getTotalAmount().compareTo(BigDecimal.ZERO) > 0)
-            errorMap.put("INVALID_PAYMENTDETAIL",
-                    "The amount paid for the paymentDetail with bill number: " + paymentDetail.getBillId());
+						BillDetail billDetailFromDb = idToBillDetailDBMap.get(billDetail.getId());
 
-        // Checks if the amount to be paid is fractional
-        if ((bill.getTotalAmount().remainder(BigDecimal.ONE)).doubleValue() != 0)
-            errorMap.put("INVALID_BILL", "The due amount cannot be fractional");
+						if (!StringUtils.isEmpty(billDetail.getVoucherHeader()))
+							billDetailFromDb.setVoucherHeader(billDetail.getVoucherHeader());
 
-        // Checks if the amount paid is fractional
-        if ((paymentDetail.getTotalAmountPaid().remainder(BigDecimal.ONE)).doubleValue() != 0)
-            errorMap.put("INVALID_PAYMENTDETAIL", "The amount paid cannot be fractional");
+						billDetailFromDb.setAdditionalDetails(
+								jsonMerge(billDetailFromDb.getAdditionalDetails(), billDetail.getAdditionalDetails()));
 
-        // Checks if the bill is expired
-        bill.getBillDetails().forEach(billDetail -> {
-            if (isNull(billDetail.getExpiryDate()) || System.currentTimeMillis() >= billDetail.getExpiryDate()) {
-                errorMap.put("BILL_EXPIRED", "Bill expired or invalid, regenerate bill!");
-            }
-        });
 
-    }
 
-    /**
-     * method to validate and update search request information based on APP configs
-     * checks for requestInfo
-     * verifies if requester is citizen and validates the module-name path for employee
-     * adds default status and module-name to criteria if applicable
-     * 
-     * @param paymentSearchCriteria
-     * @param requestInfo
-     * @param moduleName
-     */
-    public void validateAndUpdateSearchRequestFromConfig(PaymentSearchCriteria paymentSearchCriteria, RequestInfo requestInfo, String moduleName) {
-    	
-    	Map<String, String> errorMap = new HashMap<>();
-    	//validateUserInfo(requestInfo, errorMap);
-        if (!errorMap.isEmpty())
-            throw new CustomException(errorMap);
-        
-        Boolean isRequesterEmployee=false;
-        if(requestInfo.getUserInfo()!=null)
-        	isRequesterEmployee = requestInfo.getUserInfo().getType()
-				.equalsIgnoreCase(CollectionServiceConstants.EMPLOYEE_TYPE);
+						// If change to manual receipt date or manual receipt number, and instrument is
+						// Cheque / DD revalidate
+
+						if (!isEmpty(billDetail.getManualReceiptNumber()))
+							billDetailFromDb.setManualReceiptNumber(billDetail.getManualReceiptNumber());
+
+						if (!isNull(billDetail.getManualReceiptDate()) && billDetail.getManualReceiptDate() != 0L)
+							billDetailFromDb.setManualReceiptDate(billDetail.getManualReceiptDate());
+
+						// Temporary code block below, to enable backward compatibility with previous
+						// API
+
+						if (!isEmpty(payment.getInstrumentStatus())
+								&& payment.getInstrumentStatus().toString().equalsIgnoreCase(REMITTED.toString())) {
+							InstrumentStatusEnum instrumentStatusInDB = paymentFromDb.getInstrumentStatus();
+							if (!isNull(instrumentStatusInDB) && !instrumentStatusInDB.equals(REMITTED)) {
+								if (instrumentStatusInDB.isCategory(InstrumentStatusEnum.Category.OPEN)) {
+									paymentFromDb.setInstrumentStatus(REMITTED);
+									billDetailFromDb.setVoucherHeader(billDetail.getVoucherHeader());
+									paymentFromDb.setPaymentStatus(PaymentStatusEnum.DEPOSITED);
+								} else {
+									errorMap.put("PAYMENT_WORKFLOW_INVALID_PAYMENT",
+											"Payment not found in the system or not in editable state, "
+													+ payment.getId());
+								}
+							}
+						}
+					}
+				}
+				paymentWorkflowService.updateAuditDetails(paymentFromDb, requestInfo);
+
+			} else {
+				log.error("Receipt not found with receipt number {} or not in editable status ",
+						payment.getId());
+				errorMap.put("RECEIPT_UPDATE_NOT_FOUND",
+						"Receipt not found in the system or not in editable state, " + payment.getId());
+			}
+		}
+
+		if (!errorMap.isEmpty())
+			//            throw new CustomException(errorMap);
+			//        else
+			throw new CustomException(errorMap);
+
+		if (!paymentEditAudits.isEmpty())
+			paymentRepository.saveEditAudit(paymentEditAudits);
+
+		return paymentsFromDb;
+
+	}
+
+	// the helper methods
+	private String getAdditionalDetailField(JsonNode additionalDetails, String fieldName) {
+		if (isNull(additionalDetails) || additionalDetails.isNull() || !additionalDetails.has(fieldName))
+			return null;
+
+		JsonNode fieldNode = additionalDetails.get(fieldName);
+		return (isNull(fieldNode) || fieldNode.isNull()) ? null : fieldNode.asText();
+	}
+
+	//    private String buildModifiedFieldsDescription(String oldPayerName, String newPayerName,
+	//                                                    String oldPayerAddress, String newPayerAddress,
+	//                                                    String oldWard, String newWard,
+	//                                                    String oldNarration, String newNarration) {
+	//        StringBuilder sb = new StringBuilder();
+	//        appendFieldChangeIfAny(sb, "payerName", oldPayerName, newPayerName);
+	//        appendFieldChangeIfAny(sb, "payerAddress", oldPayerAddress, newPayerAddress);
+	//        appendFieldChangeIfAny(sb, "ward", oldWard, newWard);
+	//        appendFieldChangeIfAny(sb, "narration", oldNarration, newNarration);
+	//        return sb.length() == 0 ? null : sb.toString();
+	//    }
+	//
+	//    private void appendFieldChangeIfAny(StringBuilder sb, String fieldName, String oldValue, String newValue) {
+	//        boolean changed = oldValue == null ? newValue != null : !oldValue.equals(newValue);
+	//        if (!changed)
+	//            return;
+	//        if (sb.length() > 0)
+	//            sb.append("; ");
+	//        sb.append(fieldName).append(" changed from '").append(oldValue == null ? "" : oldValue)
+	//                .append("' to '").append(newValue == null ? "" : newValue).append("'");
+	//    }
+
+	private String buildModifiedFieldsDescription(String oldPayerName, String newPayerName,
+			String oldPayerAddress, String newPayerAddress,
+			String oldWard, String newWard,
+			String oldNarration, String newNarration) {
+		ObjectMapper mapper = new ObjectMapper();
+		com.fasterxml.jackson.databind.node.ArrayNode changesArray = mapper.createArrayNode();
+
+		appendFieldChangeIfAny(changesArray, "payerName", oldPayerName, newPayerName);
+		appendFieldChangeIfAny(changesArray, "payerAddress", oldPayerAddress, newPayerAddress);
+		appendFieldChangeIfAny(changesArray, "ward", oldWard, newWard);
+		appendFieldChangeIfAny(changesArray, "narration", oldNarration, newNarration);
+
+		if (changesArray.isEmpty()) return null;
+
+		try {
+			return mapper.writeValueAsString(changesArray);
+		} catch (JsonProcessingException e) {
+			log.error("Error serializing modified fields to JSON", e);
+			return null;
+		}
+	}
+
+	private void appendFieldChangeIfAny(com.fasterxml.jackson.databind.node.ArrayNode arrayNode,
+			String fieldName, String oldValue, String newValue) {
+		boolean changed = oldValue == null ? newValue != null : !oldValue.equals(newValue);
+		if (!changed) return;
+
+		ObjectMapper mapper = new ObjectMapper();
+		com.fasterxml.jackson.databind.node.ObjectNode changeNode = mapper.createObjectNode();
+		changeNode.put("field", fieldName);
+		changeNode.put("oldValue", oldValue == null ? "" : oldValue);
+		changeNode.put("newValue", newValue == null ? "" : newValue);
+		arrayNode.add(changeNode);
+	}
+
+
+	/**
+	 * Validates the paymentDetail with the bill
+	 *
+	 * @param paymentMode
+	 *            The payment mode
+	 * @param paymentDetail
+	 *            The payment detail for the bill
+	 * @param errorMap
+	 *            Error map to catch errors
+	 */
+	private void validatePaymentDetailAgainstBill(String paymentMode, PaymentDetail paymentDetail,
+			Map<String, String> errorMap) {
+
+		Bill bill = paymentDetail.getBill();
+
+		// If IsAdvanceAllowed is null it is interpretated as not allowed
+		Boolean isAdvanceAllowed = !(bill.getIsAdvanceAllowed() == null || !bill.getIsAdvanceAllowed());
+
+		// Total amount to be paid should be same in bill and paymentDetail
+		if (paymentDetail.getTotalDue().compareTo(bill.getTotalAmount()) != 0)
+			errorMap.put("INVALID_PAYMENTDETAIL",
+					"The amount to be paid is mismatching with bill for paymentDetial with bill id: " + bill.getId());
+
+
+		// If advance is not allowed bill total amount should be positive integer
+		if(!isAdvanceAllowed && !Utils.isPositiveInteger(paymentDetail.getBill().getTotalAmount()))
+			errorMap.put("INVALID_BILL_AMOUNT","The bill amount of bill: "+paymentDetail.getBill().getId()+" is fractional or less than zero");
+
+		// Amount to be paid should be greater than minimum collection amount
+		if (bill.getMinimumAmountToBePaid() != null
+				&& paymentDetail.getTotalAmountPaid().compareTo(bill.getMinimumAmountToBePaid()) == -1)
+			errorMap.put("INVALID_PAYMENTDETAIL",
+					"The amount to be paid cannot be less than minimum amount to be paid");
+
+		// In case of partial payment checks if it is allowed in bill
+		if ((bill.getPartPaymentAllowed() == null || !bill.getPartPaymentAllowed())
+				&& paymentDetail.getTotalAmountPaid().compareTo(bill.getTotalAmount()) == -1)
+			errorMap.put("INVALID_PAYMENTDETAIL", "The amount to be paid is less than amount due");
+
+		// In case of advance payment checks if it is allowed in bill
+		if ((bill.getIsAdvanceAllowed() == null || !bill.getIsAdvanceAllowed())
+				&& paymentDetail.getTotalAmountPaid().compareTo(bill.getTotalAmount()) == 1)
+			errorMap.put("INVALID_PAYMENTDETAIL", "The amount to be paid is more than amount due");
+
+		// Checks if the payment mode is allowed by the bill
+		if (!CollectionUtils.isEmpty(bill.getCollectionModesNotAllowed())
+				&& bill.getCollectionModesNotAllowed().contains(paymentMode))
+			errorMap.put("INVALID_PAYMENTDETAIL",
+					"The paymentMode: " + paymentMode + " is not allowed for the bill: " + bill.getId());
+
+		// Checks if the amount paid is positive integer
+		if (!Utils.isPositiveInteger(paymentDetail.getTotalAmountPaid()))
+			errorMap.put("INVALID_PAYMENTDETAIL",
+					"The amount paid for the paymentDetail with bill number: " + paymentDetail.getBillId());
+
+		// Zero amount payment is allowed only if bill amount is not positive
+		if (paymentDetail.getTotalAmountPaid().compareTo(BigDecimal.ZERO) == 0
+				&& bill.getTotalAmount().compareTo(BigDecimal.ZERO) > 0)
+			errorMap.put("INVALID_PAYMENTDETAIL",
+					"The amount paid for the paymentDetail with bill number: " + paymentDetail.getBillId());
+
+		// Checks if the amount to be paid is fractional
+		if ((bill.getTotalAmount().remainder(BigDecimal.ONE)).doubleValue() != 0)
+			errorMap.put("INVALID_BILL", "The due amount cannot be fractional");
+
+		// Checks if the amount paid is fractional
+		if ((paymentDetail.getTotalAmountPaid().remainder(BigDecimal.ONE)).doubleValue() != 0)
+			errorMap.put("INVALID_PAYMENTDETAIL", "The amount paid cannot be fractional");
+
+		// Checks if the bill is expired
+		bill.getBillDetails().forEach(billDetail -> {
+			if (isNull(billDetail.getExpiryDate()) || System.currentTimeMillis() >= billDetail.getExpiryDate()) {
+				errorMap.put("BILL_EXPIRED", "Bill expired or invalid, regenerate bill!");
+			}
+		});
+
+	}
+
+	/**
+	 * method to validate and update search request information based on APP configs
+	 * checks for requestInfo
+	 * verifies if requester is citizen and validates the module-name path for employee
+	 * adds default status and module-name to criteria if applicable
+	 * 
+	 * @param paymentSearchCriteria
+	 * @param requestInfo
+	 * @param moduleName
+	 */
+	public void validateAndUpdateSearchRequestFromConfig(PaymentSearchCriteria paymentSearchCriteria, RequestInfo requestInfo, String moduleName) {
+
+		Map<String, String> errorMap = new HashMap<>();
+		validateUserInfo(requestInfo, errorMap);
+		if (!errorMap.isEmpty())
+			throw new CustomException(errorMap);
+
+		Boolean isRequesterEmployee=false;
+		if(requestInfo.getUserInfo()!=null)
+			isRequesterEmployee = requestInfo.getUserInfo().getType()
+			.equalsIgnoreCase(CollectionServiceConstants.EMPLOYEE_TYPE);
 		if (isRequesterEmployee && applicationProperties.getIsModuleNameMandatoryInSearchUriForEmployee()
 				&& null == moduleName)
 			throw new CustomException("EGCL_URI_EXCEPTION", "Path variable module name is mandatory for employees");
@@ -474,7 +625,7 @@ public class PaymentValidator {
 			}
 			paymentSearchCriteria.setStatus(defaultStatus);
 		}
-        
+
 		if (null != moduleName) {
 
 			if (CollectionUtils.isEmpty(paymentSearchCriteria.getBusinessServices())) {
@@ -483,9 +634,9 @@ public class PaymentValidator {
 				paymentSearchCriteria.getBusinessServices().add(moduleName);
 			}
 		}
-    }
-    
-    /***
+	}
+
+	/***
 	 * This method will validate the ifsc code and fetch the bank details and add
 	 * those details in payment additionaldetails
 	 * 
@@ -504,11 +655,11 @@ public class PaymentValidator {
 			if (objectNode == null) {
 				ObjectMapper mapper = new ObjectMapper();
 				objectNode = mapper.createObjectNode();
-				
-					try {
-						razorPayIfscSearchResponse = mapper.readTree(response);
-					} catch (JsonProcessingException e) {
-						throw new CustomException("INVALID_PROCESS_EXCEPTION", e.getMessage());
+
+				try {
+					razorPayIfscSearchResponse = mapper.readTree(response);
+				} catch (JsonProcessingException e) {
+					throw new CustomException("INVALID_PROCESS_EXCEPTION", e.getMessage());
 
 				} 
 				objectNode.set("bankDetails", razorPayIfscSearchResponse);
@@ -517,6 +668,20 @@ public class PaymentValidator {
 
 		}
 
+	}
+	
+	private boolean isAdminUser(RequestInfo requestInfo) {
+	    if (requestInfo == null || requestInfo.getUserInfo() == null)
+	        return false;
+
+	    // Check if user has ADMIN or SUPERUSER role
+	    if (requestInfo.getUserInfo().getRoles() != null) {
+	        return requestInfo.getUserInfo().getRoles().stream()
+	                .anyMatch(role -> role.getCode() != null &&
+	                        (role.getCode().equalsIgnoreCase("EDIT_RECEIPT_ADMIN") ||
+	                         role.getCode().equalsIgnoreCase("EDIT_RECEIPT_USER")));
+	    }
+	    return false;
 	}
 
 }

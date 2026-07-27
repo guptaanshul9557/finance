@@ -50,6 +50,7 @@ $(document).ready(function(){
 		var dishonorReason = $("#dishonorReasonId").val();
 		var remarks = $("#remarks").val();
 		var dishonorDate = $("#dishonorDateId").val();
+		var userInfo = JSON.parse(localStorage.getItem('user-info'));
 
 		if(!dishonorDate){
 			bootbox.alert('Please Enter Receipt Cancel Date!');
@@ -61,6 +62,22 @@ $(document).ready(function(){
 			bootbox.alert('Please Enter the Remarks!');
 			return false;
 		}
+	
+		
+		var isUcAdmin = userInfo && Array.isArray(userInfo.roles) &&
+				userInfo.roles.some(function(role) {
+					return role.code === 'EGF_RECEIPT_CANCEL_CHEQUE_DISHONOR';
+				});
+		
+		var receiptDateFormatted = $("#receiptDateId").val();
+						
+		if (!isUcAdmin && receiptDateFormatted) {
+			if (!isToday(receiptDateFormatted)) {
+				bootbox.alert('You cannot cancel past receipts. Contact your admin.');
+				return false;
+			}
+		}
+		
 		$("#receiptDateId").inputmask("remove"); 
 		var receiptDate = $("#receiptDateId").val();
 
@@ -306,10 +323,22 @@ function decimalvalue(obj){
 }
 
 function receiptNoValue(obj){
-	var regexp_decimalvalue = /[^0-9.\/-]/g ;
-	if(jQuery(obj).val().match(regexp_decimalvalue)){
-		jQuery(obj).val( jQuery(obj).val().replace(regexp_decimalvalue,'') );
-	}
+    var regexp_receiptvalue = /[^a-zA-Z0-9.\/-]/g;
+    if(jQuery(obj).val().match(regexp_receiptvalue)){
+        jQuery(obj).val( jQuery(obj).val().replace(regexp_receiptvalue,'') );
+    }
+}
+
+function isToday(dateStr) {
+	var parts = dateStr.split('/'); 
+	if (parts.length !== 3) return false;
+
+	var inputDate = new Date(parts[2], parts[1] - 1, parts[0]);
+	var today = new Date();
+
+	return inputDate.getFullYear() === today.getFullYear() &&
+		inputDate.getMonth() === today.getMonth() &&
+		inputDate.getDate() === today.getDate();
 }
 
 function loadBankAccount() {

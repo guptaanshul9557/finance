@@ -1,8 +1,11 @@
 {
+  "requestInfo": {},
   "otp": {
     "mobileNumber": "",
+    "userName":"",
+    "password":"",
     "tenantId": "",
-    "type": "unknown",
-    "userType": "CITIZEN"
+    "type": "",
+    "userType": ""  
   }
 }

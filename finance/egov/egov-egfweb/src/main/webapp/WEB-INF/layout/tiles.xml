@@ -264,6 +264,31 @@
                        cascade="true"/>
         <put-attribute name="body" value="/WEB-INF/views/fund/fund-new.jsp"/>
     </definition>
+     <definition name="utcertificate-new" extends="base_layout">
+        <put-attribute name="page-title" value="title.utcertificate.new"
+                       cascade="true"/>
+        <put-attribute name="body" value="/WEB-INF/views/utcertificate/utcertificate-new.jsp"/>
+    </definition>
+    <definition name="utcertificate-result" extends="base_layout">
+        <put-attribute name="page-title" value="title.utcertificate.new"
+                       cascade="true"/>
+        <put-attribute name="body" value="/WEB-INF/views/utcertificate/utcertificate-result.jsp"/>
+    </definition>
+     <definition name="utcertificate-view" extends="base_layout">
+        <put-attribute name="page-title" value="title.utcertificate.new"
+                       cascade="true"/>
+        <put-attribute name="body" value="/WEB-INF/views/utcertificate/utcertificate-view.jsp"/>
+    </definition>
+     <definition name="utcertificate-edit" extends="base_layout">
+        <put-attribute name="page-title" value="title.utcertificate.new"
+                       cascade="true"/>
+        <put-attribute name="body" value="/WEB-INF/views/utcertificate/utcertificate-edit.jsp"/>
+    </definition>
+     <definition name="utcertificate-search" extends="base_layout">
+        <put-attribute name="page-title" value="title.utcertificate.new"
+                       cascade="true"/>
+        <put-attribute name="body" value="/WEB-INF/views/utcertificate/utcertificate-search.jsp"/>
+    </definition>
     <definition name="fund-view" extends="base_layout">
         <put-attribute name="page-title" value="title.fund.new"
                        cascade="true"/>

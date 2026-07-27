@@ -4,9 +4,10 @@ import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 import org.egov.domain.exception.InvalidOtpRequestException;
 
-import static org.springframework.util.StringUtils.isEmpty;
+import static org.springframework.util.ObjectUtils.isEmpty;
 
 @Getter
+@Data
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode
@@ -14,16 +15,17 @@ import static org.springframework.util.StringUtils.isEmpty;
 public class OtpRequest {
 	@Setter
     private String mobileNumber;
+	private String userName;
+	private String password;
     private String tenantId;
     private OtpRequestType type;
     private String userType;
 
     public void validate() {
         if(isTenantIdAbsent()
-				|| isMobileNumberAbsent()
+				
 				|| isInvalidType()
-				|| isMobileNumberNumeric()
-				|| isMobileNumberValidLength()) {
+				) {
             throw new InvalidOtpRequestException(this);
         }
     }
@@ -49,7 +51,7 @@ public class OtpRequest {
 	public boolean isLoginRequestType() {
     	return OtpRequestType.LOGIN.equals(getType());
 	}
-
+	
 	public boolean isInvalidType() {
     	return isEmpty(type);
 	}

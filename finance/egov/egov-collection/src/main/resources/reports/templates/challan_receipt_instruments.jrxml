@@ -53,9 +53,9 @@
 				<textFieldExpression><![CDATA[$F{instrumentType}.equals(CollectionConstants.INSTRUMENTTYPE_CASH) 
     ? "Received a sum of Rs. " + ($P{TOTAL_AMOUNT}.setScale(2, java.math.RoundingMode.UP)) + " (" + ReportUtil.amountInWords($F{instrumentAmount} == null ? BigDecimal.ZERO : $F{instrumentAmount}) + ") through cash" 
     : $F{instrumentType}.equals(CollectionConstants.INSTRUMENTTYPE_CHEQUE) 
-        ? "Reference Number: " + $F{instrumentNumber} + ", Dated " + new SimpleDateFormat("dd-MM-yyyy").format($F{instrumentDate})
+        ? "Cheque Number: " + $F{instrumentNumber} + ", Dated " + new SimpleDateFormat("dd-MM-yyyy").format($F{instrumentDate})
         : $F{instrumentType}.equals(CollectionConstants.INSTRUMENTTYPE_DD) 
-            ?"Reference Number: " + $F{instrumentNumber} + ", Dated " + new SimpleDateFormat("dd-MM-yyyy").format($F{instrumentDate})  
+            ?"DD Number: " + $F{instrumentNumber} + ", Dated " + new SimpleDateFormat("dd-MM-yyyy").format($F{instrumentDate})  
             : "Transaction Number: " + $F{instrumentNumber} + ", Payment Dated: " + new SimpleDateFormat("dd-MM-yyyy").format($F{instrumentDate})]]></textFieldExpression>
 			</textField>
 		</band>

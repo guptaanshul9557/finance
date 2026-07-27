@@ -1,0 +1,25 @@
+# Cube.js backend
+FROM node:18-slim
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy server files and table configs
+COPY server ./server
+COPY schema ./schema
+COPY cube.js ./
+
+# Generate schemas from tableConfigs.js before starting
+# This allows easy schema management via JSON configuration
+RUN node server/schemaGenerator.js || echo "Schema generation completed"
+
+# Expose Cube.js port
+EXPOSE 4000
+
+# Run Cube.js server
+CMD ["node", "server/cube-server.js"]

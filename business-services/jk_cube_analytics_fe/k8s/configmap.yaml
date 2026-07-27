@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: synmetrix-config
+data:
+  # Database configuration
+  DB_HOST: "192.168.0.132"
+  DB_PORT: "5444"
+  DB_NAME: "digit"
+  DB_USER: "sinjini"
+  DB_SCHEMA: "coll_kmc1_data"
+  
+  # Cube.js configuration
+  CUBEJS_DB_HOST: "192.168.0.132"
+  CUBEJS_DB_PORT: "5444"
+  CUBEJS_DB_NAME: "digit"
+  CUBEJS_DB_USER: "sinjini"
+  CUBEJS_DB_SCHEMA: "coll_kmc1_data"
+  CUBEJS_DB_TYPE: "postgres"
+  
+  # Cube.js API URL (will be updated after service creation)
+  REACT_APP_CUBEJS_API_URL: "http://cubejs-service:4000"

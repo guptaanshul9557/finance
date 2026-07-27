@@ -48,6 +48,7 @@ import org.egov.receipt.custom.exception.VoucherCustomException;
 import org.egov.reciept.consumer.config.PropertiesManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.egov.common.contract.request.User;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

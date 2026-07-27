@@ -59,7 +59,7 @@
 .position_alert {
 	position: fixed;
 	z-index: 9999;
-	top: 85px;
+	top: 25px;
 	right: 20px;
 	background: #F2DEDE;
 	padding: 10px 20px;
@@ -69,7 +69,7 @@
 .position_alert1 {
 	position: fixed;
 	z-index: 9999;
-	top: 85px;
+	top: 25px;
 	right: 520px;
 	background: #F2DEDE;
 	padding: 10px 20px;
@@ -79,7 +79,7 @@
 .position_alert2 {
 	position: fixed;
 	z-index: 9999;
-	top: 85px;
+	top: 25px;
 	right: 270px;
 	background: #F2DEDE;
 	padding: 10px 20px;
@@ -221,6 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			<h2>
 				Housing and Urban Development<br />Department
 			</h2>
+			<h2>${ulbName}</h2>
 		</div>
 
 	</div>

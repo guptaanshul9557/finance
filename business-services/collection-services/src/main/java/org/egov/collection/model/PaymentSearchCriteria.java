@@ -1,9 +1,11 @@
 package org.egov.collection.model;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotNull;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +20,9 @@ import lombok.NoArgsConstructor;
 public class PaymentSearchCriteria {
 
 
-    private Set<String> ids;
+    
+
+	private Set<String> ids;
 
     private Set<String> billIds;
 
@@ -56,5 +60,10 @@ public class PaymentSearchCriteria {
     
     @Default
     private Boolean isCountRequest = false;
+    
+    @Default
+    private Boolean isReport = false;
+    
+    
 
 }

@@ -179,6 +179,7 @@ public class PaymentWorkflowService {
         Set<String> paymentModes = new HashSet<>();
         paymentModes.add(PaymentModeEnum.CHEQUE.toString());
         paymentModes.add(PaymentModeEnum.DD.toString());
+        paymentModes.add(PaymentModeEnum.CASH.toString());
 
         PaymentSearchCriteria paymentSearchCriteria = PaymentSearchCriteria
                 .builder()

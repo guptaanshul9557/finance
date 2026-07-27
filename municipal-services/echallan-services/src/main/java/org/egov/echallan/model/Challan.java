@@ -146,4 +146,12 @@ public class Challan {
 
   @JsonProperty("receiptNumber")
     private String receiptNumber = null;
+
+    @JsonProperty("custId")
+    @SafeHtml
+    private String custId = null;
+
+    @JsonProperty("ddnNumber")
+    @SafeHtml
+    private String ddnNumber = null;
 }

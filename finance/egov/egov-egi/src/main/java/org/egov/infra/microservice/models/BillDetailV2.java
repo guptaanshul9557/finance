@@ -55,6 +55,8 @@ import java.util.List;
 import javax.validation.constraints.NotNull;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -83,14 +85,17 @@ public class BillDetailV2 {
 
     @SafeHtml
     @JsonProperty("tenantId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId = null;
 
     @SafeHtml
     @JsonProperty("demandId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String demandId = null;
 
     @SafeHtml
     @JsonProperty("billId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String billId = null;
 
     
@@ -114,18 +119,22 @@ public class BillDetailV2 {
 
     @SafeHtml
     @JsonProperty("channel")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String channel = null;
 
     @SafeHtml
     @JsonProperty("voucherHeader")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String voucherHeader = null;
 
     @SafeHtml
     @JsonProperty("boundary")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String boundary = null;
 
     @SafeHtml
     @JsonProperty("manualReceiptNumber")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String manualReceiptNumber = null;
 
     @JsonProperty("manualReceiptDate")
@@ -142,6 +151,7 @@ public class BillDetailV2 {
     private AuditDetails auditDetails = null;
 
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String billDescription;
 
     @NotNull
@@ -149,6 +159,7 @@ public class BillDetailV2 {
     private Long expiryDate;
 
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String displayMessage;
 
     private Boolean callBackForApportioning;

@@ -34,16 +34,19 @@ public class OtpService {
 
     public void sendOtp(OtpRequest otpRequest) {
         otpRequest.validate();
-        if (otpRequest.isRegistrationRequestType() || otpRequest.isLoginRequestType()) {
+        if (otpRequest.isRegistrationRequestType()) {
             sendOtpForUserRegistration(otpRequest);
-        } else {
+        } 
+        else if (otpRequest.isLoginRequestType())
+            sendOtpForUserLogin(otpRequest);
+        else {
             sendOtpForPasswordReset(otpRequest);
         }
     }
 
     private void sendOtpForUserRegistration(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getMobileNumber(), otpRequest.getTenantId(),
-                otpRequest.getUserType());
+                otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword());
 
         if (otpRequest.isRegistrationRequestType() && null != matchingUser)
             throw new UserAlreadyExistInSystemException();
@@ -54,9 +57,30 @@ public class OtpService {
         otpSMSSender.send(otpRequest, otpNumber);
     }
 
+     private void sendOtpForUserLogin(OtpRequest otpRequest) {
+        User matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
+                otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword());
+// if(matchingUser==null )  
+// {
+//             log.info("fetching user without password");
+
+//     matchingUser = userRepository.fetchUser(otpRequest.getUserName(), otpRequest.getTenantId(),
+//                 otpRequest.getUserType(),otpRequest.getType().toString(),null);
+// } 
+        if (otpRequest.isRegistrationRequestType() && null != matchingUser)
+            throw new UserAlreadyExistInSystemException();
+        else if (otpRequest.isLoginRequestType() && null == matchingUser)
+            throw new UserNotExistingInSystemException();
+
+        if((otpRequest.getMobileNumber() == null || otpRequest.getMobileNumber().isEmpty() ) && matchingUser!=null)
+            otpRequest.setMobileNumber(matchingUser.getMobileNumber());
+        final String otpNumber = otpRepository.fetchOtp(otpRequest);
+        otpSMSSender.send(otpRequest, otpNumber);
+    }
+
     private void sendOtpForPasswordReset(OtpRequest otpRequest) {
         final User matchingUser = userRepository.fetchUser(otpRequest.getMobileNumber(), otpRequest.getTenantId(),
-                otpRequest.getUserType());
+                otpRequest.getUserType(),otpRequest.getType().toString(),otpRequest.getPassword() );
         if (null == matchingUser) {
             throw new UserNotFoundException();
         }

@@ -52,6 +52,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.egov.commons.utils.CommonsConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
+
 public class Scheme implements java.io.Serializable {
 
 	private static final long serialVersionUID = 825465695975976653L;
@@ -59,9 +62,11 @@ public class Scheme implements java.io.Serializable {
 	private Integer id;
 
 	private Fund fund;
-
+    
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String code;
 
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	private Date validfrom;
@@ -69,7 +74,8 @@ public class Scheme implements java.io.Serializable {
 	private Date validto;
 
 	private Boolean isactive = false;
-
+    
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
 	private String description;
 
 	private BigDecimal sectorid;

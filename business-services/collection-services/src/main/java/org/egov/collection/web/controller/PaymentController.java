@@ -45,7 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 
 import org.egov.collection.model.Payment;
 import org.egov.collection.model.PaymentRequest;
@@ -95,18 +95,12 @@ public class PaymentController {
     public ResponseEntity<?> search(@ModelAttribute PaymentSearchCriteria paymentSearchCriteria,
                                              @RequestBody @Valid final RequestInfoWrapper requestInfoWrapper,
                                              @PathVariable @Nullable String moduleName) {
-
+    	Long count=0L;
 		final RequestInfo requestInfo = requestInfoWrapper.getRequestInfo();
 		if (paymentSearchCriteria.getIsCountRequest()) {
 
-			if (CollectionUtils.isEmpty(paymentSearchCriteria.getBusinessServices())
-					|| StringUtils.isEmpty(paymentSearchCriteria.getTenantId())) {
-				throw new CustomException("EGCL_PAYMENT_COUNT_ERROR",
-						"both of tenantid and businessServices is mandatory for count search");
-			}
+			count=paymentService.getPaymentCounts(requestInfo, paymentSearchCriteria, moduleName);
 
-			Long count = paymentService.getpaymentcountForBusiness(paymentSearchCriteria.getTenantId(),
-					paymentSearchCriteria.getBusinessServices().iterator().next());
 			ResponseInfo responseInfo = ResponseInfoFactory.createResponseInfoFromRequestInfo(requestInfo, true);
 			responseInfo.setStatus(HttpStatus.OK.toString());
 			
@@ -115,7 +109,11 @@ public class PaymentController {
 			responseMap.put("ResponseInfo", responseInfo);
 			
 			return new ResponseEntity<>(responseMap, HttpStatus.OK);
-		} else {
+		} else if(paymentSearchCriteria.getIsReport()) {
+						
+			List<Payment> payments =paymentService.getPaymentReport(requestInfo, paymentSearchCriteria, moduleName);
+			return getSuccessResponse(payments, requestInfo);
+		}else {
 			List<Payment> payments = paymentService.getPayments(requestInfo, paymentSearchCriteria, moduleName);
 			return getSuccessResponse(payments, requestInfo);
 		}
@@ -139,12 +137,12 @@ public class PaymentController {
         return getSuccessResponse(payments, receiptWorkflowRequest.getRequestInfo());
     }
 
-//    @RequestMapping(value = "/_update", method = RequestMethod.POST)
-//    @ResponseBody
-//    public ResponseEntity<?> update(@RequestBody @Valid PaymentRequest paymentRequest) {
-//        List<Payment> payments = paymentService.updatePayment(paymentRequest);
-//        return getSuccessResponse(payments, paymentRequest.getRequestInfo());
-//    }
+    @RequestMapping(value = "/_update", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<?> update(@RequestBody @Valid PaymentRequest paymentRequest) {
+        List<Payment> payments = paymentService.updatePayment(paymentRequest);
+        return getSuccessResponse(payments, paymentRequest.getRequestInfo());
+    }
 
     @RequestMapping(value = "/_validate", method = RequestMethod.POST)
     @ResponseBody

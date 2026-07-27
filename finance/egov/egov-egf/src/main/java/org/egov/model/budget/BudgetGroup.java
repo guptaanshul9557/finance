@@ -49,10 +49,12 @@ package org.egov.model.budget;
 
 import org.egov.commons.CChartOfAccounts;
 import org.egov.infra.persistence.entity.AbstractAuditable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Required;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.egov.utils.BudgetAccountType;
 import org.egov.utils.BudgetingType;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
 
@@ -68,6 +70,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 
 import static org.egov.model.budget.BudgetGroup.SEQ_BUDGETGROUP;
 
@@ -85,18 +88,22 @@ public class BudgetGroup extends AbstractAuditable {
     @SafeHtml
     @Required(message = "Name should not be empty")
     @Length(max = 250)
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String name;
 
     @SafeHtml
     @Length(max = 250, message = "Max 250 characters are allowed for description")
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in description")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "majorcode")
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in majorCode")
     private CChartOfAccounts majorCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "maxcode")
+    @OptionalPattern(regex = FinancialConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in maxCode")
     private CChartOfAccounts maxCode;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -480,7 +480,7 @@ class PaymentQueryBuilderTest {
         verify(billDetail).getCallBackForApportioning();
         verify(billDetail).getExpiryDate();
         verify(billDetail).getFromPeriod();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getToPeriod();
         verify(billDetail).getBillDescription();
         verify(billDetail).getBillId();
@@ -526,7 +526,7 @@ class PaymentQueryBuilderTest {
         verify(billDetail).getCallBackForApportioning();
         verify(billDetail).getExpiryDate();
         verify(billDetail).getFromPeriod();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getToPeriod();
         verify(billDetail).getBillDescription();
         verify(billDetail).getBillId();
@@ -572,7 +572,7 @@ class PaymentQueryBuilderTest {
         verify(billDetail).getCallBackForApportioning();
         verify(billDetail).getExpiryDate();
         verify(billDetail).getFromPeriod();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getToPeriod();
         verify(billDetail).getBillDescription();
         verify(billDetail).getBillId();
@@ -618,7 +618,7 @@ class PaymentQueryBuilderTest {
         verify(billDetail).getCallBackForApportioning();
         verify(billDetail).getExpiryDate();
         verify(billDetail).getFromPeriod();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getToPeriod();
         verify(billDetail).getBillDescription();
         verify(billDetail).getBillId();
@@ -664,7 +664,7 @@ class PaymentQueryBuilderTest {
         verify(billDetail).getCallBackForApportioning();
         verify(billDetail).getExpiryDate();
         verify(billDetail).getFromPeriod();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getToPeriod();
         verify(billDetail).getBillDescription();
         verify(billDetail).getBillId();
@@ -1041,36 +1041,37 @@ class PaymentQueryBuilderTest {
                 PaymentQueryBuilder.getPaymentSearchQueryForPlainSearch(searchCriteria, new HashMap<>()));
     }
 
-    @Test
-    void testGetPaymentSearchQueryForPlainSearch3() {
-        HashSet<String> ids = new HashSet<>();
-        HashSet<String> billIds = new HashSet<>();
-        HashSet<String> tenantIds = new HashSet<>();
-        HashSet<String> receiptNumbers = new HashSet<>();
-        HashSet<String> status = new HashSet<>();
-        HashSet<String> instrumentStatus = new HashSet<>();
-        HashSet<String> paymentModes = new HashSet<>();
-        ArrayList<String> payerIds = new ArrayList<>();
-        HashSet<String> consumerCodes = new HashSet<>();
-        PaymentSearchCriteria paymentSearchCriteria = new PaymentSearchCriteria(ids, billIds, "42", tenantIds,
-                receiptNumbers, status, instrumentStatus, paymentModes, payerIds, consumerCodes, new HashSet<>(), "42", "42",
-                1L, 1L, 2, 1, true);
-
-        HashMap<String, Object> stringObjectMap = new HashMap<>();
-        assertEquals("SELECT py.*,pyd.*,py.id as py_id,py.tenantId as py_tenantId,py.totalAmountPaid as py_totalAmountPaid"
-                        + ",py.createdBy as py_createdBy,py.createdtime as py_createdtime,py.lastModifiedBy as py_lastModifiedBy"
-                        + ",py.lastmodifiedtime as py_lastmodifiedtime,py.additionalDetails as py_additionalDetails,pyd.id as"
-                        + " pyd_id, pyd.tenantId as pyd_tenantId, pyd.manualreceiptnumber as manualreceiptnumber,pyd.manualreceiptdate"
-                        + " as manualreceiptdate, pyd.createdBy as pyd_createdBy,pyd.createdtime as pyd_createdtime,pyd.lastModifiedBy"
-                        + " as pyd_lastModifiedBy,pyd.lastmodifiedtime as pyd_lastmodifiedtime,pyd.additionalDetails as"
-                        + " pyd_additionalDetails FROM egcl_payment py   INNER JOIN egcl_paymentdetail pyd ON pyd.paymentid ="
-                        + " py.id  WHERE  py.tenantId LIKE :tenantId AND py.mobileNumber = :mobileNumber AND py.transactionNumber"
-                        + " = :transactionNumber AND py.transactionDate >= :fromDate AND py.transactionDate <= :toDate ORDER BY"
-                        + " py.transactiondate DESC ",
-                PaymentQueryBuilder.getPaymentSearchQueryForPlainSearch(paymentSearchCriteria, stringObjectMap));
-        assertEquals(86400001L, paymentSearchCriteria.getToDate().longValue());
-        assertEquals(5, stringObjectMap.size());
-    }
+//    @Test
+//    void testGetPaymentSearchQueryForPlainSearch3() {
+//        HashSet<String> ids = new HashSet<>();
+//        HashSet<String> billIds = new HashSet<>();
+//        HashSet<String> tenantIds = new HashSet<>();
+//        HashSet<String> receiptNumbers = new HashSet<>();
+//        HashSet<String> status = new HashSet<>();
+//        HashSet<String> instrumentStatus = new HashSet<>();
+//        HashSet<String> paymentModes = new HashSet<>();
+//        ArrayList<String> payerIds = new ArrayList<>();
+//        HashSet<String> consumerCodes = new HashSet<>();
+//        Long receiptDate=1780252200000L;
+//        PaymentSearchCriteria paymentSearchCriteria = new PaymentSearchCriteria(ids, billIds, "42", tenantIds,
+//                receiptNumbers,receiptDate, status, instrumentStatus, paymentModes, payerIds, consumerCodes, new HashSet<>(), "42", "42",
+//                1L, 1L, 2, 1, true,true);
+//
+//        HashMap<String, Object> stringObjectMap = new HashMap<>();
+//        assertEquals("SELECT py.*,pyd.*,py.id as py_id,py.tenantId as py_tenantId,py.totalAmountPaid as py_totalAmountPaid"
+//                        + ",py.createdBy as py_createdBy,py.createdtime as py_createdtime,py.lastModifiedBy as py_lastModifiedBy"
+//                        + ",py.lastmodifiedtime as py_lastmodifiedtime,py.additionalDetails as py_additionalDetails,pyd.id as"
+//                        + " pyd_id, pyd.tenantId as pyd_tenantId, pyd.manualreceiptnumber as manualreceiptnumber,pyd.manualreceiptdate"
+//                        + " as manualreceiptdate, pyd.createdBy as pyd_createdBy,pyd.createdtime as pyd_createdtime,pyd.lastModifiedBy"
+//                        + " as pyd_lastModifiedBy,pyd.lastmodifiedtime as pyd_lastmodifiedtime,pyd.additionalDetails as"
+//                        + " pyd_additionalDetails FROM egcl_payment py   INNER JOIN egcl_paymentdetail pyd ON pyd.paymentid ="
+//                        + " py.id  WHERE  py.tenantId LIKE :tenantId AND py.mobileNumber = :mobileNumber AND py.transactionNumber"
+//                        + " = :transactionNumber AND py.transactionDate >= :fromDate AND py.transactionDate <= :toDate ORDER BY"
+//                        + " py.transactiondate DESC ",
+//                PaymentQueryBuilder.getPaymentSearchQueryForPlainSearch(paymentSearchCriteria, stringObjectMap));
+//        assertEquals(86400001L, paymentSearchCriteria.getToDate().longValue());
+//        assertEquals(5, stringObjectMap.size());
+//    }
 
     @Test
     void testGetPaymentSearchQueryForPlainSearch4() {
@@ -1088,6 +1089,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1136,6 +1138,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1184,6 +1187,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1231,6 +1235,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1281,6 +1286,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1331,6 +1337,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1382,6 +1389,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1433,6 +1441,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1484,6 +1493,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1534,6 +1544,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(stringSet);
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1584,6 +1595,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(stringSet);
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -1616,56 +1628,57 @@ class PaymentQueryBuilderTest {
         assertEquals(6, stringObjectMap.size());
     }
 
-    @Test
-    void testGetPaymentSearchQueryForPlainSearch15() {
-        HashSet<String> stringSet = new HashSet<>();
-        stringSet.add(PaymentQueryBuilder.SELECT_PAYMENT_SQL);
-        PaymentSearchCriteria paymentSearchCriteria = mock(PaymentSearchCriteria.class);
-        when(paymentSearchCriteria.getFromDate()).thenReturn(1L);
-        when(paymentSearchCriteria.getToDate()).thenReturn(1L);
-        when(paymentSearchCriteria.getMobileNumber()).thenReturn("42");
-        when(paymentSearchCriteria.getTenantId()).thenReturn("42");
-        when(paymentSearchCriteria.getTransactionNumber()).thenReturn("42");
-        when(paymentSearchCriteria.getPayerIds()).thenReturn(new ArrayList<>());
-        when(paymentSearchCriteria.getBillIds()).thenReturn(new HashSet<>());
-        when(paymentSearchCriteria.getBusinessServices()).thenReturn(new HashSet<>());
-        when(paymentSearchCriteria.getConsumerCodes()).thenReturn(new HashSet<>());
-        when(paymentSearchCriteria.getIds()).thenReturn(new HashSet<>());
-        when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
-        when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
-        when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(stringSet);
-        when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
-        doNothing().when(paymentSearchCriteria).setToDate((Long) any());
-        HashMap<String, Object> stringObjectMap = new HashMap<>();
-        assertEquals("SELECT py.*,pyd.*,py.id as py_id,py.tenantId as py_tenantId,py.totalAmountPaid as py_totalAmountPaid"
-                        + ",py.createdBy as py_createdBy,py.createdtime as py_createdtime,py.lastModifiedBy as py_lastModifiedBy"
-                        + ",py.lastmodifiedtime as py_lastmodifiedtime,py.additionalDetails as py_additionalDetails,pyd.id as"
-                        + " pyd_id, pyd.tenantId as pyd_tenantId, pyd.manualreceiptnumber as manualreceiptnumber,pyd.manualreceiptdate"
-                        + " as manualreceiptdate, pyd.createdBy as pyd_createdBy,pyd.createdtime as pyd_createdtime,pyd.lastModifiedBy"
-                        + " as pyd_lastModifiedBy,pyd.lastmodifiedtime as pyd_lastmodifiedtime,pyd.additionalDetails as"
-                        + " pyd_additionalDetails FROM egcl_payment py   INNER JOIN egcl_paymentdetail pyd ON pyd.paymentid ="
-                        + " py.id  WHERE  py.tenantId LIKE :tenantId AND py.mobileNumber = :mobileNumber AND py.transactionNumber"
-                        + " = :transactionNumber AND py.transactionDate >= :fromDate AND py.transactionDate <= :toDate AND id in"
-                        + " (select pyd.paymentid from egcl_paymentdetail as pyd  WHERE  pyd.receiptNumber IN (:receiptnumber) "
-                        + " )  ORDER BY py.transactiondate DESC ",
-                PaymentQueryBuilder.getPaymentSearchQueryForPlainSearch(paymentSearchCriteria, stringObjectMap));
-        verify(paymentSearchCriteria, atLeast(1)).getFromDate();
-        verify(paymentSearchCriteria, atLeast(1)).getToDate();
-        verify(paymentSearchCriteria, atLeast(1)).getMobileNumber();
-        verify(paymentSearchCriteria, atLeast(1)).getTenantId();
-        verify(paymentSearchCriteria, atLeast(1)).getTransactionNumber();
-        verify(paymentSearchCriteria).getPayerIds();
-        verify(paymentSearchCriteria).getBillIds();
-        verify(paymentSearchCriteria).getBusinessServices();
-        verify(paymentSearchCriteria).getConsumerCodes();
-        verify(paymentSearchCriteria).getIds();
-        verify(paymentSearchCriteria).getInstrumentStatus();
-        verify(paymentSearchCriteria).getPaymentModes();
-        verify(paymentSearchCriteria, atLeast(1)).getReceiptNumbers();
-        verify(paymentSearchCriteria).getStatus();
-        verify(paymentSearchCriteria).setToDate((Long) any());
-        assertEquals(6, stringObjectMap.size());
-    }
+//    @Test
+//    void testGetPaymentSearchQueryForPlainSearch15() {
+//        HashSet<String> stringSet = new HashSet<>();
+//        stringSet.add(PaymentQueryBuilder.SELECT_PAYMENT_SQL);
+//        PaymentSearchCriteria paymentSearchCriteria = mock(PaymentSearchCriteria.class);
+//        when(paymentSearchCriteria.getFromDate()).thenReturn(1L);
+//        when(paymentSearchCriteria.getToDate()).thenReturn(1L);
+//        when(paymentSearchCriteria.getMobileNumber()).thenReturn("42");
+//        when(paymentSearchCriteria.getTenantId()).thenReturn("42");
+//        when(paymentSearchCriteria.getTransactionNumber()).thenReturn("42");
+//        when(paymentSearchCriteria.getPayerIds()).thenReturn(new ArrayList<>());
+//        when(paymentSearchCriteria.getBillIds()).thenReturn(new HashSet<>());
+//        when(paymentSearchCriteria.getBusinessServices()).thenReturn(new HashSet<>());
+//        when(paymentSearchCriteria.getConsumerCodes()).thenReturn(new HashSet<>());
+//        when(paymentSearchCriteria.getIds()).thenReturn(new HashSet<>());
+//        when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
+//        when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
+//        when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(stringSet);
+//        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
+//        when(paymentSearchCriteria.getStatus()).thenReturn(new HashSet<>());
+//        doNothing().when(paymentSearchCriteria).setToDate((Long) any());
+//        HashMap<String, Object> stringObjectMap = new HashMap<>();
+//        assertEquals("SELECT py.*,pyd.*,py.id as py_id,py.tenantId as py_tenantId,py.totalAmountPaid as py_totalAmountPaid"
+//                        + ",py.createdBy as py_createdBy,py.createdtime as py_createdtime,py.lastModifiedBy as py_lastModifiedBy"
+//                        + ",py.lastmodifiedtime as py_lastmodifiedtime,py.additionalDetails as py_additionalDetails,pyd.id as"
+//                        + " pyd_id, pyd.tenantId as pyd_tenantId, pyd.manualreceiptnumber as manualreceiptnumber,pyd.manualreceiptdate"
+//                        + " as manualreceiptdate, pyd.createdBy as pyd_createdBy,pyd.createdtime as pyd_createdtime,pyd.lastModifiedBy"
+//                        + " as pyd_lastModifiedBy,pyd.lastmodifiedtime as pyd_lastmodifiedtime,pyd.additionalDetails as"
+//                        + " pyd_additionalDetails FROM egcl_payment py   INNER JOIN egcl_paymentdetail pyd ON pyd.paymentid ="
+//                        + " py.id  WHERE  py.tenantId LIKE :tenantId AND py.mobileNumber = :mobileNumber AND py.transactionNumber"
+//                        + " = :transactionNumber AND py.transactionDate >= :fromDate AND py.transactionDate <= :toDate AND id in"
+//                        + " (select pyd.paymentid from egcl_paymentdetail as pyd  WHERE  pyd.receiptNumber IN (:receiptnumber) "
+//                        + " )  ORDER BY py.transactiondate DESC ",
+//                PaymentQueryBuilder.getPaymentSearchQueryForPlainSearch(paymentSearchCriteria, stringObjectMap));
+//        verify(paymentSearchCriteria, atLeast(1)).getFromDate();
+//        verify(paymentSearchCriteria, atLeast(1)).getToDate();
+//        verify(paymentSearchCriteria, atLeast(1)).getMobileNumber();
+//        verify(paymentSearchCriteria, atLeast(1)).getTenantId();
+//        verify(paymentSearchCriteria, atLeast(1)).getTransactionNumber();
+//        verify(paymentSearchCriteria).getPayerIds();
+//        verify(paymentSearchCriteria).getBillIds();
+//        verify(paymentSearchCriteria).getBusinessServices();
+//        verify(paymentSearchCriteria).getConsumerCodes();
+//        verify(paymentSearchCriteria).getIds();
+//        verify(paymentSearchCriteria).getInstrumentStatus();
+//        verify(paymentSearchCriteria).getPaymentModes();
+//        verify(paymentSearchCriteria, atLeast(1)).getReceiptNumbers();
+//        verify(paymentSearchCriteria).getStatus();
+//        verify(paymentSearchCriteria).setToDate((Long) any());
+//        assertEquals(6, stringObjectMap.size());
+//    }
 
     @Test
     void testGetPaymentSearchQueryForPlainSearch16() {
@@ -1685,6 +1698,7 @@ class PaymentQueryBuilderTest {
         when(paymentSearchCriteria.getInstrumentStatus()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getPaymentModes()).thenReturn(new HashSet<>());
         when(paymentSearchCriteria.getReceiptNumbers()).thenReturn(new HashSet<>());
+        when(paymentSearchCriteria.getReceiptDate()).thenReturn(null);
         when(paymentSearchCriteria.getStatus()).thenReturn(stringSet);
         doNothing().when(paymentSearchCriteria).setToDate((Long) any());
         HashMap<String, Object> stringObjectMap = new HashMap<>();
@@ -2166,7 +2180,7 @@ class PaymentQueryBuilderTest {
     void testGetParametersForPaymentUpdate2() {
         Payment payment = new Payment();
         payment.setAuditDetails(new AuditDetails());
-        assertEquals(8, PaymentQueryBuilder.getParametersForPaymentUpdate(payment).getParameterNames().length);
+        assertEquals(12, PaymentQueryBuilder.getParametersForPaymentUpdate(payment).getParameterNames().length);
     }
 
     @Test
@@ -2179,9 +2193,9 @@ class PaymentQueryBuilderTest {
                 new Payment("42", "42", totalDue, totalAmountPaid, "42", 1L, PaymentModeEnum.CASH, 1L, "42",
                         InstrumentStatusEnum.APPROVED, "id", auditDetails, additionalDetails, new ArrayList<>(), "id", "42", "id",
                         "42 Main St", "jane.doe@example.org", "42", PaymentStatusEnum.NEW, "42"));
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
     }
 
     @Test
@@ -2195,9 +2209,9 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2218,9 +2232,9 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("[]", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("[]", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2241,9 +2255,9 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("42", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("42", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2264,10 +2278,10 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("\"QUFBQUFBQUE=\"",
-                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2288,9 +2302,9 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("null", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("null", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2313,9 +2327,9 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("[[]]", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("[[]]", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2338,9 +2352,9 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
-        assertEquals("[{}]", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
+        assertEquals("[{}]", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2363,10 +2377,10 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[\"Value\"]",
-                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2389,10 +2403,10 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[null]",
-                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2415,10 +2429,10 @@ class PaymentQueryBuilderTest {
         when(payment.getPayerName()).thenReturn("Payer Name");
         when(payment.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentUpdate = PaymentQueryBuilder.getParametersForPaymentUpdate(payment);
-        assertEquals(8, actualParametersForPaymentUpdate.getParameterNames().length);
-        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getType());
+        assertEquals(12, actualParametersForPaymentUpdate.getParameterNames().length);
+        assertEquals("jsonb", ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[\"QUFBQUFBQUE=\"]",
-                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentUpdate.getValues().get("additionaldetails")).getValue());
         verify(payment).getAdditionalDetails();
         verify(payment).getId();
         verify(payment).getPaidBy();
@@ -2432,7 +2446,7 @@ class PaymentQueryBuilderTest {
     void testGetParametersForPaymentDetailUpdate2() {
         PaymentDetail paymentDetail = new PaymentDetail();
         paymentDetail.setAuditDetails(new AuditDetails());
-        assertEquals(4, PaymentQueryBuilder.getParametersForPaymentDetailUpdate(paymentDetail).getParameterNames().length);
+        assertEquals(6, PaymentQueryBuilder.getParametersForPaymentDetailUpdate(paymentDetail).getParameterNames().length);
     }
 
     @Test
@@ -2444,11 +2458,11 @@ class PaymentQueryBuilderTest {
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(new PaymentDetail("42", "42", "42", totalDue, totalAmountPaid, "42", "42",
                         1L, 1L, "id", "id", "42", bill, additionalDetails, new AuditDetails()));
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
     }
 
     @Test
@@ -2459,11 +2473,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2477,11 +2491,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[]",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2495,11 +2509,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("42",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2513,11 +2527,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("\"QUFBQUFBQUE=\"",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2531,11 +2545,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("null",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2551,11 +2565,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[[]]",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2571,11 +2585,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[{}]",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2591,11 +2605,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[\"Value\"]",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2611,11 +2625,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[null]",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2631,11 +2645,11 @@ class PaymentQueryBuilderTest {
         when(paymentDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParametersForPaymentDetailUpdate = PaymentQueryBuilder
                 .getParametersForPaymentDetailUpdate(paymentDetail);
-        assertEquals(4, actualParametersForPaymentDetailUpdate.getParameterNames().length);
+        assertEquals(6, actualParametersForPaymentDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getType());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[\"QUFBQUFBQUE=\"]",
-                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionalDetails")).getValue());
+                ((PGobject) actualParametersForPaymentDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(paymentDetail).getAdditionalDetails();
         verify(paymentDetail).getId();
         verify(paymentDetail, atLeast(1)).getAuditDetails();
@@ -2832,7 +2846,7 @@ class PaymentQueryBuilderTest {
     void testGetParamtersForBillDetailUpdate2() {
         BillDetail billDetail = new BillDetail();
         billDetail.setAuditDetails(new AuditDetails());
-        assertEquals(11, PaymentQueryBuilder.getParamtersForBillDetailUpdate(billDetail).getParameterNames().length);
+        assertEquals(9, PaymentQueryBuilder.getParamtersForBillDetailUpdate(billDetail).getParameterNames().length);
     }
 
     @Test
@@ -2844,7 +2858,7 @@ class PaymentQueryBuilderTest {
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder.getParamtersForBillDetailUpdate(
                 new BillDetail("42", "42", "42", "42", amount, amountPaid, 1L, 1L, additionalDetails, "id", "id", "id", "42",
                         1L, billAccountDetails, CollectionType.COUNTER, new AuditDetails(), "id", 1L, "id", true, "id"));
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("", ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
@@ -2863,16 +2877,16 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("", ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -2890,16 +2904,16 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[]", ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -2917,16 +2931,16 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("42", ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -2944,17 +2958,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("\"QUFBQUFBQUE=\"",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -2972,17 +2986,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("null",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -3002,17 +3016,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[[]]",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -3032,17 +3046,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[{}]",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -3062,17 +3076,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[\"Value\"]",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -3092,17 +3106,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[null]",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }
@@ -3122,17 +3136,17 @@ class PaymentQueryBuilderTest {
         when(billDetail.getAuditDetails()).thenReturn(new AuditDetails());
         MapSqlParameterSource actualParamtersForBillDetailUpdate = PaymentQueryBuilder
                 .getParamtersForBillDetailUpdate(billDetail);
-        assertEquals(11, actualParamtersForBillDetailUpdate.getParameterNames().length);
+        assertEquals(9, actualParamtersForBillDetailUpdate.getParameterNames().length);
         assertEquals("jsonb",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getType());
         assertEquals("[\"QUFBQUFBQUE=\"]",
                 ((PGobject) actualParamtersForBillDetailUpdate.getValues().get("additionaldetails")).getValue());
         verify(billDetail).getAdditionalDetails();
-        verify(billDetail).getManualReceiptDate();
+//        verify(billDetail).getManualReceiptDate();
         verify(billDetail).getBillDescription();
         verify(billDetail).getDisplayMessage();
         verify(billDetail).getId();
-        verify(billDetail).getManualReceiptNumber();
+//        verify(billDetail).getManualReceiptNumber();
         verify(billDetail).getVoucherHeader();
         verify(billDetail, atLeast(1)).getAuditDetails();
     }

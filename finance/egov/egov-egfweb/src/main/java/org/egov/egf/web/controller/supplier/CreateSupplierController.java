@@ -56,7 +56,10 @@ import org.egov.commons.dao.EgwStatusHibernateDAO;
 import org.egov.egf.commons.bank.service.CreateBankService;
 import org.egov.egf.commons.bank.service.StateMasterService;
 import org.egov.egf.masters.services.SupplierService;
+import org.egov.egf.utils.FinancialUtils;
 import org.egov.egf.web.adaptor.SupplierJsonAdaptor;
+import org.egov.infra.admin.master.repository.CityRepository;
+import org.egov.infra.config.core.ApplicationThreadLocals;
 import org.egov.model.masters.Supplier;
 import org.egov.model.masters.SupplierSearchRequest;
 import org.egov.utils.FinancialConstants;
@@ -108,6 +111,11 @@ public class CreateSupplierController {
 
 	@Autowired
 	private MessageSource messageSource;
+	@Autowired
+	private CityRepository cityRepository;
+	
+	@Autowired
+	private FinancialUtils financialUtils;
 
 	private void prepareNewForm(final Model model) {
 		model.addAttribute("banks", createBankService.getByIsActiveTrueOrderByName());
@@ -131,7 +139,16 @@ public class CreateSupplierController {
 			prepareNewForm(model);
 			return NEW;
 		}
+		
+		supplier.setCorrespondenceAddress(
+			    financialUtils.sanitizeInput(supplier.getCorrespondenceAddress()));
 
+		supplier.setPaymentAddress(
+			    financialUtils.sanitizeInput(supplier.getPaymentAddress()));
+
+		supplier.setNarration(
+			    financialUtils.sanitizeInput(supplier.getNarration()));
+        
 		supplierService.create(supplier);
 
 		redirectAttrs.addFlashAttribute("message", messageSource.getMessage("msg.supplier.success", null, null));
@@ -173,6 +190,8 @@ public class CreateSupplierController {
 		final SupplierSearchRequest supplierSearchRequest = new SupplierSearchRequest();
 		prepareNewForm(model);
 		model.addAttribute(STR_SUPPLIER_SEARCH_REQUEST, supplierSearchRequest);
+		model.addAttribute("ulbName",
+			    cityRepository.findByCode(ApplicationThreadLocals.getTenantID()).getName());
 		return SEARCH;
 
 	}

@@ -44,7 +44,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 
 import org.egov.receipt.consumer.model.AuditDetails;
 import org.springframework.util.CollectionUtils;

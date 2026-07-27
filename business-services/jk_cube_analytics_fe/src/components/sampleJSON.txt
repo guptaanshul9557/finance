@@ -1,0 +1,48 @@
+// Just add this to screenRegistry.js array:
+{
+  id: 'employee_management',
+  name: 'Employee Management',
+  displayName: 'Employee Management Dashboard',
+  route: '/modules/employee-management',
+  icon: '👥',
+  color: '#673AB7',
+  enabled: true,
+  enableInHomescreen: true,
+  enableInSidebar: true,
+
+  financialYear: {
+    enabled: true,
+    defaultYear: '2026-2027',
+    availableYears: ['2023-2024', '2024-2025', '2025-2026'],
+  },
+
+  kpis: [
+    {
+      id: 'totalEmployees',
+      label: 'Total Employees',
+      icon: '👤',
+      color: '#4CAF50',
+      format: 'number',
+      measure: 'EgHrmsEmployee.totalCount',
+      isDrillingRequired: true,
+      timeDimension: 'EgHrmsEmployee.createdDate',
+      drilldownPath: [
+        {
+          type: 'selection',
+          dimension: 'EgHrmsEmployee.departmentName',
+          label: 'Select Department',
+        },
+        {
+          type: 'monthly',
+          label: 'Monthly Breakdown',
+          granularity: 'month',
+        },
+        {
+          type: 'daily',
+          label: 'Daily Breakdown',
+          granularity: 'day',
+        },
+      ],
+    },
+  ],
+}

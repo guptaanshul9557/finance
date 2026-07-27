@@ -48,6 +48,7 @@
 package org.egov.commons;
 
 import java.util.Date;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -63,10 +64,13 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.infra.persistence.entity.AbstractPersistable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.SafeHtml;
+
 
 @Entity
 @Table(name = "BANK")
@@ -86,16 +90,19 @@ public class Bank extends AbstractPersistable<Integer> {
 	@NotNull
 	@Length(max = 50)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String code;
 
 	@NotNull
 	@Length(max = 100)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String name;
 
 	@JsonIgnore
 	@Length(max = 250)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in majorCode")
 	private String narration;
 
 	@JsonIgnore
@@ -105,6 +112,7 @@ public class Bank extends AbstractPersistable<Integer> {
 	@JsonIgnore
 	@Length(max = 50)
 	@SafeHtml
+	@OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String type;
 
 	@JsonIgnore

@@ -41,7 +41,7 @@ package org.egov;
 
 import java.util.TimeZone;
 
-import jakarta.annotation.PostConstruct;
+import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;

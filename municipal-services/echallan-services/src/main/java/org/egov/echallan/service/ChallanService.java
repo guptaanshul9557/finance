@@ -14,6 +14,7 @@ import org.egov.echallan.repository.ChallanRepository;
 import org.egov.echallan.util.CommonUtils;
 import org.egov.echallan.util.ResponseInfoFactory;
 import org.egov.echallan.validator.ChallanValidator;
+import org.egov.echallan.service.CustIdService;
 import org.egov.echallan.web.models.user.UserDetailResponse;
 import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,9 +43,11 @@ public class ChallanService {
     
     private ChallanConfiguration config;
     
-    @Autowired
-    public ChallanService(EnrichmentService enrichmentService, UserService userService,ChallanRepository repository,CalculationService calculationService,
-    		ChallanValidator validator, CommonUtils utils, ChallanConfiguration config) {
+	private CustIdService custIdService;
+    
+	@Autowired
+	public ChallanService(EnrichmentService enrichmentService, UserService userService, ChallanRepository repository, CalculationService calculationService,
+			ChallanValidator validator, CommonUtils utils, ChallanConfiguration config, CustIdService custIdService) {
         this.enrichmentService = enrichmentService;
         this.userService = userService;
         this.repository = repository;
@@ -52,6 +55,7 @@ public class ChallanService {
         this.validator = validator;
         this.utils = utils;
         this.config = config;
+		this.custIdService = custIdService;
     }
     
     
@@ -66,6 +70,7 @@ public class ChallanService {
 		validator.validateFields(request, mdmsData);
 		enrichmentService.enrichCreateRequest(request);
 		userService.createUser(request);
+		custIdService.createCustIdMapping(request);
 		calculationService.addCalculation(request);
 		repository.save(request);
 		return request.getChallan();

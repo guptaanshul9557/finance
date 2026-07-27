@@ -55,6 +55,8 @@ import java.util.List;
 import javax.validation.Valid;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -86,30 +88,37 @@ public class BillV2 {
     private String id = null;
     
 	@JsonProperty("userId")
+	@OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
 	private String userId;
 
     @SafeHtml
     @JsonProperty("mobileNumber")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String mobileNumber = null;
 
     @SafeHtml
     @JsonProperty("paidBy")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String paidBy = null;
 
     @SafeHtml
     @JsonProperty("payerName")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String payerName = null;
 
     @SafeHtml
     @JsonProperty("payerAddress")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String payerAddress = null;
 
     @SafeHtml
     @JsonProperty("payerEmail")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String payerEmail = null;
 
     @SafeHtml
     @JsonProperty("payerId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String payerId = null;
 
     @JsonProperty("status")
@@ -117,6 +126,7 @@ public class BillV2 {
 
     @SafeHtml
     @JsonProperty("reasonForCancellation")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String reasonForCancellation = null;
 
     @JsonProperty("isCancelled")
@@ -131,6 +141,7 @@ public class BillV2 {
 
     @SafeHtml
     @JsonProperty("tenantId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String tenantId = null;
 
     @JsonProperty("auditDetails")
@@ -149,6 +160,7 @@ public class BillV2 {
     private BigDecimal minimumAmountToBePaid = null;
 
     @JsonProperty("businessService")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String businessService = null;
 
     @JsonProperty("totalAmount")
@@ -156,6 +168,7 @@ public class BillV2 {
 
     @SafeHtml
     @JsonProperty("consumerCode")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String consumerCode = null;
 
     @SafeHtml
@@ -170,6 +183,7 @@ public class BillV2 {
 
     @SafeHtml
     @JsonProperty("fileStoreId")
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String fileStoreId;
 
     public enum StatusEnum {

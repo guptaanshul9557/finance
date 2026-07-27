@@ -165,6 +165,12 @@ function validateNew() {
     printWindow.close();
 }
 
+function exportAllReportToExcel(){
+		  //  window.location.href = "/services/collection/receipts/exportAllReceiptExcel-report.action";
+	     document.searchReceiptForm.action = "exportAllReceiptExcel-report.action";
+         document.searchReceiptForm.submit();
+	 }
+
 function exportTableToExcel() {
     var table = document.getElementById("resultTable");
 
@@ -764,18 +770,21 @@ function exportTableToExcel() {
 			<div align="center">
 				<display:table id="resultTable" htmlId="resultTable" name="searchResult" uid="currentRow" 
                   style="width:100%;border-left: 1px solid #DFDFDF;" cellpadding="0"
-                     cellspacing="0" export="false" requestURI=""> 
+                     cellspacing="0" export="false" pagesize="20" 
+                      requestURI=""> 
                      
 					<display:caption media="pdf">&nbsp;</display:caption>
 					<display:column headerClass="bluebgheadtd" class="blueborderfortd"
 						style="width:3%">
 						<s:if test='%{collectionVersion eq "V2"}'>
 							<input name="selectedReceipts" type="checkbox"
-								id="selectedReceipts" value="${currentRow.paymentId}" />
+								id="selectedReceipts" 
+								value="${currentRow.paymentId}|${currentRow.serviceCat}|${currentRow.service}" />
 						</s:if>
 						<s:else>
 							<input name="selectedReceipts" type="checkbox"
-								id="selectedReceipts" value="${currentRow.receiptnumber}" />
+								id="selectedReceipts" 
+								value="${currentRow.receiptnumber}|${currentRow.serviceCat}|${currentRow.service}" />
 						</s:else>
 						<input type="hidden" name="receiptstatus" id="receiptstatus"
 							value="${currentRow.curretnStatus}" />
@@ -845,9 +854,12 @@ function exportTableToExcel() {
 					<input type="button" class="buttonsubmit"
                          value="Print PDF"
                          onclick="printResultTable()" />
-                     <input type="button" class="buttonsubmit"
+                <!--      <input type="button" class="buttonsubmit"
                        value="Export to Excel"
-                       onclick="exportTableToExcel()" />    
+                       onclick="exportTableToExcel()" />  -->   
+                     <input type="button" class="buttonsubmit"
+                       value="Export All Receipt Excel"
+                       onclick="exportAllReportToExcel()" />
 				<%-- <egov-authz:authorize actionName="CancelReceipt">
   <input name="button32" type="button" class="buttonsubmit" id="button32" value="Cancel Receipt" onclick="return checkcancelforselectedrecord()"/>
   </egov-authz:authorize> --%>

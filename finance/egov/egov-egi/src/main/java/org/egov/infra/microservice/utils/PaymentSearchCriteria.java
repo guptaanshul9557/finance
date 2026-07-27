@@ -80,4 +80,8 @@ public class PaymentSearchCriteria {
     private Long toDate;
     private Integer offset;
     private Integer limit;
+    
+    private Boolean isCountRequest;
+    
+    private Boolean isReport;
 }

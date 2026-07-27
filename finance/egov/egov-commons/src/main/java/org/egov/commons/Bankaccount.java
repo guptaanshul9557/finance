@@ -112,9 +112,11 @@ public class Bankaccount extends AbstractAuditable implements java.io.Serializab
 
     @SafeHtml
     @NotNull
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String accounttype;
 
     @SafeHtml
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed in narration")
     private String narration;
 
     @NotNull

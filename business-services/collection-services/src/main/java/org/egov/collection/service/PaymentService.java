@@ -2,7 +2,10 @@ package org.egov.collection.service;
 
 import static java.util.Objects.isNull;
 
+import java.time.ZoneId;
 import java.util.*;
+
+import java.time.LocalDate;
 
 import org.apache.commons.lang3.StringUtils;
 import org.egov.collection.config.ApplicationProperties;
@@ -194,25 +197,21 @@ public class PaymentService {
     }
 
     public List<Payment> plainSearch(PaymentSearchCriteria paymentSearchCriteria) {
-        PaymentSearchCriteria searchCriteria = new PaymentSearchCriteria();
-        searchCriteria.setTenantId(paymentSearchCriteria.getTenantId());
-        searchCriteria.setFromDate(paymentSearchCriteria.getFromDate());
-        searchCriteria.setToDate(paymentSearchCriteria.getToDate());
-
+        
         if (applicationProperties.isPaymentsSearchPaginationEnabled()) {
-            searchCriteria.setOffset(isNull(paymentSearchCriteria.getOffset()) ? 0 : paymentSearchCriteria.getOffset());
-            searchCriteria.setLimit(isNull(paymentSearchCriteria.getLimit()) ? applicationProperties.getReceiptsSearchDefaultLimit() : paymentSearchCriteria.getLimit());
+        	paymentSearchCriteria.setOffset(isNull(paymentSearchCriteria.getOffset()) ? 0 : paymentSearchCriteria.getOffset());
+        	paymentSearchCriteria.setLimit(isNull(paymentSearchCriteria.getLimit()) ? applicationProperties.getReceiptsSearchDefaultLimit() : paymentSearchCriteria.getLimit());
         } else {
-            searchCriteria.setOffset(0);
-            searchCriteria.setLimit(applicationProperties.getReceiptsSearchDefaultLimit());
+        	paymentSearchCriteria.setOffset(0);
+        	paymentSearchCriteria.setLimit(applicationProperties.getReceiptsSearchDefaultLimit());
         }
 
-        List<String> ids = paymentRepository.fetchPaymentIds(searchCriteria);
-        if (ids.isEmpty())
-            return Collections.emptyList();
-
-        PaymentSearchCriteria criteria = PaymentSearchCriteria.builder().ids(new HashSet<String>(ids)).build();
-        return paymentRepository.fetchPaymentsForPlainSearch(criteria);
+//        List<String> ids = paymentRepository.fetchPaymentIds(searchCriteria);
+//        if (ids.isEmpty())
+//            return Collections.emptyList();
+//
+//        PaymentSearchCriteria criteria = PaymentSearchCriteria.builder().ids(new HashSet<String>(ids)).build();
+        return paymentRepository.fetchPaymentsForPlainSearch(paymentSearchCriteria);
     }
     
     public List<Payment> receiptSearch(PaymentSearchCriteria paymentSearchCriteria) {
@@ -241,6 +240,47 @@ public class PaymentService {
         
         return paymentRepository.fetchPaymentsForPlainSearch(criteria);
     }
+
+    public Long getPaymentCounts(RequestInfo requestInfo, PaymentSearchCriteria paymentSearchCriteria,
+			String moduleName) {
+		return paymentRepository.getPaymentCounts(paymentSearchCriteria);
+	}
+
+
+
+	public List<Payment> getPaymentReport(RequestInfo requestInfo, PaymentSearchCriteria paymentSearchCriteria,
+			String moduleName) {
+		LocalDate today = LocalDate.now();
+		LocalDate fyStart;
+		LocalDate fyEnd;
+		if (today.getMonthValue() >= 4) {
+		    // FY: Apr current year to Mar next year
+		    fyStart = LocalDate.of(today.getYear(), 4, 1);
+		    fyEnd = LocalDate.of(today.getYear() + 1, 3, 31);
+		} else {
+		    // FY: Apr previous year to Mar current year
+		    fyStart = LocalDate.of(today.getYear() - 1, 4, 1);
+		    fyEnd = LocalDate.of(today.getYear(), 3, 31);
+		}
+		Long fromDate = fyStart.atStartOfDay(ZoneId.systemDefault())
+		                       .toInstant()
+		                       .toEpochMilli();
+		Long toDate = fyEnd.plusDays(1)
+		                   .atStartOfDay(ZoneId.systemDefault())
+		                   .toInstant()
+		                   .toEpochMilli() - 1;
+		
+		paymentSearchCriteria=paymentSearchCriteria.builder().fromDate(applicationProperties.getIsFromDate()?paymentSearchCriteria.getFromDate():fromDate)
+		                               .toDate(applicationProperties.getIsToDate()?paymentSearchCriteria.getToDate():toDate)
+		                               .businessServices(applicationProperties.getIsBusinessservice()?paymentSearchCriteria.getBusinessServices():null)
+		                               .receiptNumbers(null)
+		                               .tenantId(paymentSearchCriteria.getTenantId())
+		                               .build();
+		
+		
+
+		return paymentRepository.getPaymentsReport(paymentSearchCriteria);
+	}
 
 
 }

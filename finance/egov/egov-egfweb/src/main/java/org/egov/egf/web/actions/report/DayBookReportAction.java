@@ -180,7 +180,7 @@ public class DayBookReportAction extends BaseFormAction {
 			                .append(" AND ca.GLCODE=gd.GLCODE AND voucherdate >=:startDate ")
 			                .append(" and voucherdate <= :endDate ")
                             .append(" and vh.status not in (4,5)  and vh.fundid =:fundId ")
-                            .append(" ORDER BY vdate,vouchernumber");
+                            .append(" ORDER BY vdate");
         params.put("startDate", startDate);
         params.put("endDate", endDate);
         params.put("fundId", Long.valueOf(fundId));

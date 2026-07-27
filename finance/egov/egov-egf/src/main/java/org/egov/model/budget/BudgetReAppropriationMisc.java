@@ -53,14 +53,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.validation.constraints.Pattern;
+
 import org.egov.commons.EgwStatus;
 import org.egov.infra.workflow.entity.StateAware;
 import org.egov.utils.Constants;
+import org.egov.utils.FinancialConstants;
 
 public class BudgetReAppropriationMisc extends StateAware {
 	private static final long serialVersionUID = 3462810824735494382L;
 	private Long id;
 	private String sequenceNumber;
+	@Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
 	private String remarks;
 	private Date reAppropriationDate;
 	private EgwStatus status;

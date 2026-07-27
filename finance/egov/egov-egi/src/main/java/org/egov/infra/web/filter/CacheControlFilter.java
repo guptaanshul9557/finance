@@ -100,8 +100,8 @@ public class CacheControlFilter implements Filter {
 		final HTTPUtilities httpUtilities = ESAPI.httpUtilities();
 		httpUtilities.setCurrentHTTP((HttpServletRequest) request, (HttpServletResponse) response);
 		httpUtilities.setHeader(CACHE_CONTROL_HEADER, "public,max-age=" + expireInSeconds);
-		httpUtilities.setHeader(PRAGMA_HEADER, "");
-		httpUtilities.setHeader(ETAG_HEADER, "");
+		httpUtilities.setHeader(PRAGMA_HEADER, "no-cache");
+		httpUtilities.setHeader(ETAG_HEADER, "0");
 
 		httpServletResponse.setDateHeader(EXPIRE_HEADER, System.currentTimeMillis() + expireInSeconds * 1000L);
 		chain.doFilter(request, httpServletResponse);

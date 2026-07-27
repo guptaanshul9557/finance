@@ -43,6 +43,8 @@ $(document).ready(function(){
 	jQuery('#dishonorChequeSubmitButtonId').click(function(e) {
 		var dishonorReason = $("#dishonorReasonId").val();
 		var remarks = $("#remarks").val();
+		var userInfo = JSON.parse(localStorage.getItem('user-info'));
+		
 		if(!$("#dishonorDateId").val()){
 			bootbox.alert('Please Enter Dihonor Date!');
 			return false;
@@ -53,6 +55,21 @@ $(document).ready(function(){
 			bootbox.alert('Please Enter the Remarks!');
 			return false;
 		}
+		
+		var dishonorDate = $("#instrumentDateId").val();
+		
+		var isUcAdmin = userInfo && Array.isArray(userInfo.roles) &&
+						userInfo.roles.some(function(role) {
+							return role.code === 'EGF_RECEIPT_CANCEL_CHEQUE_DISHONOR';
+						});
+						
+		if (!isUcAdmin && dishonorDate) {
+			if (!isToday(dishonorDate)) {
+				bootbox.alert('You cannot dishonor past Cheque/DD. Contact your admin.');
+				return false;
+			}
+		}
+		
 		$("#dishonorChequeForm").submit();
 	});
 	
@@ -303,6 +320,18 @@ function loadBankAccount() {
 		});
 		$('#bankAccountId').append(output);
 	});
+}
+
+function isToday(dateStr) {
+	var parts = dateStr.split('/'); 
+	if (parts.length !== 3) return false;
+
+	var inputDate = new Date(parts[2], parts[1] - 1, parts[0]);
+	var today = new Date();
+
+	return inputDate.getFullYear() === today.getFullYear() &&
+		inputDate.getMonth() === today.getMonth() &&
+		inputDate.getDate() === today.getDate();
 }
 
 function viewVoucher(event,vid){

@@ -227,6 +227,8 @@ public class CreateSupplierBillController extends BaseBillController {
 			model.addAttribute("errorMessage", getLocalizedMessage(INVALID_APPROVER, null, null));
 			return SUPPLIERBILL_FORM;
 		}
+		egBillregister.setNarration(financialUtils.sanitizeInput(egBillregister.getNarration()));
+        egBillregister.setApprovalComent(financialUtils.sanitizeInput(egBillregister.getApprovalComent()));
 		egBillregister.setCreatedBy(ApplicationThreadLocals.getUserId());
 		if (StringUtils.isBlank(egBillregister.getExpendituretype()))
 			egBillregister.setExpendituretype(FinancialConstants.STANDARD_EXPENDITURETYPE_PURCHASE);
@@ -260,7 +262,7 @@ public class CreateSupplierBillController extends BaseBillController {
 			String approvalComment = "";
 			String approvalDesignation = "";
 			if (request.getParameter(APPROVAL_COMENT) != null)
-				approvalComment = request.getParameter(APPROVAL_COMENT);
+				approvalComment = financialUtils.sanitizeInput(request.getParameter(APPROVAL_COMENT));
 			if (request.getParameter(APPROVAL_POSITION) != null && !request.getParameter(APPROVAL_POSITION).isEmpty())
 				approvalPosition = Long.valueOf(request.getParameter(APPROVAL_POSITION));
 			if (request.getParameter(APPROVAL_DESIGNATION) != null

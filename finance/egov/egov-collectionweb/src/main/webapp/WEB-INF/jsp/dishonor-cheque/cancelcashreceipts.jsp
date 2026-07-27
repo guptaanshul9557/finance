@@ -151,7 +151,7 @@ var receiptDateMandatoryMessage = "<spring:message code='msg.please.enter.receip
 							<div class="col-sm-3 add-margin">
 								<form:input path="receiptNumber" id="receiptNumberId"
 									class="form-control" required="required" autocomplete="off"
-									maxlength="18" onkeyup="receiptNoValue(this);" />
+									maxlength="25" onkeyup="receiptNoValue(this);" />
 								<form:errors path="receiptNumber"
 									cssClass="add-margin error-msg" />
 							</div>

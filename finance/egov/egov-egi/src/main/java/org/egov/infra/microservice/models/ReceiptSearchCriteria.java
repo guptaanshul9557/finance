@@ -82,6 +82,10 @@ public class ReceiptSearchCriteria {
     String department;
     String classification;
     String tenantId;
+    Boolean isCountRequest;
+    private Integer offset;
+    private Integer limit;
+    private Boolean isReport;
     
     public void toPayemntSerachCriteriaContract(PaymentSearchCriteria contract){
         //contract.setIds(this.ids);
@@ -102,5 +106,9 @@ public class ReceiptSearchCriteria {
         
         //contract.setReceiptNumbers(this.receiptNumbers);
         contract.setTenantId(this.tenantId);
+        contract.setIsCountRequest(this.isCountRequest);
+        contract.setIsReport(isReport);
+        contract.setOffset(offset);
+        contract.setLimit(limit);
     }
 }

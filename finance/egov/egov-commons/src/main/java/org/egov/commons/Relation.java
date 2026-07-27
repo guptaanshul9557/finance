@@ -47,8 +47,10 @@
  */
 package org.egov.commons;
 
+import org.egov.commons.utils.CommonsConstants;
 import org.egov.commons.utils.EntityType;
 import org.egov.infra.persistence.entity.AbstractPersistable;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.egov.infra.persistence.validator.annotation.Unique;
 import org.hibernate.validator.constraints.Length;
 
@@ -82,18 +84,22 @@ public class Relation extends AbstractPersistable<Integer> implements java.io.Se
     @Column(unique = true)
     @NotNull
     @Length(max = 50)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String code;
 
     @NotNull
     @Length(max = 50)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String name;
 
     @Length(max = 300)
     private String address;
 
     @Length(max = 10)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String mobile;
     @Length(max = 25)
+    @OptionalPattern(regex = CommonsConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String email;
     @Length(max = 250)
     private String narration;

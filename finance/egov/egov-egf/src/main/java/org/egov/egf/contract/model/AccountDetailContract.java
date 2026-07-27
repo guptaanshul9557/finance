@@ -50,8 +50,11 @@ package org.egov.egf.contract.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.validation.constraints.Pattern;
+
 import org.egov.commons.CGeneralLedger;
 import org.egov.commons.CGeneralLedgerDetail;
+import org.egov.utils.FinancialConstants;
 import org.hibernate.validator.constraints.SafeHtml;
 
 public class AccountDetailContract {
@@ -63,6 +66,7 @@ public class AccountDetailContract {
     private Long id;
     private Long orderId;
     @SafeHtml
+    @Pattern(regexp = FinancialConstants.HTMLNOTALLOWED, message = "Characters '<' and '>' are not allowed.")
     private String glcode;
     private Double debitAmount;
     private Double creditAmount;

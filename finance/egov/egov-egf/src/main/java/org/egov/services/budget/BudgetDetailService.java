@@ -2532,11 +2532,16 @@ public class BudgetDetailService extends PersistenceService<BudgetDetail, Long> 
                 .list();
     }
 
-    public List<BudgetDetail> getBudgetDetailByFunctionId(final Long functionId) {
+    public List<BudgetDetail> getBudgetDetailByFunctionId(final Long functionId,String depId) {
         final Criteria criteria = getSession().createCriteria(BudgetDetail.class);
-        return criteria.add(Restrictions.eq("function.id", functionId))
-                .setProjection(Projections.distinct(Projections.property("budgetGroup")))
-                .addOrder(Order.asc("budgetGroup")).list();
+        return criteria
+                .add(Restrictions.eq("function.id", functionId))
+                .add(Restrictions.eq("executingDepartment", depId))
+                .setProjection(
+                        Projections.distinct(
+                                Projections.property("budgetGroup")))
+                .addOrder(Order.asc("budgetGroup"))
+                .list();
     }
     
     public List<BudgetDetail> getBudgetDetailByFunctionIdAndDeptId(final Long functionId, final String departmentId) {

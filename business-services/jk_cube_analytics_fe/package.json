@@ -1,0 +1,57 @@
+{
+  "name": "synmetrix-analytics-dashboard",
+  "version": "1.0.0",
+  "description": "Dynamic analytics dashboard with Synmetrix + PostgreSQL",
+  "homepage": "/mis-dashboard",
+  "proxy": "https://jkhudd.mycitydemo.in/",
+  "main": "server/cube-server.js",
+  "scripts": {
+    "start": "node server/cube-server.js",
+    "dev": "concurrently \"node server/cube-server.js\" \"set NODE_OPTIONS=--no-deprecation && npm run client\"",
+    "client": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "generate-schemas": "node server/schemaGenerator.js"
+  },
+  "dependencies": {
+    "@cubejs-backend/postgres-driver": "^1.5.9",
+    "@cubejs-backend/server": "^1.5.9",
+    "@cubejs-backend/server-core": "^1.5.9",
+    "@cubejs-client/core": "^1.5.9",
+    "@cubejs-client/react": "^1.5.9",
+    "axios": "^1.6.0",
+    "chart.js": "^4.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.9.6",
+    "react-scripts": "^5.0.1",
+    "react-select": "^5.10.2",
+    "react-icons": "^5.5.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

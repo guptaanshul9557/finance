@@ -5,7 +5,7 @@ All notable changes to this module will be documented in this file.
 
 - Upgraded Spring Boot from 2.2.6 to 3.2.2 LTS
 - Upgraded Java version to 17 LTS
-- Migrated from javax to jakarta namespace
+- Migrated from javax to javax namespace
 - Updated log4j2 version to 2.21.1
 - Updated Spring beans version to 6.1.4
 - Upgraded tracer dependency to 2.9.0-SNAPSHOT

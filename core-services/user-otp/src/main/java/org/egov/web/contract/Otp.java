@@ -12,28 +12,32 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 @Setter
 @ToString
 public class Otp {
-    private static final String USER_REGISTRATION = "register";
-    private static final String PASSWORD_RESET = "passwordreset";
-    private static final String USER_LOGIN = "login";
+    private static final String USER_REGISTRATION = "REGISTER";
+    private static final String PASSWORD_RESET = "PASSWORD_RESET";
+    private static final String USER_LOGIN = "LOGIN";
     private String mobileNumber;
+    private String userName;
+    private String password;
     private String tenantId;
     private String type;
     private String userType;
 
-    @JsonIgnore
-    public OtpRequestType getTypeOrDefault() {
-        return isEmpty(type) ? OtpRequestType.REGISTER : mapToDomainType();
-    }
+
+@JsonIgnore
+public OtpRequestType getTypeOrDefault() {
+       return isEmpty(type) ? OtpRequestType.REGISTER : mapToDomainType();
+
+}
 
     private OtpRequestType mapToDomainType() {
-        if (USER_REGISTRATION.equalsIgnoreCase(type)) {
-            return OtpRequestType.REGISTER;
-        } else if (USER_LOGIN.equalsIgnoreCase(type)) {
-            return OtpRequestType.LOGIN;
-        } else if (PASSWORD_RESET.equalsIgnoreCase(type)) {
-            return OtpRequestType.PASSWORD_RESET;
-        }
-        return null;
+    if (USER_REGISTRATION.equalsIgnoreCase(type)) {
+        return OtpRequestType.REGISTER;
+    } else if (USER_LOGIN.equalsIgnoreCase(type)) {
+        return OtpRequestType.LOGIN;
+    } else if (PASSWORD_RESET.equalsIgnoreCase(type)) {
+        return OtpRequestType.PASSWORD_RESET;
     }
+    return null;
+}
 }
 

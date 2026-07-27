@@ -179,9 +179,19 @@ public class PropertiesManager {
     		if(finCoeErpEnvName != null && finCoeErpEnvName.equalsIgnoreCase("local")){
     			return "http://jalandhar.lgpunjab.com:8080/";
     		}
-    		if(finCoeErpEnvName != null && !finCoeErpEnvName.isEmpty()){
+    		else if(finCoeErpEnvName != null && !finCoeErpEnvName.isEmpty() && finCoeErpEnvName.equalsIgnoreCase("hudd")  ){
+    			//return httpProtocol+"://hudd-finance."+finCoeErpDomainName+"/";
+    			return "http://egov-finance:8080/";
+    		}
+    		else if(finCoeErpEnvName != null && !finCoeErpEnvName.isEmpty() && finCoeErpEnvName.equalsIgnoreCase("jk")  ){
+    			//return httpProtocol+"://jmc-jk."+finCoeErpDomainName+"/";
+    			return "http://egov-finance:8080/";
+    		}
+    		else if(finCoeErpEnvName != null && !finCoeErpEnvName.isEmpty() ){
     			return httpProtocol+"://"+tenantId+"-"+finCoeErpEnvName+"."+finCoeErpDomainName+"/";
-    		}else{
+    		}
+    		
+    		else{
     			//considered as the production url
     			return httpProtocol+"://"+tenantId+"."+finCoeErpDomainName+"/";
     		}

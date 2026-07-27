@@ -72,9 +72,11 @@ function populateFunction(obj) {
 }
 function populateBudgetHead(obj) {
 	var functionId = document.getElementById("functions").value;
+	var depId = document.getElementById("department").value;
 	populatebudgetHeadId
 	( {
-		functionId : functionId
+		functionId : functionId,
+		depId : depId
 	})
 }
 

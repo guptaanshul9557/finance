@@ -1,0 +1,29 @@
+---
+# Cube.js Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cubejs-service
+spec:
+  selector:
+    app: cubejs
+  ports:
+  - protocol: TCP
+    port: 4000
+    targetPort: 4000
+  type: ClusterIP
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer

@@ -338,7 +338,7 @@ public class MicroserviceUtils {
 
     public String getTenentId() {
         environment.getProperty(CLIENT_ID);
-        String tenantId = ApplicationThreadLocals.getUserTenantId();
+        String tenantId = "pg."+ApplicationThreadLocals.getTenantID();
         // if (isNotBlank(clientId)) {
         // final StringBuilder stringBuilder = new StringBuilder();
         // stringBuilder.append(clientId).append('.').append(tenantId);
@@ -1013,11 +1013,58 @@ public class MicroserviceUtils {
         return this.getReceipt(criteria);
     }
     
+    public List<Receipt> getReceipts(String ids, String status, String serviceCodes, Date fromDate, Date toDate,Integer offset,Integer pageSize) {
+        ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                .receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .offset(offset)
+                .limit(pageSize)
+                .build();
+        return this.getReceipt(criteria);
+    }
+    public Integer getReceiptsCount(String ids, String status, String serviceCodes, Date fromDate, Date toDate,
+			Boolean isCount) {
+    	ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                .receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .isCountRequest(isCount)
+                .build();
+    	
+        return this.getReceiptCount(criteria);
+    	
+		
+	}
+    
+    public Integer getReceiptsAllCount(String status, String serviceCodes, Date fromDate, Date toDate,Boolean isCount) {
+        ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                //.receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .isCountRequest(isCount)
+                .build();
+        return this.getReceiptCount(criteria);
+    }
+
     public List<Receipt> getReceiptsAll(String status, String serviceCodes, Date fromDate, Date toDate) {
         ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
                 .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
                 //.receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
-                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId()).build();
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .build();
+        return this.getReceipt(criteria);
+    }
+    
+    
+    public List<Receipt> getReceiptsAll(String status, String serviceCodes, Date fromDate, Date toDate,Integer offset,Integer limit) {
+        ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder()
+                .status(Arrays.stream(status.split(",")).collect(Collectors.toSet())).fromDate(fromDate).toDate(toDate)
+                //.receiptNumbers(Arrays.stream(ids.split(",")).collect(Collectors.toSet()))
+                .businessCodes(Arrays.stream(serviceCodes.split(",")).collect(Collectors.toSet())).tenantId(getTenentId())
+                .offset(offset)
+                .limit(limit)
+                .build();
         return this.getReceipt(criteria);
     }
 
@@ -1099,20 +1146,92 @@ public class MicroserviceUtils {
     }
 
     public List<Receipt> searchReciepts(String classification, Date fromDate, Date toDate, String businessCode,
-            String receiptNo) {
+            String receiptNo,Integer offset,Integer limit) {
 
-        return this.searchReciepts(classification, fromDate, toDate, businessCode, Arrays.asList(receiptNo));
+        return this.searchReciepts(classification, fromDate, toDate, businessCode, Arrays.asList(receiptNo),offset,limit);
 
     }
+    
+    public Integer searchReciepts(String classification, Date fromDate, Date toDate, String businessCode, String receiptNo,
+			boolean isCountRequest) {
+		
+    	return this.searchRecieptsCount(classification, fromDate, toDate, businessCode, Arrays.asList(receiptNo),isCountRequest);
+	}
 
-    public List<Receipt> searchReciepts(String classification, Date fromDate, Date toDate, String businessCode,
-            List<String> receiptNos) {
+    
+
+	private Integer searchRecieptsCount(String classification, Date fromDate, Date toDate,
+			String businessCode, List<String> receiptNos, boolean isCountRequest) {
+		ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder().fromDate(fromDate).toDate(toDate)
+                .businessCodes(businessCode != null ? Arrays.stream(businessCode.split(",")).collect(Collectors.toSet())
+                        : Collections.EMPTY_SET)
+                .receiptNumbers(
+                        receiptNos != null ? receiptNos.stream().collect(Collectors.toSet()) : Collections.EMPTY_SET)
+                .classification(classification)
+                .isCountRequest(isCountRequest).build();
+        return this.getReceiptCount(criteria);
+		
+	}
+
+	private Integer getReceiptCount(ReceiptSearchCriteria rSearchcriteria) {
+		 PaymentSearchCriteria paySearchCriteria = new PaymentSearchCriteria();
+         rSearchcriteria.toPayemntSerachCriteriaContract(paySearchCriteria);
+		return this.getPaymentCounts(paySearchCriteria);
+	}
+
+	private Integer getPaymentCounts(PaymentSearchCriteria searchCriteria) {
+		Map<String,Object> response = null;
+        StringBuilder url = new StringBuilder();
+        if (paymentSearchEndPointEnabled) {
+        	if(!searchCriteria.getBusinessServices().isEmpty() && searchCriteria.getBusinessServices().size()>0) {
+        		url = new StringBuilder(appConfigManager.getEgovCollSerHost())
+                        .append(appConfigManager.getCollSerPaymentModuleNameSearch()).append("?");
+        	}else {
+        		url = new StringBuilder(appConfigManager.getEgovCollSerHost())
+                        .append(appConfigManager.getCollSerPaymentSearch()).append("?");
+        	}
+        } else {
+            url = new StringBuilder(appConfigManager.getEgovCollSerHost())
+                    .append(appConfigManager.getCollSerPaymentSearch()).append("?");
+        }
+        final RequestInfo requestInfo = getRequestInfo();
+        RequestInfoWrapper reqWrapper = new RequestInfoWrapper();
+        reqWrapper.setRequestInfo(requestInfo);
+        try {
+            preparePaymentSearchQueryString(searchCriteria, url);
+            if (paymentSearchEndPointEnabled) {
+            	if(!searchCriteria.getBusinessServices().isEmpty() && searchCriteria.getBusinessServices().size()>0) {
+            		for (String serviceCode :searchCriteria.getBusinessServices()) {
+                        response = restTemplate.postForObject(url.toString(), reqWrapper, Map.class,serviceCode);
+                        }	
+            	}else {
+            		response = restTemplate.postForObject(url.toString(), reqWrapper, Map.class);
+            	}
+                
+            } else {
+                response = restTemplate.postForObject(url.toString(), reqWrapper, Map.class);
+            }
+            return response!=null ? (Integer) response.get("Count") : null;
+
+        } catch (RestClientException e) {
+            LOGGER.error("ERROR occurred while fetching the Payment list : ", e);
+        }
+        return null;
+	}
+
+	public List<Receipt> searchReciepts(String classification, Date fromDate, Date toDate, String businessCode,
+            List<String> receiptNos,Integer offset ,Integer limit) {
         ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder().fromDate(fromDate).toDate(toDate)
                 .businessCodes(businessCode != null ? Arrays.stream(businessCode.split(",")).collect(Collectors.toSet())
                         : Collections.EMPTY_SET)
                 .receiptNumbers(
                         receiptNos != null ? receiptNos.stream().collect(Collectors.toSet()) : Collections.EMPTY_SET)
-                .classification(classification).build();
+                .classification(classification)
+                .offset(offset)
+                .limit(limit)
+                .build();
+        
+                
         return this.getReceipt(criteria);
     }
 
@@ -1569,6 +1688,52 @@ public class MicroserviceUtils {
         }
         return null;
     }
+    
+    public List<BusinessService> getBusinessServiceByBusinessServices(Set<String> businessServices) {
+        List<BusinessService> list = null;
+        List<ModuleDetail> moduleDetailsList = new ArrayList<>();
+
+        try {
+            if (businessServices != null && !businessServices.isEmpty()) {
+                for (String businessService : businessServices) {
+                    this.prepareModuleDetails(
+                            moduleDetailsList,
+                            "BillingService",
+                            "BusinessService",
+                            "businessService", // filter field
+                            businessService,
+                            String.class);
+                }
+            } else {
+                this.prepareModuleDetails(
+                        moduleDetailsList,
+                        "BillingService",
+                        "BusinessService",
+                        "businessService",
+                        null,
+                        String.class);
+            }
+
+            Map postForObject = mapper.convertValue(
+                    this.getMdmsData(moduleDetailsList, true, null, null),
+                    Map.class);
+
+            if (postForObject != null) {
+                return mapper.convertValue(
+                        JsonPath.read(postForObject,
+                                "$.MdmsRes.BillingService.BusinessService"),
+                        new TypeReference<List<BusinessService>>() {
+                        });
+            }
+
+        } catch (RestClientException e) {
+            LOGGER.error(
+                    "ERROR occurred while fetching business service details by businessService: ",
+                    e);
+        }
+
+        return null;
+    }
 
     public List<BusinessService> getBusinessService(String type) {
         List<BusinessService> list = null;
@@ -1827,7 +1992,7 @@ public class MicroserviceUtils {
         if (CollectionUtils.isNotEmpty(searchCriteria.getReceiptNumbers())) {
             url.append("&receiptNumbers=").append(StringUtils.join(searchCriteria.getReceiptNumbers(), ","));
         }
-        if (CollectionUtils.isNotEmpty(searchCriteria.getReceiptNumbers())) {
+        if (CollectionUtils.isNotEmpty(searchCriteria.getReceiptNumbers()) && searchCriteria.getReceiptDate()!=null) {
             url.append("&receiptDate=").append(searchCriteria.getReceiptDate());
         }
         if (CollectionUtils.isNotEmpty(searchCriteria.getStatus())) {
@@ -1856,6 +2021,18 @@ public class MicroserviceUtils {
         }
         if (CollectionUtils.isNotEmpty(searchCriteria.getIds())) {
             url.append("&ids=").append(StringUtils.join(searchCriteria.getIds(), ","));
+        }
+        if(searchCriteria.getIsCountRequest()!=null) {
+        	url.append("&isCountRequest=").append(searchCriteria.getIsCountRequest());
+        }
+        if(searchCriteria.getIsReport()!=null) {
+        	url.append("&isReport=").append(searchCriteria.getIsReport());
+        }
+        if(searchCriteria.getOffset()!=null) {
+        	url.append("&offset=").append(searchCriteria.getOffset());
+        }
+        if(searchCriteria.getLimit()!=null) {
+        	url.append("&limit=").append(searchCriteria.getLimit());
         }
     }
 
@@ -1957,6 +2134,62 @@ public class MicroserviceUtils {
         }
         return null;
     }
+
+	public List<Receipt> receiptReport(String classification, Date fromDate, Date toDate, String businessCode, String receiptNo,
+			boolean isReport) {
+		
+		return this.searchRecieptsReport(classification, fromDate, toDate, businessCode, Arrays.asList(receiptNo),isReport);
+	}
+
+	private List<Receipt> searchRecieptsReport(String classification, Date fromDate, Date toDate,
+			String businessCode, List<String> receiptNos, boolean isReport) {
+		ReceiptSearchCriteria criteria = new ReceiptSearchCriteria().builder().fromDate(fromDate).toDate(toDate)
+                .businessCodes(businessCode != null ? Arrays.stream(businessCode.split(",")).collect(Collectors.toSet())
+                        : Collections.EMPTY_SET)
+                .receiptNumbers(
+                        receiptNos != null ? receiptNos.stream().collect(Collectors.toSet()) : Collections.EMPTY_SET)
+                .classification(classification)
+                .isReport(isReport)
+                .tenantId(this.getTenentId())
+                .build();
+		        
+        return this.getReceiptReport(criteria);
+		
+	}
+
+	private List<Receipt> getReceiptReport(ReceiptSearchCriteria rSearchcriteria) {
+		// Checking for the collection version either older version or new
+        // version are getting used
+        List<Receipt> receipts = new ArrayList<>();
+        switch (ApplicationThreadLocals.getCollectionVersion().toUpperCase()) {
+        case "V2":
+        case "VERSION2":
+            PaymentSearchCriteria paySearchCriteria = new PaymentSearchCriteria();
+            rSearchcriteria.toPayemntSerachCriteriaContract(paySearchCriteria);
+            List<Payment> payments = this.getPayments(paySearchCriteria);
+            paymentUtils.getReceiptsFromPayments(payments, receipts);
+            break;
+
+        default:
+            RequestInfo requestInfo = new RequestInfo();
+            RequestInfoWrapper reqWrapper = new RequestInfoWrapper();
+            requestInfo.setAuthToken(getUserToken());
+            requestInfo.setUserInfo(getUserInfo());
+            reqWrapper.setRequestInfo(requestInfo);
+            StringBuilder url = new StringBuilder();
+            url.append(appConfigManager.getEgovCollSerHost()).append(receiptSearchUrl).append("?tenantId=")
+                    .append(getTenentId());
+            prepareReceiptSearchUrl(rSearchcriteria, url);
+            LOGGER.info("call:" + url.toString());
+            ReceiptResponse response = restTemplate.postForObject(url.toString(), reqWrapper, ReceiptResponse.class);
+            receipts = response.getReceipts();
+        }
+        return receipts;
+	}
+
+
+
+	
 
    
 

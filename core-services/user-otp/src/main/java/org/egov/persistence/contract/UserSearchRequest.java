@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UserSearchRequest {
     private String userName;
+    private String password;
     private String tenantId;
     private String userType;
     private String mobileNumber;

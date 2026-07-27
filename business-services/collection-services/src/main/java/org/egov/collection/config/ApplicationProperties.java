@@ -185,7 +185,16 @@ public class ApplicationProperties {
     @Value("${coll.notification.fallback.locale}")
     private String fallBackLocale;
 
-    // Payment properties
+    //Report
+
+    @Value("${businessservice.filer.isRequired}")
+    private Boolean isBusinessservice;
+
+    @Value("${todate.filter.isRequired}")
+    private Boolean isToDate;
+
+   @Value("${fromdate.filter.isRequired}")
+   private Boolean isFromDate;
 
     @Value("${kafka.topics.payment.create.name}")
     private String createPaymentTopicName;

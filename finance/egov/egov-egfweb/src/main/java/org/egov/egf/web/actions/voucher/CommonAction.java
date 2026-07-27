@@ -266,11 +266,22 @@ public class CommonAction extends BaseFormAction {
     private Integer bankaccount;
     private List<CFinancialYear> yearCodeList;
     private Long functionId;
-    @Autowired
+    private String depId;
+   
+
+	@Autowired
     private BudgetDetailService budgetDetailService;
     private ArrayList<Department> listOfDepartments;
 
-    public String getSerialNo() {
+    public String getDepId() {
+		return depId;
+	}
+
+	public void setDepId(String depId) {
+		this.depId = depId;
+	}
+
+	public String getSerialNo() {
         return serialNo;
     }
 
@@ -3455,8 +3466,8 @@ public class CommonAction extends BaseFormAction {
 
     @Action(value = "/voucher/common-ajaxLoadEstimateBudgetDetailsByFuncId")
     public String ajaxLoadEstimateBudgetDetailsByFuncId() {
-        if (functionId != null && functionId != 0)
-            budgetDetailList = budgetDetailService.getBudgetDetailByFunctionId(functionId);
+        if (functionId != null && functionId != 0 && depId!=null && !depId.isEmpty())
+            budgetDetailList = budgetDetailService.getBudgetDetailByFunctionId(functionId,depId);
         return "estimateBudgetDetails";
     }
 

@@ -1,8 +1,10 @@
 {
   "otp": {
     "mobileNumber": "mobileNumber",
+    "userName": "userName",
+    "password": "password",
     "tenantId": "tenantId",
-    "type": "passwordreset",
+    "type": "PASSWORD_RESET",
     "userType": "CITIZEN"
   }
 }

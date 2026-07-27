@@ -2,6 +2,8 @@ package org.egov.infra.microservice.models;
 
 import java.io.Serializable;
 
+import org.egov.infra.microservice.utils.MicroserviceConstants;
+import org.egov.infra.persistence.validator.annotation.OptionalPattern;
 import org.hibernate.validator.constraints.SafeHtml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,6 +13,7 @@ public class AuditDetails implements Serializable {
     private static final long serialVersionUID = -7014596797379473651L;
     @JsonProperty("createdBy")
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String createdBy = null;
 
     @JsonProperty("createdDate")
@@ -18,6 +21,7 @@ public class AuditDetails implements Serializable {
 
     @JsonProperty("lastModifiedBy")
     @SafeHtml
+    @OptionalPattern(regex = MicroserviceConstants.ALPHANUMERICWITHALLSPECIALCHAR, message = "Special characters are not allowed")
     private String lastModifiedBy = null;
 
     @JsonProperty("lastModifiedDate")
