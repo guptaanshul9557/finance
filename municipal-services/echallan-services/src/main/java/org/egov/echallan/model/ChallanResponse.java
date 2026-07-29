@@ -44,11 +44,11 @@ public class ChallanResponse {
   @JsonProperty("countOfServices")
   private int countOfServices;
 
-  @JsonProperty("totalAmountCollected")
-  private int totalAmountCollected;
-  
-  @JsonProperty("challanValidity")
-  private int validity;
+//  @JsonProperty("totalAmountCollected")
+//  private int totalAmountCollected;
+//  
+//  @JsonProperty("challanValidity")
+//  private int validity;
 
   @JsonProperty("responseInfo")
 
