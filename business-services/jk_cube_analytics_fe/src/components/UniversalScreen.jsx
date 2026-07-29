@@ -1,28 +1,29 @@
 /**
  * Universal Screen Component
- * 
+ *
  * This component renders any dashboard screen based on configuration from screenRegistry.
  * Just pass a screenId prop and it handles everything: KPIs, filters, charts, tables, drilling.
- * 
+ *
  * Usage:
  *   <UniversalScreen screenId="crn_management" />
  *   <UniversalScreen screenId="common_collection" />
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getScreenById, formatValue } from '../config/screenRegistry';
-import cubejsApi from '../cubejs/cubejsApi';
-import KPICard from './KPICard';
-import PieChart from './charts/PieChart';
-import BarChart from './charts/BarChart';
-import LineChart from './charts/LineChart';
-import Select from 'react-select';
-import '../styles/UniversalScreen.css';
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { getScreenById, formatValue } from "../config/screenRegistry";
+import cubejsApi from "../cubejs/cubejsApi";
+import KPICard from "./KPICard";
+import PieChart from "./charts/PieChart";
+import BarChart from "./charts/BarChart";
+import LineChart from "./charts/LineChart";
+import Select from "react-select";
+import "../styles/UniversalScreen.css";
 import { IoArrowBackCircleSharp } from "react-icons/io5";
 import { GrFormNextLink } from "react-icons/gr";
-import axios from 'axios';
-import * as XLSX from 'xlsx';
+import { IoMdDownload } from "react-icons/io";
+import axios from "axios";
+import * as XLSX from "xlsx";
 
 // Wrap cubejsApi.load with a safe fallback for time-dimension name mismatches.
 // Some cubes expose `systemDate` while others expose `createdDate`. If a query
@@ -35,11 +36,11 @@ cubejsApi.load = async (query) => {
   } catch (err) {
     try {
       const msg = err && (err.message || JSON.stringify(err));
-      if (msg && msg.includes('not found for path')) {
+      if (msg && msg.includes("not found for path")) {
         const m = msg.match(/not found for path '([^']+)'/);
         if (m) {
           const path = m[1]; // e.g. Treasury.systemDate
-          const parts = path.split('.');
+          const parts = path.split(".");
           if (parts.length === 2) {
             const cube = parts[0];
             const dim = parts[1];
@@ -69,12 +70,26 @@ cubejsApi.load = async (query) => {
 };
 
 // Display-only helper: raw dimension values (tenant ids, service categories/types, etc.)
-// often use underscores (e.g. "ACCOUNT_SECTION"). This turns them into a readable label
-// ("ACCOUNT SECTION") for card titles only — the underlying value passed to
+// often use underscores (e.g. "ACCOUNT_SECTION" or P.>JAMMU). This turns them into a readable label
+// ("ACCOUNT SECTION") or JAMMU for card titles only — the underlying value passed to
 // handleDepartmentSelect / Cube.js filters is always the untouched original string.
-const formatCardLabel = (label) => {
+const formatCardLabel = (label, format) => {
   if (label === null || label === undefined) return label;
-  return String(label).replace(/_/g, ' ');
+
+  const value = String(label);
+
+  // If it starts with "PG.", return everything after it
+  if (value.startsWith("PG.")) {
+    return value.substring(3);
+  }
+
+  // If it contains underscores, replace them with spaces
+  if (value.includes("_")) {
+    return value.replace(/_/g, " ");
+  }
+
+  // Otherwise return as is
+  return value;
 };
 
 const UniversalScreen = ({ screenId }) => {
@@ -82,32 +97,42 @@ const UniversalScreen = ({ screenId }) => {
   const screenConfig = getScreenById(screenId);
 
   // Helper function to handle authentication errors
-  const handleAuthError = useCallback((error) => {
-    if (error.message?.includes('Invalid token') ||
-      error.message?.includes('Unauthorized') ||
-      error.response?.status === 401 ||
-      error.response?.status === 403) {
-      console.error('Authentication error, redirecting to login...');
-      localStorage.removeItem('token'); // Clear invalid token
-      navigate('/login', { replace: true });
-      return true;
-    }
-    return false;
-  }, [navigate]);
+  const handleAuthError = useCallback(
+    (error) => {
+      if (
+        error.message?.includes("Invalid token") ||
+        error.message?.includes("Unauthorized") ||
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+        console.error("Authentication error, redirecting to login...");
+        localStorage.removeItem("token"); // Clear invalid token
+        navigate("/login", { replace: true });
+        return true;
+      }
+      return false;
+    },
+    [navigate],
+  );
 
   // State Management
   const [selectedYear, setSelectedYear] = useState(
-    screenConfig?.financialYear?.defaultYear || '2026-2027'
+    screenConfig?.financialYear?.defaultYear || "2026-2027",
   );
-  const [fromDate, setFromDate]= useState("")
-  const [toDate, setToDate]= useState("")
-  const [serviceCategory, setServiceCategory]= useState("")
-  const [ serviceType, setServiceType]= useState("")
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [serviceCategory, setServiceCategory] = useState("");
+  const [serviceType, setServiceType] = useState("");
   const [serviceTypeOptions, setServiceTypeOptions] = useState([]);
   const [serviceCatOptions, setServiceCatOptions] = useState([]);
-  const [businessServices, setBusinessServices]= useState([])
+  const [businessServices, setBusinessServices] = useState([]);
   const [drilldownView, setDrilldownView] = useState("tenant");
   const [isExporting, setIsExporting] = useState(false);
+  const [organization, setOrganization] = useState("");
+  const [ulb, setUlb] = useState("");
+  const [allOrganizationOptions, setAllOrganizationOptions] = useState([]);
+  const [organizationOptions, setOrganizationOptions] = useState([]);
+  const [ulbOptions, setUlbOptions] = useState([]);
 
   const [headerKPIs, setHeaderKPIs] = useState({});
   const [bodyKPIs, setBodyKPIs] = useState({});
@@ -145,11 +170,11 @@ const UniversalScreen = ({ screenId }) => {
 
   // Modal chart state for different modals
   const [departmentChartData, setDepartmentChartData] = useState(null);
-  const [departmentChartType, setDepartmentChartType] = useState('bar');
+  const [departmentChartType, setDepartmentChartType] = useState("bar");
   const [monthlyChartData, setMonthlyChartData] = useState(null);
-  const [monthlyChartType, setMonthlyChartType] = useState('bar');
+  const [monthlyChartType, setMonthlyChartType] = useState("bar");
   const [dailyChartData, setDailyChartData] = useState(null);
-  const [dailyChartType, setDailyChartType] = useState('bar');
+  const [dailyChartType, setDailyChartType] = useState("bar");
 
   // Department-wise collection state (for main dashboard)
   const [departmentWiseData, setDepartmentWiseData] = useState([]);
@@ -165,12 +190,9 @@ const UniversalScreen = ({ screenId }) => {
 
   const [drilldownStack, setDrilldownStack] = useState([]);
 
-  console.log("departmentListData",departmentListData);
-  
-
   // ==================== RESET DRILLDOWN STATE ====================
   const resetDrilldownState = useCallback(() => {
-    console.log('🔄 Resetting drilldown state');
+    console.log("🔄 Resetting drilldown state");
     setShowDepartmentSelection(false);
     setShowMonthlyDrilldown(false);
     setShowDailyDrilldown(false);
@@ -182,11 +204,11 @@ const UniversalScreen = ({ screenId }) => {
     setMonthlyChartData(null);
     setDailyChartData(null);
     setDrilldownStack([]);
-    setDrilldownView("tenant"); 
-    setFromDate("");
-    setToDate("");
-    setServiceType("")
-    setServiceCategory("")
+    setDrilldownView("tenant");
+    // setFromDate("");
+    // setToDate("");
+    // setServiceType("");
+    // setServiceCategory("");
   }, []);
 
   const handleGoBack = () => {
@@ -195,7 +217,7 @@ const UniversalScreen = ({ screenId }) => {
     setShowDailyDrilldown(false);
     setShowMonthlyDrilldown(false);
     setShowDepartmentSelection(false);
-    if (prevLevel.type === 'selection') {
+    if (prevLevel.type === "selection") {
       if (prevLevel.snapshot) {
         setDepartmentListData(prevLevel.snapshot.departmentListData);
         setDepartmentChartData(prevLevel.snapshot.departmentChartData);
@@ -203,7 +225,7 @@ const UniversalScreen = ({ screenId }) => {
         setModalFilter(prevLevel.snapshot.modalFilter);
       }
       setShowDepartmentSelection(true);
-    } else if (prevLevel.type === 'monthly') {
+    } else if (prevLevel.type === "monthly") {
       if (prevLevel.snapshot) {
         setMonthlyDrilldownData(prevLevel.snapshot.monthlyDrilldownData);
         setMonthlyChartData(prevLevel.snapshot.monthlyChartData);
@@ -212,29 +234,70 @@ const UniversalScreen = ({ screenId }) => {
       }
       setShowMonthlyDrilldown(true);
     }
-    setDrilldownStack(prev => prev.slice(0, -1));
+    setDrilldownStack((prev) => prev.slice(0, -1));
+  };
+
+  // ==================== ORGANIZATION / ULB FILTER (generic, opt-in) ====================
+  // Resolves the currently-selected Organization/ULB dropdowns into a concrete list of tenant
+  // codes to filter by. Returns null when neither is selected (i.e. "show everything", the
+  // existing default behavior — completely unchanged).
+  //   - ULB selected: filter to that exact code.
+  //   - Organization selected (no ULB): filter to the organization's own code plus every child
+  //     ULB under it (using the tenant list already fetched into allOrganizationOptions).
+  const getOrgUlbTenantValues = () => {
+    if (ulb) return [ulb];
+    if (organization) {
+      // const childCodes = allOrganizationOptions
+      //   .filter((item) => !item.isParent && item.parent === organization)
+      //   .map((item) => item.code);
+      // return [organization, ...childCodes];
+      return [organization];
+    }
+    return null;
+  };
+
+  // Applies the Organization/ULB filter to a header-KPI query, IN PLACE, only when this screen
+  // opts in via `screenConfig.tenantFilter`. Screens that don't define it are unaffected — this
+  // is a pure no-op for them.
+  const applyTenantFilterToQuery = (query) => {
+    const cfg = screenConfig?.tenantFilter;
+    if (!cfg?.dimension) return query;
+
+    const tenantValues = getOrgUlbTenantValues();
+    if (!tenantValues || tenantValues.length === 0) return query;
+
+    const values =
+      cfg.uppercase !== false
+        ? tenantValues.map((v) => String(v).toUpperCase())
+        : tenantValues;
+
+    query.filters = [
+      ...(query.filters || []),
+      { member: cfg.dimension, operator: "equals", values },
+    ];
+    return query;
   };
 
   // ==================== FETCH HEADER KPIs ====================
   const fetchHeaderKPIs = async () => {
-    if (!screenConfig || !screenConfig.kpis || screenConfig.kpis.length === 0) return;
+    if (!screenConfig || !screenConfig.kpis || screenConfig.kpis.length === 0)
+      return;
 
     try {
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
       const kpiResults = {};
-
 
       for (const kpi of screenConfig.kpis) {
         // Special logic for Today Top Grievance: fetch department with max count for today
         if (kpi.displayDepartmentName) {
           const today = new Date();
           const yyyy = today.getFullYear();
-          const mm = String(today.getMonth() + 1).padStart(2, '0');
-          const dd = String(today.getDate()).padStart(2, '0');
+          const mm = String(today.getMonth() + 1).padStart(2, "0");
+          const dd = String(today.getDate()).padStart(2, "0");
           const todayStr = `${yyyy}-${mm}-${dd}`;
           const query = {
             measures: [kpi.measure],
-            dimensions: [kpi.dimension || 'EgPgrService.departmentName'],
+            dimensions: [kpi.dimension || "EgPgrService.departmentName"],
             timeDimensions: [
               {
                 dimension: kpi.timeDimension,
@@ -242,23 +305,23 @@ const UniversalScreen = ({ screenId }) => {
               },
             ],
             order: {
-              [kpi.measure]: 'desc',
+              [kpi.measure]: "desc",
             },
             limit: 1,
           };
-            // await cubejsApi.invalidateCache();
+          // await cubejsApi.invalidateCache();
+          applyTenantFilterToQuery(query);
           const resultSet = await cubejsApi.load(query);
           const data = resultSet.tablePivot();
           console.log({ resultSetDataHdr: data });
           // Save both value and department name
           kpiResults[kpi.id] = {
             value: data[0]?.[kpi.measure] || 0,
-            department: data[0]?.[kpi.dimension || 'EgPgrService.departmentName'] || '',
+            department:
+              data[0]?.[kpi.dimension || "EgPgrService.departmentName"] || "",
           };
           continue;
         }
-
-
 
         // If kpi provides a customQuery, use it (useful for multi-measure responses)
         if (kpi.customQuery?.measures?.length) {
@@ -268,13 +331,17 @@ const UniversalScreen = ({ screenId }) => {
             const queryToRun = JSON.parse(JSON.stringify(kpi.customQuery));
 
             // Compute date range from selected year
-            const timeDim = kpi.timeDimension || (queryToRun.timeDimensions?.[0]?.dimension) || (queryToRun.dimensions?.[0]) || 'TresCollReceiptHdr.receiptDate';
+            const timeDim =
+              kpi.timeDimension ||
+              queryToRun.timeDimensions?.[0]?.dimension ||
+              queryToRun.dimensions?.[0] ||
+              "TresCollReceiptHdr.receiptDate";
 
             if (kpi.isTodayBased) {
               const today = new Date();
               const yyyy = today.getFullYear();
-              const mm = String(today.getMonth() + 1).padStart(2, '0');
-              const dd = String(today.getDate()).padStart(2, '0');
+              const mm = String(today.getMonth() + 1).padStart(2, "0");
+              const dd = String(today.getDate()).padStart(2, "0");
               const todayStr = `${yyyy}-${mm}-${dd}`;
 
               queryToRun.timeDimensions = [
@@ -292,16 +359,20 @@ const UniversalScreen = ({ screenId }) => {
               ];
             }
 
-            console.log(`🔍 KPI ${kpi.id} SENDING QUERY:`, JSON.stringify(queryToRun, null, 2));
+            console.log(
+              `🔍 KPI ${kpi.id} SENDING QUERY:`,
+              JSON.stringify(queryToRun, null, 2),
+            );
+            applyTenantFilterToQuery(queryToRun);
             const resultSet = await cubejsApi.load(queryToRun);
             const data = resultSet.tablePivot();
             console.log(`🔍 KPI ${kpi.id} customQuery response:`, data);
             // If kpi has a renderValue function, call it to compute display value
-            if (typeof kpi.renderValue === 'function') {
+            if (typeof kpi.renderValue === "function") {
               try {
                 kpiResults[kpi.id] = kpi.renderValue(data);
               } catch (err) {
-                console.error('❌ Error in kpi.renderValue:', err);
+                console.error("❌ Error in kpi.renderValue:", err);
                 kpiResults[kpi.id] = data[0] || 0;
               }
             } else {
@@ -310,7 +381,10 @@ const UniversalScreen = ({ screenId }) => {
             }
             continue;
           } catch (err) {
-            console.error(`❌ Error fetching customQuery for KPI ${kpi.id}:`, err);
+            console.error(
+              `❌ Error fetching customQuery for KPI ${kpi.id}:`,
+              err,
+            );
             kpiResults[kpi.id] = 0;
             continue;
           }
@@ -324,7 +398,7 @@ const UniversalScreen = ({ screenId }) => {
 
           query = structuredClone(kpi.customQuery);
         } else {
-          console.log({ customQuery: kpi.measure }, "measure",);
+          console.log({ customQuery: kpi.measure }, "measure");
 
           query = {
             measures: [kpi.measure], // only for simple KPIs
@@ -332,14 +406,13 @@ const UniversalScreen = ({ screenId }) => {
         }
         console.log({ query });
 
-
         if (kpi.timeDimension) {
           // If KPI is today-based, use today's date for dateRange
           if (kpi.isTodayBased) {
             const today = new Date();
             const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
             const todayStr = `${yyyy}-${mm}-${dd}`;
             query.timeDimensions = [
               {
@@ -360,16 +433,22 @@ const UniversalScreen = ({ screenId }) => {
         console.log(`🔍 Fetching KPI ${kpi.id} with measure:`, kpi.measure);
 
         // Defensive: ensure the query has valid measures before calling Cube.js
-        const measuresValid = Array.isArray(query.measures) && query.measures.length > 0 &&
-          (typeof query.measures[0] === 'string' || typeof query.measures[0] === 'object');
+        const measuresValid =
+          Array.isArray(query.measures) &&
+          query.measures.length > 0 &&
+          (typeof query.measures[0] === "string" ||
+            typeof query.measures[0] === "object");
 
         if (!measuresValid) {
-          console.warn(`Skipping KPI ${kpi.id} because query.measures is invalid:`, query.measures);
+          console.warn(
+            `Skipping KPI ${kpi.id} because query.measures is invalid:`,
+            query.measures,
+          );
           kpiResults[kpi.id] = 0;
           continue;
         }
 
-        const resultSet = await cubejsApi.load(query);
+        const resultSet = await cubejsApi.load(applyTenantFilterToQuery(query));
         const data = resultSet.tablePivot();
         console.log({ resultSetDatahdr3: data });
         console.log(`🔍 KPI ${kpi.id} Response:`, {
@@ -378,16 +457,16 @@ const UniversalScreen = ({ screenId }) => {
           firstRow: data[0],
           measureKey: kpi.measure,
           value: data[0]?.[kpi.measure],
-          allKeys: data[0] ? Object.keys(data[0]) : []
+          allKeys: data[0] ? Object.keys(data[0]) : [],
         });
         // Cube.js returns data with full measure name (including cube name)
         kpiResults[kpi.id] = data[0]?.[kpi.measure] || 0;
       }
 
       setHeaderKPIs(kpiResults);
-      console.log('✅ Final Header KPIs:', kpiResults);
+      console.log("✅ Final Header KPIs:", kpiResults);
     } catch (error) {
-      console.error('❌ Error fetching header KPIs:', error);
+      console.error("❌ Error fetching header KPIs:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -401,7 +480,7 @@ const UniversalScreen = ({ screenId }) => {
     const options = {};
 
     for (const field of screenConfig.filters.fields || []) {
-      if (field.type === 'select' && field.optionsQuery) {
+      if (field.type === "select" && field.optionsQuery) {
         try {
           const resultSet = await cubejsApi.load({
             dimensions: [
@@ -421,7 +500,7 @@ const UniversalScreen = ({ screenId }) => {
             return;
           }
         }
-      } else if (field.type === 'select' && field.options) {
+      } else if (field.type === "select" && field.options) {
         options[field.id] = field.options;
       }
     }
@@ -450,7 +529,7 @@ const UniversalScreen = ({ screenId }) => {
 
       setBodyKPIs(kpiResults);
     } catch (error) {
-      console.error('❌ Error fetching body KPIs:', error);
+      console.error("❌ Error fetching body KPIs:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -461,11 +540,16 @@ const UniversalScreen = ({ screenId }) => {
 
   // ==================== FETCH CHART DATA ====================
   const fetchChartData = async () => {
-    if (!screenConfig || !screenConfig.charts || screenConfig.charts.length === 0) return;
+    if (
+      !screenConfig ||
+      !screenConfig.charts ||
+      screenConfig.charts.length === 0
+    )
+      return;
 
     try {
       const allChartData = {};
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
 
       // Fetch data for ALL charts
       for (const chart of screenConfig.charts) {
@@ -473,7 +557,7 @@ const UniversalScreen = ({ screenId }) => {
           measures: [chart.measure],
           dimensions: [chart.dimension],
           order: {
-            [chart.measure]: chart.order?.direction || 'desc',
+            [chart.measure]: chart.order?.direction || "desc",
           },
         };
 
@@ -482,8 +566,8 @@ const UniversalScreen = ({ screenId }) => {
           const cubeName = screenConfig.schema.cubeName;
 
           // Check if any time dimension exists in schema
-          const timeDimension = screenConfig.schema.dimensions?.find(dim =>
-            dim.type === 'time'
+          const timeDimension = screenConfig.schema.dimensions?.find(
+            (dim) => dim.type === "time",
           );
 
           if (timeDimension) {
@@ -505,7 +589,7 @@ const UniversalScreen = ({ screenId }) => {
         const data = resultSet.tablePivot();
         console.log({ resultSetData: data });
         const formatted = data.map((row) => ({
-          name: row[chart.dimension] || 'N/A',
+          name: row[chart.dimension] || "N/A",
           value: parseFloat(row[chart.measure] || 0),
         }));
 
@@ -516,13 +600,12 @@ const UniversalScreen = ({ screenId }) => {
 
       // Initialize chart types with defaults
       const defaultTypes = {};
-      screenConfig.charts.forEach(chart => {
-        defaultTypes[chart.id] = chart.defaultType || chart.types?.[0] || 'pie';
+      screenConfig.charts.forEach((chart) => {
+        defaultTypes[chart.id] = chart.defaultType || chart.types?.[0] || "pie";
       });
       setChartTypes(defaultTypes);
-
     } catch (error) {
-      console.error('❌ Error fetching chart data:', error);
+      console.error("❌ Error fetching chart data:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -532,22 +615,22 @@ const UniversalScreen = ({ screenId }) => {
   // ==================== FETCH DEPARTMENT-WISE COLLECTION ====================
   const fetchDepartmentWiseCollection = async () => {
     // Only fetch for Common Collection screen
-    if (screenConfig?.id !== 'common_collection') return;
+    if (screenConfig?.id !== "common_collection") return;
 
     try {
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
 
       const query = {
-        measures: ['TresCollReceiptHdr.totalAmount'],
-        dimensions: ['TresCollReceiptHdr.departmentName'],
+        measures: ["TresCollReceiptHdr.totalAmount"],
+        dimensions: ["TresCollReceiptHdr.departmentName"],
         timeDimensions: [
           {
-            dimension: 'TresCollReceiptHdr.receiptDate',
+            dimension: "TresCollReceiptHdr.receiptDate",
             dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
           },
         ],
         order: {
-          'TresCollReceiptHdr.totalAmount': 'desc',
+          "TresCollReceiptHdr.totalAmount": "desc",
         },
         limit: 10, // Top 10 departments
       };
@@ -556,13 +639,13 @@ const UniversalScreen = ({ screenId }) => {
       const data = resultSet.tablePivot();
       console.log({ resultSetData: data });
       const departments = data.map((row) => ({
-        name: row['TresCollReceiptHdr.departmentName'] || 'Unknown',
-        value: parseFloat(row['TresCollReceiptHdr.totalAmount'] || 0),
+        name: row["TresCollReceiptHdr.departmentName"] || "Unknown",
+        value: parseFloat(row["TresCollReceiptHdr.totalAmount"] || 0),
       }));
 
       setDepartmentWiseData(departments);
     } catch (error) {
-      console.error('❌ Error fetching department-wise collection:', error);
+      console.error("❌ Error fetching department-wise collection:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -574,11 +657,11 @@ const UniversalScreen = ({ screenId }) => {
     if (!screenConfig?.bodyConfig?.sections) return;
 
     try {
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
       const sectionsData = {};
 
       for (const section of screenConfig.bodyConfig.sections) {
-        if (section.type === 'kpiCards') {
+        if (section.type === "kpiCards") {
           if (section.dataQuery) {
             // Dynamic query-based section (e.g., departmentWise with dataQuery)
             const filters = {
@@ -595,7 +678,7 @@ const UniversalScreen = ({ screenId }) => {
             console.log(`✅ Body section ${section.id} data:`, data);
 
             sectionsData[section.id] = {
-              type: 'dynamic',
+              type: "dynamic",
               data: data,
               config: section.cardConfig,
             };
@@ -617,7 +700,10 @@ const UniversalScreen = ({ screenId }) => {
                 ];
               }
 
-              console.log(`🔍 Fetching card: ${card.id} with measure:`, card.measure);
+              console.log(
+                `🔍 Fetching card: ${card.id} with measure:`,
+                card.measure,
+              );
 
               const resultSet = await cubejsApi.load(query);
               const data = resultSet.tablePivot();
@@ -631,7 +717,7 @@ const UniversalScreen = ({ screenId }) => {
             console.log(`✅ Body section ${section.id} cards:`, cardsData);
 
             sectionsData[section.id] = {
-              type: 'static',
+              type: "static",
               cards: cardsData,
             };
           }
@@ -640,7 +726,7 @@ const UniversalScreen = ({ screenId }) => {
 
       setBodySectionsData(sectionsData);
     } catch (error) {
-      console.error('❌ Error fetching body sections:', error);
+      console.error("❌ Error fetching body sections:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -656,21 +742,25 @@ const UniversalScreen = ({ screenId }) => {
       const offset = (currentPage - 1) * screenConfig.table.pageSize;
       const limit = screenConfig.table.pageSize;
 
+      const tenantValues = getOrgUlbTenantValues();
       const query = screenConfig.table.dataQuery(
-        filterValues,
+        {
+          ...filterValues,
+          ...(tenantValues ? { tenantIdValues: tenantValues } : {}),
+        },
         offset,
-        limit
+        limit,
+        selectedYear,
       );
-      console.log(`🔍 Fetching body section: `, query);
-
+      console.log(`🔍 Fetching table section: `, query);
 
       const resultSet = await cubejsApi.load(query);
-  
+
       const data = resultSet.tablePivot();
       console.log({ resultSetData: data });
       setTableData(data);
     } catch (error) {
-      console.error('❌ Error fetching table data:', error);
+      console.error("❌ Error fetching table data:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -680,31 +770,61 @@ const UniversalScreen = ({ screenId }) => {
   };
 
   // ==================== NEW MULTI-LEVEL DRILLDOWN HANDLER ====================
-  const handleMultiLevelDrilldown = async (kpi, levelIndex = 0, filters = {}, rowItem, viewOverride) => {
-    console.log("handleMultiLevelDrilldown start", { kpi, levelIndex, filters, rowItem });
-    
+  const handleMultiLevelDrilldown = async (
+    kpi,
+    levelIndex = 0,
+    filters = {},
+    rowItem,
+    viewOverride,
+  ) => {
+    console.log("handleMultiLevelDrilldown start", {
+      kpi,
+      levelIndex,
+      filters,
+      rowItem,
+    });
+
     try {
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
       const drilldownPathArray = kpi.drilldownPath || [];
-      // Effective measure: prefer explicit `kpi.measure`, otherwise fall back to first customQuery measure
-      const measureKey = kpi.measure ?? (kpi.customQuery && Array.isArray(kpi.customQuery.measures) ? kpi.customQuery.measures[0] : undefined);
+      // Effective measure: prefer a per-KPI dynamic resolver (kpi.getMeasure), then explicit
+      // `kpi.measure`, otherwise fall back to first customQuery measure. getMeasure lets a KPI
+      // pick a different measure per drilldown based on filters already selected (e.g. the
+      // combined Non-Cash card switches between chequeSum/DDSum based on filters.paymentmode).
+      // Existing KPIs never define getMeasure, so this changes nothing for them.
+      const measureKey =
+        (typeof kpi.getMeasure === "function"
+          ? kpi.getMeasure(filters)
+          : undefined) ??
+        kpi.measure ??
+        (kpi.customQuery && Array.isArray(kpi.customQuery.measures)
+          ? kpi.customQuery.measures[0]
+          : undefined);
       // Effective time-dimension: prefer explicit `kpi.timeDimension`, otherwise infer from measure's cube (e.g., 'Treasury.systemDate')
-      const tdDim = kpi.timeDimension ?? (measureKey ? `${measureKey.split('.')[0]}.systemDate` : undefined);
-      console.log(levelIndex,{drilldownPathArray});
-      
+      const tdDim =
+        kpi.timeDimension ??
+        (measureKey ? `${measureKey.split(".")[0]}.systemDate` : undefined);
+      console.log(levelIndex, { drilldownPathArray });
+
       if (levelIndex > drilldownPathArray.length) {
-        console.log('✅ Drilldown path completed');
+        console.log("✅ Drilldown path completed");
         return;
       }
 
       // Get the current level config based on index
       const currentLevelConfig = drilldownPathArray[levelIndex];
-      
-      console.log(`📍 Processing drilldown level index ${levelIndex}:`, currentLevelConfig);
+
+      console.log(
+        `📍 Processing drilldown level index ${levelIndex}:`,
+        currentLevelConfig,
+      );
 
       // ==================== GENERIC DATAQUERY HANDLING ====================
       // If the config defines a custom dataQuery function, use it!
-      if (currentLevelConfig.dataQuery && (currentLevelConfig.type !== "monthly")) {
+      if (
+        currentLevelConfig.dataQuery &&
+        currentLevelConfig.type !== "monthly"
+      ) {
         if (currentLevelConfig.type !== "daily") {
           console.log(`🚀 Using generic dataQuery for level ${levelIndex}`);
           setDepartmentLoading(true);
@@ -721,22 +841,25 @@ const UniversalScreen = ({ screenId }) => {
               // `prevConfig.dimension` is only a static fallback label source and never reflects
               // which toggle was actually active. `filters.level1Dimension` (set in
               // handleDepartmentSelect) is the source of truth for the active dimension.
-              const effectivePrevDimension = (i === 0 && filters.level1Dimension)
-                ? filters.level1Dimension
-                : prevConfig.dimension;
+              const effectivePrevDimension =
+                i === 0 && filters.level1Dimension
+                  ? filters.level1Dimension
+                  : prevConfig.dimension;
 
               if (effectivePrevDimension) {
                 // Extract the key name (e.g. "fundType" from "ComRegisteredNumber.fundType")
-                const dimParts = effectivePrevDimension.split('.');
+                const dimParts = effectivePrevDimension.split(".");
                 const keyName = dimParts[dimParts.length - 1];
                 const value = filters[keyName];
                 if (value) {
                   constructedFilters.push({
                     member: effectivePrevDimension,
-                    operator: 'equals',
-                    values: [value]
+                    operator: "equals",
+                    values: [value],
                   });
-                  console.log(`   ➕ Added context filter: ${keyName} = ${value}`);
+                  console.log(
+                    `   ➕ Added context filter: ${keyName} = ${value}`,
+                  );
                 }
               }
             }
@@ -748,36 +871,45 @@ const UniversalScreen = ({ screenId }) => {
               filters: constructedFilters, // Cube.js array ([{ member: "...", values: ["A"] }])
               dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
               year: selectedYear,
-              kpiKeyFieldValue: kpi.keyFieldValue
+              kpiKeyFieldValue: kpi.keyFieldValue,
             };
-            setModalFilter(modalFilter, ...constructedFilters)
+            setModalFilter(modalFilter, ...constructedFilters);
 
             console.log({ constructedFilters });
 
             // 3. Execute the dataQuery function
             console.log(`   ⚡ Executing dataQuery with context:`, context);
             console.log(`   ⚡ Executing dataQuery with context:`, rowItem);
-            const query = currentLevelConfig.dataQuery({ filters: context, rowItem, 
+            const query = currentLevelConfig.dataQuery({
+              filters: context,
+              rowItem,
               view: viewOverride ?? drilldownView,
-             });
-            console.log(`   🔍 Generated Query:`, JSON.stringify(query, null, 2));
+            });
+            console.log(
+              `   🔍 Generated Query:`,
+              JSON.stringify(query, null, 2),
+            );
 
             // 4. Load data
-            const resultSet = await cubejsApi.load(query);
+            const resultSet = await cubejsApi.load(
+              applyTenantFilterToQuery(query),
+            );
             const data = resultSet.tablePivot();
             console.log({ resultSetData: data });
             // 5. Map results to generic list format
             // Infer proper display keys if not explicitly known: use first dimension/measure
-            const displayDim = query.dimensions?.[0] || currentLevelConfig.dimension;
+            const displayDim =
+              query.dimensions?.[0] || currentLevelConfig.dimension;
             const displayMeasure = query.measures?.[0] || kpi.measure;
 
-            const items = data.map(row => {
+            const items = data.map((row) => {
               const rowVal = row[displayMeasure];
               return {
-                name: row[displayDim] || 'Unknown',
-                value: typeof rowVal === 'number' ? rowVal : (parseFloat(rowVal) || 0),
+                name: row[displayDim] || "Unknown",
+                value:
+                  typeof rowVal === "number" ? rowVal : parseFloat(rowVal) || 0,
                 rowItem: row,
-                _raw: row
+                _raw: row,
               };
             });
 
@@ -793,31 +925,45 @@ const UniversalScreen = ({ screenId }) => {
             // is a no-op for the existing tenant flow.
             let finalItems = items;
             let rawServiceRows = null;
-            if (displayDim === 'egcl_paymentdetail.businessService') {
+            if (displayDim === "egcl_paymentdetail.businessService") {
               rawServiceRows = data;
               const categoryTotals = {};
-              data.forEach(row => {
-                const raw = row[displayDim] || '';
-                const category = raw.split('.')[0] || 'UNKNOWN';
+              data.forEach((row) => {
+                const raw = row[displayDim] || "";
+                const category = raw.split(".")[0] || "UNKNOWN";
                 const rowVal = row[displayMeasure];
-                const num = typeof rowVal === 'number' ? rowVal : (parseFloat(rowVal) || 0);
-                categoryTotals[category] = (categoryTotals[category] || 0) + num;
+                const num =
+                  typeof rowVal === "number" ? rowVal : parseFloat(rowVal) || 0;
+                categoryTotals[category] =
+                  (categoryTotals[category] || 0) + num;
               });
               finalItems = Object.entries(categoryTotals)
-                .map(([name, value]) => ({ name, value, rowItem: { [displayDim]: name }, _raw: { [displayDim]: name } }))
+                .map(([name, value]) => ({
+                  name,
+                  value,
+                  rowItem: { [displayDim]: name },
+                  _raw: { [displayDim]: name },
+                }))
                 .sort((a, b) => b.value - a.value);
-              console.log(`   🗂️ Grouped ${items.length} businessService rows into ${finalItems.length} service categories.`);
+              console.log(
+                `   🗂️ Grouped ${items.length} businessService rows into ${finalItems.length} service categories.`,
+              );
             }
 
             // 🔥 DYNAMIC HEADING FIX: for a level with viewOptions (the tenantId/serviceCategory
             // toggle), the static config `label` ("Select Tenant") never reflects which toggle
             // option is actually active. Derive the heading from the active view's own label
             // instead, so it reads "Select Tenant" or "Select Service Category" correctly.
-            let levelSelectionLabel = currentLevelConfig.label || 'Select Item';
+            let levelSelectionLabel = currentLevelConfig.label || "Select Item";
             if (currentLevelConfig.viewOptions?.length) {
-              const activeViewId = viewOverride ?? drilldownView ?? currentLevelConfig.viewOptions[0].id;
-              const activeViewOption = currentLevelConfig.viewOptions.find(v => v.id === activeViewId)
-                || currentLevelConfig.viewOptions[0];
+              const activeViewId =
+                viewOverride ??
+                drilldownView ??
+                currentLevelConfig.viewOptions[0].id;
+              const activeViewOption =
+                currentLevelConfig.viewOptions.find(
+                  (v) => v.id === activeViewId,
+                ) || currentLevelConfig.viewOptions[0];
               levelSelectionLabel = `Select ${activeViewOption.label}`;
             }
 
@@ -840,7 +986,7 @@ const UniversalScreen = ({ screenId }) => {
             setShowDepartmentSelection(true);
             return; // ✅ STOP here, do not run hardcoded logic
           } catch (err) {
-            console.error('❌ Error in generic dataQuery handler:', err);
+            console.error("❌ Error in generic dataQuery handler:", err);
             // Fallthrough? No, probably safer to stop to avoid confusing errors from subsequent blocks
             return;
           } finally {
@@ -849,18 +995,87 @@ const UniversalScreen = ({ screenId }) => {
         }
       }
 
+      // ==================== PAYMENT TYPE SUB-LEVEL (Cheque vs DD) ====================
+      // Used only by the combined "Non-Cash" KPI card. Fetches both totals in one query and
+      // shows two cards; whichever is clicked sets filters.paymentmode, which every downstream
+      // level reads (via kpi.getMeasure) to decide whether to query chequeSum or DDSum.
+      if (currentLevelConfig.type === "paymentTypeSelection") {
+        setDepartmentLoading(true);
+        try {
+          const query = {
+            measures: ["egcl_payment.chequeSum", "egcl_payment.DDSum"],
+            timeDimensions: [
+              {
+                dimension: "egcl_payment.transactionDate",
+                dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
+              },
+            ],
+          };
+          const resultSet = await cubejsApi.load(
+            applyTenantFilterToQuery(query),
+          );
+          const data = resultSet.tablePivot();
+          const row = data[0] || {};
+          const chequeVal = Number(row["egcl_payment.chequeSum"]) || 0;
+          const ddVal = Number(row["egcl_payment.DDSum"]) || 0;
+
+          const items = [
+            {
+              name: "Cheque",
+              value: chequeVal,
+              rowItem: { paymentType: "CHEQUE" },
+              _raw: { paymentType: "CHEQUE" },
+            },
+            {
+              name: "DD",
+              value: ddVal,
+              rowItem: { paymentType: "DD" },
+              _raw: { paymentType: "DD" },
+            },
+          ];
+
+          setSelectedKPI(kpi);
+          setDepartmentListData({
+            kpi: kpi,
+            year: selectedYear,
+            departments: items,
+            selectionLabel: currentLevelConfig.label || "Select Payment Type",
+            currentLevel: levelIndex + 1,
+            nextLevel: levelIndex + 2,
+            levelIndex: levelIndex,
+            filters: filters,
+          });
+
+          await fetchDepartmentChartData(kpi, items);
+          setDrilldownLevel(levelIndex + 1);
+          setShowDepartmentSelection(true);
+        } finally {
+          setDepartmentLoading(false);
+        }
+        return;
+      }
+
       // ==================== SERVICE TYPE SUB-LEVEL ====================
       // egcl_paymentdetail.businessService is "SERVICE_CATEGORY.SERVICE_TYPE". This level only
       // makes sense when the Service Category toggle was active for the level-1 selection
       // (filters.level1Dimension will be 'egcl_paymentdetail.businessService' in that case).
       // In Tenant mode there's nothing to show here, so we transparently skip straight through
       // to the next level — the tenant flow is completely unaffected.
-      if (currentLevelConfig.type === 'serviceType') {
-        const isServiceMode = filters.level1Dimension === 'egcl_paymentdetail.businessService';
+      if (currentLevelConfig.type === "serviceType") {
+        const isServiceMode =
+          filters.level1Dimension === "egcl_paymentdetail.businessService";
 
         if (!isServiceMode) {
-          console.log('⏭️ Skipping Service Type level (Tenant toggle active) — passing straight through');
-          return handleMultiLevelDrilldown(kpi, levelIndex + 1, filters, rowItem, viewOverride);
+          console.log(
+            "⏭️ Skipping Service Type level (Tenant toggle active) — passing straight through",
+          );
+          return handleMultiLevelDrilldown(
+            kpi,
+            levelIndex + 1,
+            filters,
+            rowItem,
+            viewOverride,
+          );
         }
 
         setDepartmentLoading(true);
@@ -872,17 +1087,20 @@ const UniversalScreen = ({ screenId }) => {
           const rawRows = departmentListData?.rawServiceRows || [];
 
           if (!selectedCategory) {
-            console.warn('⚠️ No service category selected — cannot derive service types.');
+            console.warn(
+              "⚠️ No service category selected — cannot derive service types.",
+            );
             return;
           }
 
           const typeTotals = {};
-          rawRows.forEach(row => {
-            const raw = row['egcl_paymentdetail.businessService'] || '';
+          rawRows.forEach((row) => {
+            const raw = row["egcl_paymentdetail.businessService"] || "";
             if (!raw.startsWith(`${selectedCategory}.`)) return;
             const type = raw.substring(selectedCategory.length + 1);
             const rowVal = row[measureKey];
-            const num = typeof rowVal === 'number' ? rowVal : (parseFloat(rowVal) || 0);
+            const num =
+              typeof rowVal === "number" ? rowVal : parseFloat(rowVal) || 0;
             typeTotals[type] = (typeTotals[type] || 0) + num;
           });
 
@@ -895,14 +1113,16 @@ const UniversalScreen = ({ screenId }) => {
             }))
             .sort((a, b) => b.value - a.value);
 
-          console.log(`   🗂️ Derived ${items.length} service types for category "${selectedCategory}" from ${rawRows.length} cached rows.`);
+          console.log(
+            `   🗂️ Derived ${items.length} service types for category "${selectedCategory}" from ${rawRows.length} cached rows.`,
+          );
 
           setSelectedKPI(kpi);
           setDepartmentListData({
             kpi: kpi,
             year: selectedYear,
             departments: items,
-            selectionLabel: currentLevelConfig.label || 'Select Service Type',
+            selectionLabel: currentLevelConfig.label || "Select Service Type",
             currentLevel: levelIndex + 1,
             nextLevel: levelIndex + 2,
             levelIndex: levelIndex,
@@ -919,15 +1139,31 @@ const UniversalScreen = ({ screenId }) => {
         return;
       }
 
-      console.log(currentLevelConfig.type, currentLevelConfig.order === 1, levelIndex, currentLevelConfig.type === 'selection' && (currentLevelConfig.order === 1 || (levelIndex === 0 && currentLevelConfig.type === 'selection')));
+      console.log(
+        currentLevelConfig.type,
+        currentLevelConfig.order === 1,
+        levelIndex,
+        currentLevelConfig.type === "selection" &&
+          (currentLevelConfig.order === 1 ||
+            (levelIndex === 0 && currentLevelConfig.type === "selection")),
+      );
 
       // Level 1: Department Selection
       // Check by order property (new way) OR by type + position (old way for backwards compatibility)
-      if (currentLevelConfig.type === 'selection' && (currentLevelConfig.order === 1 || (levelIndex === 0 && currentLevelConfig.type === 'selection'))) {
+      if (
+        currentLevelConfig.type === "selection" &&
+        (currentLevelConfig.order === 1 ||
+          (levelIndex === 0 && currentLevelConfig.type === "selection"))
+      ) {
         // Check what dimension we're selecting to show appropriate label
-        const isCategory = currentLevelConfig.dimension?.includes('category');
-        const isDepartment = currentLevelConfig.dimension?.includes('department');
-        const selectionLabel = isCategory ? 'Select Category' : isDepartment ? 'Select Department' : 'Select Option';
+        const isCategory = currentLevelConfig.dimension?.includes("category");
+        const isDepartment =
+          currentLevelConfig.dimension?.includes("department");
+        const selectionLabel = isCategory
+          ? "Select Category"
+          : isDepartment
+            ? "Select Department"
+            : "Select Option";
 
         console.log(`📋 Level 1: Fetching ${selectionLabel}...`);
 
@@ -937,50 +1173,68 @@ const UniversalScreen = ({ screenId }) => {
         if (kpi.sourceFilter) {
           level1Filters.push({
             member: kpi.sourceFilter.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [kpi.sourceFilter.value],
           });
 
           // Add any additional filters
           if (kpi.sourceFilter.additionalFilters) {
-            kpi.sourceFilter.additionalFilters.forEach(filter => {
+            kpi.sourceFilter.additionalFilters.forEach((filter) => {
               level1Filters.push({
                 member: filter.dimension,
-                operator: 'equals',
+                operator: "equals",
                 values: [filter.value],
               });
             });
           }
         }
         // Add department/fund-type filter if provided on the KPI (e.g., keyField/code)
-        if (kpi.departmentFilter && kpi.departmentFilter.dimension && kpi.departmentFilter.value !== undefined) {
+        if (
+          kpi.departmentFilter &&
+          kpi.departmentFilter.dimension &&
+          kpi.departmentFilter.value !== undefined
+        ) {
           level1Filters.push({
             member: kpi.departmentFilter.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [kpi.departmentFilter.value],
           });
-          console.log('✅ Applied initial department/fund filter to level1:', kpi.departmentFilter);
+          console.log(
+            "✅ Applied initial department/fund filter to level1:",
+            kpi.departmentFilter,
+          );
         }
         console.log("selectionLabel", selectionLabel, { kpi });
 
         setDepartmentLoading(true);
         try {
-          const level1Dimensions = currentLevelConfig.dimensions || (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
+          const level1Dimensions =
+            currentLevelConfig.dimensions ||
+            (currentLevelConfig.dimension
+              ? [currentLevelConfig.dimension]
+              : []);
 
           const level1Query = {
             dimensions: level1Dimensions,
             measures: [measureKey],
             filters: level1Filters.length > 0 ? level1Filters : undefined,
-            order: { [measureKey]: 'desc' },
+            order: { [measureKey]: "desc" },
           };
           console.log({ tdDim });
 
           if (tdDim) {
-            level1Query.timeDimensions = [{ dimension: tdDim, dateRange: [`${startYear}-04-01`, `${endYear}-03-31`] }];
+            level1Query.timeDimensions = [
+              {
+                dimension: tdDim,
+                dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
+              },
+            ];
           }
           console.log({ level1Query });
 
-          const resultSet = await cubejsApi.load(level1Query);
+          const resultSet = await cubejsApi.load(
+            applyTenantFilterToQuery(level1Query),
+          );
 
           const data = resultSet.tablePivot();
           console.log({ resultSetData: data });
@@ -988,9 +1242,18 @@ const UniversalScreen = ({ screenId }) => {
             const dims = level1Dimensions;
             let name = null;
             if (currentLevelConfig.titleTemplate) {
-              name = currentLevelConfig.titleTemplate.replace(/\{([^}]+)\}/g, (_, key) => (row && row[key] !== undefined && row[key] !== null) ? String(row[key]) : "").trim();
+              name = currentLevelConfig.titleTemplate
+                .replace(/\{([^}]+)\}/g, (_, key) =>
+                  row && row[key] !== undefined && row[key] !== null
+                    ? String(row[key])
+                    : "",
+                )
+                .trim();
             } else if (dims.length > 1) {
-              name = dims.map(d => row[d]).filter(Boolean).join(' - ');
+              name = dims
+                .map((d) => row[d])
+                .filter(Boolean)
+                .join(" - ");
             } else {
               name = row[dims[0]];
             }
@@ -1025,7 +1288,7 @@ const UniversalScreen = ({ screenId }) => {
       }
 
       // Monthly Breakdown (any depth)
-      if (currentLevelConfig.type === 'monthly') {
+      if (currentLevelConfig.type === "monthly") {
         // 🔥 FIX: Dynamically extract the filter key from the appropriate level's dimension
         // If monthly is at index 0 (first level), use the dimension from the monthly config itself
         // If monthly is at index 1+, use the dimension from the first (selection) level
@@ -1041,46 +1304,59 @@ const UniversalScreen = ({ screenId }) => {
           const firstLevelConfig = drilldownPathArray[0];
           console.log({ firstLevelConfig, currentLevelConfig });
 
-          dimensionToUse = filters.level1Dimension ||
+          dimensionToUse =
+            filters.level1Dimension ||
             firstLevelConfig?.dimension ||
-            (Array.isArray(firstLevelConfig?.dimensions) ? firstLevelConfig.dimensions[0] : undefined);
+            (Array.isArray(firstLevelConfig?.dimensions)
+              ? firstLevelConfig.dimensions[0]
+              : undefined);
         }
 
         // Extract the key name (e.g., "departmentName" from "TresCollReceiptHdr.departmentName")
-        const filterKeyParts = dimensionToUse ? dimensionToUse.split('.') : [];
-        const filterKey = filterKeyParts[filterKeyParts.length - 1] || 'department'; // fallback to 'department'
+        const filterKeyParts = dimensionToUse ? dimensionToUse.split(".") : [];
+        const filterKey =
+          filterKeyParts[filterKeyParts.length - 1] || "department"; // fallback to 'department'
         console.log(filterKey, { arshadfilters: filters }, { filterKeyParts });
 
         const selectedDept = filters[filterKey];
         if (!selectedDept) {
-          console.warn(`⚠️ ${filterKey} not selected for monthly breakdown. Available filters:`, Object.keys(filters));
+          console.warn(
+            `⚠️ ${filterKey} not selected for monthly breakdown. Available filters:`,
+            Object.keys(filters),
+          );
           return;
         }
 
-        console.log('📊 Level Monthly: Fetching monthly data for', filterKey + ':', selectedDept);
+        console.log(
+          "📊 Level Monthly: Fetching monthly data for",
+          filterKey + ":",
+          selectedDept,
+        );
 
         setDepartmentLoading(true);
         try {
-          const monthlyFilters = [{
-            member: dimensionToUse,
-            operator: 'equals',
-            values: [selectedDept],
-          }];
+          const monthlyFilters = [
+            {
+              member: dimensionToUse,
+              operator: "equals",
+              values: [selectedDept],
+            },
+          ];
 
           // Add source filter if KPI has one
           if (kpi.sourceFilter) {
             monthlyFilters.push({
               member: kpi.sourceFilter.dimension,
-              operator: 'equals',
+              operator: "equals",
               values: [kpi.sourceFilter.value],
             });
 
             // Add any additional filters
             if (kpi.sourceFilter.additionalFilters) {
-              kpi.sourceFilter.additionalFilters.forEach(filter => {
+              kpi.sourceFilter.additionalFilters.forEach((filter) => {
                 monthlyFilters.push({
                   member: filter.dimension,
-                  operator: 'equals',
+                  operator: "equals",
                   values: [filter.value],
                 });
               });
@@ -1089,24 +1365,36 @@ const UniversalScreen = ({ screenId }) => {
 
           console.log({ currentLevelConfig });
 
-          const monthlyQueryTest = currentLevelConfig.dataQuery({ filters: filters, rowItem: rowItem })
+          const monthlyQueryTest = currentLevelConfig.dataQuery({
+            filters: filters,
+            rowItem: rowItem,
+          });
           console.log({ monthlyQueryTest });
-          const monthlyQuery = { measures: [measureKey], filters: monthlyQueryTest.filters };
-          setMonthlyModalFilter(monthlyQueryTest.filters)
-          setMonthlyModalRowItem(rowItem)
+          const monthlyQuery = {
+            measures: [measureKey],
+            filters: monthlyQueryTest.filters,
+          };
+          setMonthlyModalFilter(monthlyQueryTest.filters);
+          setMonthlyModalRowItem(rowItem);
           if (tdDim) {
-            monthlyQuery.timeDimensions = [{ dimension: tdDim, granularity: 'month', dateRange: [`${startYear}-04-01`, `${endYear}-03-31`] }];
-            monthlyQuery.order = { [tdDim]: 'asc' };
+            monthlyQuery.timeDimensions = [
+              {
+                dimension: tdDim,
+                granularity: "month",
+                dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
+              },
+            ];
+            monthlyQuery.order = { [tdDim]: "asc" };
           } else {
-            monthlyQuery.order = { [measureKey]: 'desc' };
+            monthlyQuery.order = { [measureKey]: "desc" };
           }
           if (monthlyFilters?.length) {
-            setModalFilter(modalFilter, ...monthlyFilters)
-
+            setModalFilter(modalFilter, ...monthlyFilters);
           }
 
-
-          const resultSet = await cubejsApi.load(monthlyQuery);
+          const resultSet = await cubejsApi.load(
+            applyTenantFilterToQuery(monthlyQuery),
+          );
           //   const query = screenConfig.dataQuery(filterValues);
           // query.measures = [kpi.measure];
 
@@ -1122,14 +1410,30 @@ const UniversalScreen = ({ screenId }) => {
             const monthKey = row[`${kpi.timeDimension}.month`];
             console.log("monthKey timeDimension", { monthKey });
             if (monthKey) {
-              const [year, month] = monthKey.split('-');
-              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+              const [year, month] = monthKey.split("-");
+              const monthNames = [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+              ];
               const monthName = monthNames[parseInt(month) - 1];
               const displayKey = `${monthName} ${year}`;
               const measureValue = row[measureKey];
 
               monthlyData[displayKey] = {
-                value: typeof measureValue === 'number' ? measureValue : (parseInt(measureValue) || 0),
+                value:
+                  typeof measureValue === "number"
+                    ? measureValue
+                    : parseInt(measureValue) || 0,
                 monthKey: monthKey,
               };
             }
@@ -1156,7 +1460,7 @@ const UniversalScreen = ({ screenId }) => {
           await fetchMonthlyChartData(kpi, monthlyData);
           setDrilldownLevel(2);
           setShowMonthlyDrilldown(true);
-          console.log('✅ Level 2 complete - showing monthly blocks');
+          console.log("✅ Level 2 complete - showing monthly blocks");
         } finally {
           setDepartmentLoading(false);
         }
@@ -1164,17 +1468,20 @@ const UniversalScreen = ({ screenId }) => {
       }
 
       // Level 3: Check if this is 3-level drilldown going to daily (skip category selection)
-      if (currentLevelConfig.type === 'daily') {
-        console.log('📅 Level 3 (3-level drilldown): Fetching daily data directly after monthly...');
+      if (currentLevelConfig.type === "daily") {
+        console.log(
+          "📅 Level 3 (3-level drilldown): Fetching daily data directly after monthly...",
+        );
 
         setDepartmentLoading(true);
         try {
           // This is a 3-level drilldown: Dept → Monthly → Daily
           // No category/subcategory levels, go straight to daily breakdown
 
-          const timeDateRange = filters.monthDateStart && filters.monthDateEnd
-            ? [filters.monthDateStart, filters.monthDateEnd]
-            : [`${startYear}-04-01`, `${endYear}-03-31`];
+          const timeDateRange =
+            filters.monthDateStart && filters.monthDateEnd
+              ? [filters.monthDateStart, filters.monthDateEnd]
+              : [`${startYear}-04-01`, `${endYear}-03-31`];
 
           const queryFilters = [];
 
@@ -1182,53 +1489,80 @@ const UniversalScreen = ({ screenId }) => {
           // filters.level1Dimension, set in handleDepartmentSelect), falling back to the first
           // level's static dimension only when no toggle was involved.
           const firstLevelConfig = drilldownPathArray[0];
-          const firstLevelDimension = filters.level1Dimension ||
+          const firstLevelDimension =
+            filters.level1Dimension ||
             firstLevelConfig?.dimension ||
-            (Array.isArray(firstLevelConfig?.dimensions) ? firstLevelConfig.dimensions[0] : undefined);
-          const filterKeyParts = firstLevelDimension ? firstLevelDimension.split('.') : [];
-          const filterKey = filterKeyParts[filterKeyParts.length - 1] || 'department';
+            (Array.isArray(firstLevelConfig?.dimensions)
+              ? firstLevelConfig.dimensions[0]
+              : undefined);
+          const filterKeyParts = firstLevelDimension
+            ? firstLevelDimension.split(".")
+            : [];
+          const filterKey =
+            filterKeyParts[filterKeyParts.length - 1] || "department";
 
           // Add department filter (required for 3-level source drilldowns)
           if (filters[filterKey]) {
             queryFilters.push({
               member: firstLevelDimension,
-              operator: 'equals',
+              operator: "equals",
               values: [filters[filterKey]],
             });
-            console.log(`✅ Added ${filterKey} filter for daily:`, filters[filterKey]);
+            console.log(
+              `✅ Added ${filterKey} filter for daily:`,
+              filters[filterKey],
+            );
           }
 
           // Add source filter if KPI has one
           if (kpi.sourceFilter) {
             queryFilters.push({
               member: kpi.sourceFilter.dimension,
-              operator: 'equals',
+              operator: "equals",
               values: [kpi.sourceFilter.value],
             });
 
             // Add any additional filters
             if (kpi.sourceFilter.additionalFilters) {
-              kpi.sourceFilter.additionalFilters.forEach(filter => {
+              kpi.sourceFilter.additionalFilters.forEach((filter) => {
                 queryFilters.push({
                   member: filter.dimension,
-                  operator: 'equals',
+                  operator: "equals",
                   values: [filter.value],
                 });
               });
             }
           }
 
-          const dailyQueryTest = currentLevelConfig.dataQuery({ filters: filters, rowItem: rowItem })
+          const dailyQueryTest = currentLevelConfig.dataQuery({
+            filters: filters,
+            rowItem: rowItem,
+          });
           console.log({ dailyQueryTest });
 
-          const dailyQuery = { measures: [measureKey], filters: dailyQueryTest?.filters?.length ? dailyQueryTest.filters : (queryFilters.length > 0 ? queryFilters : undefined) };
+          const dailyQuery = {
+            measures: [measureKey],
+            filters: dailyQueryTest?.filters?.length
+              ? dailyQueryTest.filters
+              : queryFilters.length > 0
+                ? queryFilters
+                : undefined,
+          };
           if (tdDim) {
-            dailyQuery.timeDimensions = [{ dimension: tdDim, granularity: 'day', dateRange: timeDateRange }];
-            dailyQuery.order = { [tdDim]: 'asc' };
+            dailyQuery.timeDimensions = [
+              {
+                dimension: tdDim,
+                granularity: "day",
+                dateRange: timeDateRange,
+              },
+            ];
+            dailyQuery.order = { [tdDim]: "asc" };
           } else {
-            dailyQuery.order = { [measureKey]: 'desc' };
+            dailyQuery.order = { [measureKey]: "desc" };
           }
-          const resultSet = await cubejsApi.load(dailyQuery);
+          const resultSet = await cubejsApi.load(
+            applyTenantFilterToQuery(dailyQuery),
+          );
 
           const data = resultSet.tablePivot();
           console.log({ resultSetData: data });
@@ -1239,14 +1573,20 @@ const UniversalScreen = ({ screenId }) => {
             if (dayKey) {
               const measureValue = row[kpi.measure];
               dailyData[dayKey] = {
-                value: typeof measureValue === 'number' ? measureValue : (parseInt(measureValue) || 0),
+                value:
+                  typeof measureValue === "number"
+                    ? measureValue
+                    : parseInt(measureValue) || 0,
                 dayKey: dayKey,
               };
             }
           });
 
-          console.log('📊 Daily data fetched for 3-level drilldown:', dailyData);
-          console.log('📊 Total days:', Object.keys(dailyData).length);
+          console.log(
+            "📊 Daily data fetched for 3-level drilldown:",
+            dailyData,
+          );
+          console.log("📊 Total days:", Object.keys(dailyData).length);
 
           // Close monthly modal before showing daily data
           setShowMonthlyDrilldown(false);
@@ -1256,7 +1596,9 @@ const UniversalScreen = ({ screenId }) => {
           await fetchDailyChartData(kpi, dailyData);
           setDrilldownLevel(3);
           setShowDailyDrilldown(true);
-          console.log('✅ Level 3 complete - showing daily data for 3-level drilldown');
+          console.log(
+            "✅ Level 3 complete - showing daily data for 3-level drilldown",
+          );
         } finally {
           setDepartmentLoading(false);
         }
@@ -1264,18 +1606,30 @@ const UniversalScreen = ({ screenId }) => {
       }
 
       // Level 3: Category Selection (from monthly flow) OR Category Selection (as first level in 3-level drilldown)
-      if (currentLevelConfig.type === 'selection' && (currentLevelConfig.order === 3 || (levelIndex === 2 && currentLevelConfig.type === 'selection'))) {
-        console.log('📂 Level 3: Fetching categories...');
-        console.log('   Current level config:', currentLevelConfig);
-        console.log('   Expected dimension:', currentLevelConfig.dimension);
-        console.log('   Level index:', levelIndex);
+      if (
+        currentLevelConfig.type === "selection" &&
+        (currentLevelConfig.order === 3 ||
+          (levelIndex === 2 && currentLevelConfig.type === "selection"))
+      ) {
+        console.log("📂 Level 3: Fetching categories...");
+        console.log("   Current level config:", currentLevelConfig);
+        console.log("   Expected dimension:", currentLevelConfig.dimension);
+        console.log("   Level index:", levelIndex);
 
         // Check if this is from a monthly flow (has filters.month) or category-first flow (no filters.month)
         const isFromMonthlyFlow = !!filters.month;
 
-        console.log('🔍 Context: isFromMonthlyFlow=', isFromMonthlyFlow, 'filters=', filters);
-        console.log('🏗️ Drilldown Path Array:', drilldownPathArray);
-        console.log('🔍 Full filters object:', JSON.stringify(filters, null, 2));
+        console.log(
+          "🔍 Context: isFromMonthlyFlow=",
+          isFromMonthlyFlow,
+          "filters=",
+          filters,
+        );
+        console.log("🏗️ Drilldown Path Array:", drilldownPathArray);
+        console.log(
+          "🔍 Full filters object:",
+          JSON.stringify(filters, null, 2),
+        );
 
         const queryFilters = [];
         const timeDateRange = isFromMonthlyFlow
@@ -1284,60 +1638,81 @@ const UniversalScreen = ({ screenId }) => {
 
         // Add department/building filter if available (from either monthly flow OR from initial departmentFilter)
         if (filters.department) {
-          const departmentDimension = drilldownPathArray[0].dimensions ? drilldownPathArray[0].dimensions[0] : drilldownPathArray[0].dimension;
+          const departmentDimension = drilldownPathArray[0].dimensions
+            ? drilldownPathArray[0].dimensions[0]
+            : drilldownPathArray[0].dimension;
           queryFilters.push({
             member: departmentDimension,
-            operator: 'equals',
+            operator: "equals",
             values: [filters.department],
           });
-          console.log('✅ Added building/department filter:', filters.department, 'using dimension:', departmentDimension);
+          console.log(
+            "✅ Added building/department filter:",
+            filters.department,
+            "using dimension:",
+            departmentDimension,
+          );
         } else {
-          console.warn('⚠️ WARNING: No department filter available at Level 3!');
-          console.warn('⚠️ This means categories will show for ALL departments, not just the selected one');
-          console.warn('⚠️ Available filters:', Object.keys(filters));
+          console.warn(
+            "⚠️ WARNING: No department filter available at Level 3!",
+          );
+          console.warn(
+            "⚠️ This means categories will show for ALL departments, not just the selected one",
+          );
+          console.warn("⚠️ Available filters:", Object.keys(filters));
         }
 
         // Add source filter if KPI has one
         if (kpi.sourceFilter) {
           queryFilters.push({
             member: kpi.sourceFilter.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [kpi.sourceFilter.value],
           });
 
           // Add any additional filters
           if (kpi.sourceFilter.additionalFilters) {
-            kpi.sourceFilter.additionalFilters.forEach(filter => {
+            kpi.sourceFilter.additionalFilters.forEach((filter) => {
               queryFilters.push({
                 member: filter.dimension,
-                operator: 'equals',
+                operator: "equals",
                 values: [filter.value],
               });
             });
           }
         }
 
-        console.log('📂 CRITICAL DEBUG - Level 3 Category Query:');
-        console.log('   Dimension being queried:', currentLevelConfig.dimension);
-        console.log('   Query filters:', queryFilters.map(f => ({ member: f.member, values: f.values })));
+        console.log("📂 CRITICAL DEBUG - Level 3 Category Query:");
+        console.log(
+          "   Dimension being queried:",
+          currentLevelConfig.dimension,
+        );
+        console.log(
+          "   Query filters:",
+          queryFilters.map((f) => ({ member: f.member, values: f.values })),
+        );
 
-        const level3Dimensions = currentLevelConfig.dimensions || (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
+        const level3Dimensions =
+          currentLevelConfig.dimensions ||
+          (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
 
         const resultSet = await cubejsApi.load({
           dimensions: level3Dimensions,
           measures: [kpi.measure],
-          timeDimensions: [{
-            dimension: kpi.timeDimension,
-            dateRange: timeDateRange,
-            // NOTE: No granularity - we want total count for entire date range, not monthly breakdown
-          }],
+          timeDimensions: [
+            {
+              dimension: kpi.timeDimension,
+              dateRange: timeDateRange,
+              // NOTE: No granularity - we want total count for entire date range, not monthly breakdown
+            },
+          ],
           filters: queryFilters.length > 0 ? queryFilters : undefined,
           order: {
-            [kpi.measure]: 'desc',
+            [kpi.measure]: "desc",
           },
         });
 
-        console.log('🔍 Level 3 Category Query Details:', {
+        console.log("🔍 Level 3 Category Query Details:", {
           dimension: currentLevelConfig.dimension,
           filters: queryFilters,
           dateRange: timeDateRange,
@@ -1348,26 +1723,37 @@ const UniversalScreen = ({ screenId }) => {
           const dims = level3Dimensions;
           let name = null;
           if (currentLevelConfig.titleTemplate) {
-            name = currentLevelConfig.titleTemplate.replace(/\{([^}]+)\}/g, (_, key) => (row && row[key] !== undefined && row[key] !== null) ? String(row[key]) : "").trim();
+            name = currentLevelConfig.titleTemplate
+              .replace(/\{([^}]+)\}/g, (_, key) =>
+                row && row[key] !== undefined && row[key] !== null
+                  ? String(row[key])
+                  : "",
+              )
+              .trim();
           } else if (dims.length > 1) {
-            name = dims.map(d => row[d]).filter(Boolean).join(' - ');
+            name = dims
+              .map((d) => row[d])
+              .filter(Boolean)
+              .join(" - ");
           } else {
             name = row[dims[0]];
           }
           return { name, value: row[kpi.measure] || 0, _raw: row };
         });
 
-        console.log('📊 Query Filters Applied:', queryFilters);
-        console.log('🔍 Raw Category Data from Cube.js:', data);
-        console.log('📋 Processed Categories:', categories);
-        console.log(`✅ Found ${categories.length} categories for ${filters.department}`);
+        console.log("📊 Query Filters Applied:", queryFilters);
+        console.log("🔍 Raw Category Data from Cube.js:", data);
+        console.log("📋 Processed Categories:", categories);
+        console.log(
+          `✅ Found ${categories.length} categories for ${filters.department}`,
+        );
 
         // Close monthly modal before showing category modal
         setShowMonthlyDrilldown(false);
 
         const categoryTitle = isFromMonthlyFlow
           ? `${filters.department} - Select Category`
-          : 'Select Category';
+          : "Select Category";
 
         setDepartmentListData({
           kpi: kpi,
@@ -1385,23 +1771,33 @@ const UniversalScreen = ({ screenId }) => {
 
         setDrilldownLevel(3);
         setShowDepartmentSelection(true);
-        console.log('✅ Level 3 complete - showing category modal');
-        console.log('   Will call handleDepartmentSelect when user clicks a category');
+        console.log("✅ Level 3 complete - showing category modal");
+        console.log(
+          "   Will call handleDepartmentSelect when user clicks a category",
+        );
         return;
       }
 
-      if (currentLevelConfig.type === 'selection') {
-        console.log('📂 Level 3: Fetching categories...');
-        console.log('   Current level config:', currentLevelConfig);
-        console.log('   Expected dimension:', currentLevelConfig.dimension);
-        console.log('   Level index:', levelIndex);
+      if (currentLevelConfig.type === "selection") {
+        console.log("📂 Level 3: Fetching categories...");
+        console.log("   Current level config:", currentLevelConfig);
+        console.log("   Expected dimension:", currentLevelConfig.dimension);
+        console.log("   Level index:", levelIndex);
 
         // Check if this is from a monthly flow (has filters.month) or category-first flow (no filters.month)
         const isFromMonthlyFlow = !!filters.month;
 
-        console.log('🔍 Context: isFromMonthlyFlow=', isFromMonthlyFlow, 'filters=', filters);
-        console.log('🏗️ Drilldown Path Array:', drilldownPathArray);
-        console.log('🔍 Full filters object:', JSON.stringify(filters, null, 2));
+        console.log(
+          "🔍 Context: isFromMonthlyFlow=",
+          isFromMonthlyFlow,
+          "filters=",
+          filters,
+        );
+        console.log("🏗️ Drilldown Path Array:", drilldownPathArray);
+        console.log(
+          "🔍 Full filters object:",
+          JSON.stringify(filters, null, 2),
+        );
 
         const queryFilters = [];
         const timeDateRange = isFromMonthlyFlow
@@ -1410,60 +1806,81 @@ const UniversalScreen = ({ screenId }) => {
 
         // Add department/building filter if available (from either monthly flow OR from initial departmentFilter)
         if (filters.department) {
-          const departmentDimension = drilldownPathArray[0].dimensions ? drilldownPathArray[0].dimensions[0] : drilldownPathArray[0].dimension;
+          const departmentDimension = drilldownPathArray[0].dimensions
+            ? drilldownPathArray[0].dimensions[0]
+            : drilldownPathArray[0].dimension;
           queryFilters.push({
             member: departmentDimension,
-            operator: 'equals',
+            operator: "equals",
             values: [filters.department],
           });
-          console.log('✅ Added building/department filter:', filters.department, 'using dimension:', departmentDimension);
+          console.log(
+            "✅ Added building/department filter:",
+            filters.department,
+            "using dimension:",
+            departmentDimension,
+          );
         } else {
-          console.warn('⚠️ WARNING: No department filter available at Level 3!');
-          console.warn('⚠️ This means categories will show for ALL departments, not just the selected one');
-          console.warn('⚠️ Available filters:', Object.keys(filters));
+          console.warn(
+            "⚠️ WARNING: No department filter available at Level 3!",
+          );
+          console.warn(
+            "⚠️ This means categories will show for ALL departments, not just the selected one",
+          );
+          console.warn("⚠️ Available filters:", Object.keys(filters));
         }
 
         // Add source filter if KPI has one
         if (kpi.sourceFilter) {
           queryFilters.push({
             member: kpi.sourceFilter.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [kpi.sourceFilter.value],
           });
 
           // Add any additional filters
           if (kpi.sourceFilter.additionalFilters) {
-            kpi.sourceFilter.additionalFilters.forEach(filter => {
+            kpi.sourceFilter.additionalFilters.forEach((filter) => {
               queryFilters.push({
                 member: filter.dimension,
-                operator: 'equals',
+                operator: "equals",
                 values: [filter.value],
               });
             });
           }
         }
 
-        console.log('📂 CRITICAL DEBUG - Level 3 Category Query:');
-        console.log('   Dimension being queried:', currentLevelConfig.dimension);
-        console.log('   Query filters:', queryFilters.map(f => ({ member: f.member, values: f.values })));
+        console.log("📂 CRITICAL DEBUG - Level 3 Category Query:");
+        console.log(
+          "   Dimension being queried:",
+          currentLevelConfig.dimension,
+        );
+        console.log(
+          "   Query filters:",
+          queryFilters.map((f) => ({ member: f.member, values: f.values })),
+        );
 
-        const level3Dimensions = currentLevelConfig.dimensions || (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
+        const level3Dimensions =
+          currentLevelConfig.dimensions ||
+          (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
 
         const resultSet = await cubejsApi.load({
           dimensions: level3Dimensions,
           measures: [kpi.measure],
-          timeDimensions: [{
-            dimension: kpi.timeDimension,
-            dateRange: timeDateRange,
-            // NOTE: No granularity - we want total count for entire date range, not monthly breakdown
-          }],
+          timeDimensions: [
+            {
+              dimension: kpi.timeDimension,
+              dateRange: timeDateRange,
+              // NOTE: No granularity - we want total count for entire date range, not monthly breakdown
+            },
+          ],
           filters: queryFilters.length > 0 ? queryFilters : undefined,
           order: {
-            [kpi.measure]: 'desc',
+            [kpi.measure]: "desc",
           },
         });
 
-        console.log('🔍 Level 3 Category Query Details:', {
+        console.log("🔍 Level 3 Category Query Details:", {
           dimension: currentLevelConfig.dimension,
           filters: queryFilters,
           dateRange: timeDateRange,
@@ -1474,19 +1891,30 @@ const UniversalScreen = ({ screenId }) => {
           const dims = level3Dimensions;
           let name = null;
           if (currentLevelConfig.titleTemplate) {
-            name = currentLevelConfig.titleTemplate.replace(/\{([^}]+)\}/g, (_, key) => (row && row[key] !== undefined && row[key] !== null) ? String(row[key]) : "").trim();
+            name = currentLevelConfig.titleTemplate
+              .replace(/\{([^}]+)\}/g, (_, key) =>
+                row && row[key] !== undefined && row[key] !== null
+                  ? String(row[key])
+                  : "",
+              )
+              .trim();
           } else if (dims.length > 1) {
-            name = dims.map(d => row[d]).filter(Boolean).join(' - ');
+            name = dims
+              .map((d) => row[d])
+              .filter(Boolean)
+              .join(" - ");
           } else {
             name = row[dims[0]];
           }
           return { name, value: row[kpi.measure] || 0, _raw: row };
         });
 
-        console.log('📊 Query Filters Applied:', queryFilters);
-        console.log('🔍 Raw Category Data from Cube.js:', data);
-        console.log('📋 Processed Categories:', categories);
-        console.log(`✅ Found ${categories.length} categories for ${filters.department}`);
+        console.log("📊 Query Filters Applied:", queryFilters);
+        console.log("🔍 Raw Category Data from Cube.js:", data);
+        console.log("📋 Processed Categories:", categories);
+        console.log(
+          `✅ Found ${categories.length} categories for ${filters.department}`,
+        );
 
         // Close monthly modal before showing category modal
         setShowMonthlyDrilldown(false);
@@ -1509,92 +1937,134 @@ const UniversalScreen = ({ screenId }) => {
 
         setDrilldownLevel(3);
         setShowDepartmentSelection(true);
-        console.log('✅ Level 3 complete - showing category modal');
-        console.log('   Will call handleDepartmentSelect when user clicks a category');
+        console.log("✅ Level 3 complete - showing category modal");
+        console.log(
+          "   Will call handleDepartmentSelect when user clicks a category",
+        );
         return;
       }
 
       // Level 3/4: Sub-Category Selection (can be at order 4 depending on path, or levelIndex 3)
       // CRITICAL: Only trigger if:
       // 1. Type is 'selection'
-      // 2. Dimension is 'subcategory' 
+      // 2. Dimension is 'subcategory'
       // 3. We have a category filter (meaning category was already selected)
-      if (currentLevelConfig.type === 'selection' &&
-        currentLevelConfig.dimension?.includes('subcategory') &&
-        filters.category) {
-        console.log('📂 Level 4: Fetching sub-categories for category:', filters.category);
-        console.log('📊 Filters passed:', filters);
-        console.log('   Level index:', levelIndex);
-        console.log('   Current config dimension:', currentLevelConfig.dimension);
+      if (
+        currentLevelConfig.type === "selection" &&
+        currentLevelConfig.dimension?.includes("subcategory") &&
+        filters.category
+      ) {
+        console.log(
+          "📂 Level 4: Fetching sub-categories for category:",
+          filters.category,
+        );
+        console.log("📊 Filters passed:", filters);
+        console.log("   Level index:", levelIndex);
+        console.log(
+          "   Current config dimension:",
+          currentLevelConfig.dimension,
+        );
 
         // Check if this is 5-level (has department) or 3-level (no department) flow
         const isFiveLevel = !!filters.department;
-        console.log('🔍 Flow type:', isFiveLevel ? '5-level (Department→Monthly→Category→SubCat→Daily)' : '3-level (Building→Monthly→SubCat→Daily)');
+        console.log(
+          "🔍 Flow type:",
+          isFiveLevel
+            ? "5-level (Department→Monthly→Category→SubCat→Daily)"
+            : "3-level (Building→Monthly→SubCat→Daily)",
+        );
 
-        const timeDateRange = isFiveLevel && filters.monthDateStart
-          ? [filters.monthDateStart, filters.monthDateEnd]
-          : [`${startYear}-04-01`, `${endYear}-03-31`];
+        const timeDateRange =
+          isFiveLevel && filters.monthDateStart
+            ? [filters.monthDateStart, filters.monthDateEnd]
+            : [`${startYear}-04-01`, `${endYear}-03-31`];
 
         const queryFilters = [];
 
         // Add category filter (always needed) - use drilldownPathArray index
-        const categoryDimension = drilldownPathArray.find(p => p.dimension?.includes('category') && !p.dimension?.includes('subcategory'))?.dimension;
+        const categoryDimension = drilldownPathArray.find(
+          (p) =>
+            p.dimension?.includes("category") &&
+            !p.dimension?.includes("subcategory"),
+        )?.dimension;
         queryFilters.push({
           member: categoryDimension,
-          operator: 'equals',
+          operator: "equals",
           values: [filters.category],
         });
-        console.log('✅ Added category filter:', filters.category, 'using dimension:', categoryDimension);
+        console.log(
+          "✅ Added category filter:",
+          filters.category,
+          "using dimension:",
+          categoryDimension,
+        );
 
         // Add department filter only if in 5-level flow
         if (isFiveLevel && filters.department) {
-          const departmentDimension = drilldownPathArray[0].dimensions ? drilldownPathArray[0].dimensions[0] : drilldownPathArray[0].dimension;
+          const departmentDimension = drilldownPathArray[0].dimensions
+            ? drilldownPathArray[0].dimensions[0]
+            : drilldownPathArray[0].dimension;
           queryFilters.unshift({
             member: departmentDimension,
-            operator: 'equals',
+            operator: "equals",
             values: [filters.department],
           });
-          console.log('✅ Added department filter:', filters.department, 'using dimension:', departmentDimension);
+          console.log(
+            "✅ Added department filter:",
+            filters.department,
+            "using dimension:",
+            departmentDimension,
+          );
         }
 
         // Add source filter if KPI has one
         if (kpi.sourceFilter) {
           queryFilters.push({
             member: kpi.sourceFilter.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [kpi.sourceFilter.value],
           });
 
           // Add any additional filters
           if (kpi.sourceFilter.additionalFilters) {
-            kpi.sourceFilter.additionalFilters.forEach(filter => {
+            kpi.sourceFilter.additionalFilters.forEach((filter) => {
               queryFilters.push({
                 member: filter.dimension,
-                operator: 'equals',
+                operator: "equals",
                 values: [filter.value],
               });
             });
           }
         }
 
-        console.log('📂 CRITICAL DEBUG - Level 4 Subcategory Query:');
-        console.log('   Dimension being queried:', currentLevelConfig.dimension);
-        console.log('   Category filter:', filters.category);
-        console.log('   Query filters:', queryFilters.map(f => ({ member: f.member, values: f.values })));
+        console.log("📂 CRITICAL DEBUG - Level 4 Subcategory Query:");
+        console.log(
+          "   Dimension being queried:",
+          currentLevelConfig.dimension,
+        );
+        console.log("   Category filter:", filters.category);
+        console.log(
+          "   Query filters:",
+          queryFilters.map((f) => ({ member: f.member, values: f.values })),
+        );
 
-        const level4Dimensions = currentLevelConfig.dimensions || (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
+        const level4Dimensions =
+          currentLevelConfig.dimensions ||
+          (currentLevelConfig.dimension ? [currentLevelConfig.dimension] : []);
 
         const resultSet = await cubejsApi.load({
           dimensions: level4Dimensions,
           measures: [kpi.measure],
-          timeDimensions: [{
-            dimension: kpi.timeDimension,
-            dateRange: timeDateRange,
-            // NOTE: No granularity - we want total count for entire date range, not monthly breakdown
-          }],
+          timeDimensions: [
+            {
+              dimension: kpi.timeDimension,
+              dateRange: timeDateRange,
+              // NOTE: No granularity - we want total count for entire date range, not monthly breakdown
+            },
+          ],
           filters: queryFilters,
           order: {
-            [kpi.measure]: 'desc',
+            [kpi.measure]: "desc",
           },
         });
 
@@ -1603,16 +2073,25 @@ const UniversalScreen = ({ screenId }) => {
           const dims = level4Dimensions;
           let name = null;
           if (currentLevelConfig.titleTemplate) {
-            name = currentLevelConfig.titleTemplate.replace(/\{([^}]+)\}/g, (_, key) => (row && row[key] !== undefined && row[key] !== null) ? String(row[key]) : "").trim();
+            name = currentLevelConfig.titleTemplate
+              .replace(/\{([^}]+)\}/g, (_, key) =>
+                row && row[key] !== undefined && row[key] !== null
+                  ? String(row[key])
+                  : "",
+              )
+              .trim();
           } else if (dims.length > 1) {
-            name = dims.map(d => row[d]).filter(Boolean).join(' - ');
+            name = dims
+              .map((d) => row[d])
+              .filter(Boolean)
+              .join(" - ");
           } else {
             name = row[dims[0]];
           }
           return { name, value: row[kpi.measure] || 0, _raw: row };
         });
 
-        console.log('📊 Level 4 Subcategory Query Details:', {
+        console.log("📊 Level 4 Subcategory Query Details:", {
           category: filters.category,
           filters: queryFilters,
           dateRange: timeDateRange,
@@ -1624,7 +2103,7 @@ const UniversalScreen = ({ screenId }) => {
           kpi: kpi,
           year: selectedYear,
           departments: subcategories,
-          title: `${filters.department ? filters.department + ' - ' : ''}${filters.category} - Select Sub-Category`,
+          title: `${filters.department ? filters.department + " - " : ""}${filters.category} - Select Sub-Category`,
           currentLevel: 4,
           nextLevel: 5,
           levelIndex: levelIndex,
@@ -1636,103 +2115,163 @@ const UniversalScreen = ({ screenId }) => {
 
         setDrilldownLevel(4);
         setShowDepartmentSelection(true);
-        console.log('✅ Level 4 complete - showing sub-category modal');
-        console.log('   Will call handleDepartmentSelect when user clicks a subcategory');
+        console.log("✅ Level 4 complete - showing sub-category modal");
+        console.log(
+          "   Will call handleDepartmentSelect when user clicks a subcategory",
+        );
         return;
       }
 
       // Level 3/4/5: Daily Breakdown (can be at order 3, 4, or 5 depending on drilldown path length)
-      if (currentLevelConfig.type === 'daily') {
-        console.log('📅 Daily Breakdown: Fetching daily data...');
-        console.log('📅 Daily level index:', levelIndex, 'currentLevelConfig:', currentLevelConfig);
+      if (currentLevelConfig.type === "daily") {
+        console.log("📅 Daily Breakdown: Fetching daily data...");
+        console.log(
+          "📅 Daily level index:",
+          levelIndex,
+          "currentLevelConfig:",
+          currentLevelConfig,
+        );
 
         // Check if this is 5-level (has department) or 3-level (no department) flow
         const isFiveLevel = !!filters.department;
 
-        const timeDateRange = isFiveLevel && filters.monthDateStart
-          ? [filters.monthDateStart, filters.monthDateEnd]
-          : [`${startYear}-04-01`, `${endYear}-03-31`];
+        const timeDateRange =
+          isFiveLevel && filters.monthDateStart
+            ? [filters.monthDateStart, filters.monthDateEnd]
+            : [`${startYear}-04-01`, `${endYear}-03-31`];
 
         const queryFilters = [];
 
         // Find indices for category and subcategory in drilldown path
-        const categoryLevelIndex = drilldownPathArray.findIndex(p => p.dimension?.includes('category') && !p.dimension?.includes('subcategory'));
-        const subcategoryLevelIndex = drilldownPathArray.findIndex(p => p.dimension?.includes('subcategory'));
+        const categoryLevelIndex = drilldownPathArray.findIndex(
+          (p) =>
+            p.dimension?.includes("category") &&
+            !p.dimension?.includes("subcategory"),
+        );
+        const subcategoryLevelIndex = drilldownPathArray.findIndex((p) =>
+          p.dimension?.includes("subcategory"),
+        );
 
         // Add department filter only if in 5-level flow
         if (isFiveLevel && filters.department) {
-          const departmentDimension = drilldownPathArray[0].dimensions ? drilldownPathArray[0].dimensions[0] : drilldownPathArray[0].dimension;
+          const departmentDimension = drilldownPathArray[0].dimensions
+            ? drilldownPathArray[0].dimensions[0]
+            : drilldownPathArray[0].dimension;
           queryFilters.push({
             member: departmentDimension,
-            operator: 'equals',
+            operator: "equals",
             values: [filters.department],
           });
-          console.log('✅ Added department filter:', filters.department);
+          console.log("✅ Added department filter:", filters.department);
         }
 
         // Add category filter (if available and if category comes BEFORE daily in drilldown path)
-        const categoryDimension = drilldownPathArray[categoryLevelIndex]?.dimension;
-        if (categoryLevelIndex >= 0 && categoryLevelIndex < levelIndex && filters.category) {
+        const categoryDimension =
+          drilldownPathArray[categoryLevelIndex]?.dimension;
+        if (
+          categoryLevelIndex >= 0 &&
+          categoryLevelIndex < levelIndex &&
+          filters.category
+        ) {
           queryFilters.push({
             member: categoryDimension,
-            operator: 'equals',
+            operator: "equals",
             values: [filters.category],
           });
-          console.log('✅ Added category filter:', filters.category, '(category is at index', categoryLevelIndex, ', current level is', levelIndex, ')');
+          console.log(
+            "✅ Added category filter:",
+            filters.category,
+            "(category is at index",
+            categoryLevelIndex,
+            ", current level is",
+            levelIndex,
+            ")",
+          );
         }
 
         // Add subcategory filter (if available and if subcategory comes BEFORE daily in drilldown path)
-        const subcategoryDimension = drilldownPathArray[subcategoryLevelIndex]?.dimension;
-        if (subcategoryLevelIndex >= 0 && subcategoryLevelIndex < levelIndex && filters.subcategory) {
+        const subcategoryDimension =
+          drilldownPathArray[subcategoryLevelIndex]?.dimension;
+        if (
+          subcategoryLevelIndex >= 0 &&
+          subcategoryLevelIndex < levelIndex &&
+          filters.subcategory
+        ) {
           queryFilters.push({
             member: subcategoryDimension,
-            operator: 'equals',
+            operator: "equals",
             values: [filters.subcategory],
           });
-          console.log('✅ Added subcategory filter:', filters.subcategory, '(subcategory is at index', subcategoryLevelIndex, ', current level is', levelIndex, ')');
+          console.log(
+            "✅ Added subcategory filter:",
+            filters.subcategory,
+            "(subcategory is at index",
+            subcategoryLevelIndex,
+            ", current level is",
+            levelIndex,
+            ")",
+          );
         } else if (subcategoryLevelIndex >= 0 && filters.subcategory) {
-          console.log('⚠️ WARNING: Subcategory exists in filter but drilldown order is wrong!');
-          console.log('   Category index:', categoryLevelIndex, 'Subcategory index:', subcategoryLevelIndex, 'Current level:', levelIndex);
-          console.log('   This usually means category was selected but subcategory selection was skipped');
+          console.log(
+            "⚠️ WARNING: Subcategory exists in filter but drilldown order is wrong!",
+          );
+          console.log(
+            "   Category index:",
+            categoryLevelIndex,
+            "Subcategory index:",
+            subcategoryLevelIndex,
+            "Current level:",
+            levelIndex,
+          );
+          console.log(
+            "   This usually means category was selected but subcategory selection was skipped",
+          );
         }
 
         // Add source filter if KPI has one (for Grievances Sources cards)
         if (kpi.sourceFilter) {
           queryFilters.push({
             member: kpi.sourceFilter.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [kpi.sourceFilter.value],
           });
-          console.log('✅ Added source filter:', kpi.sourceFilter.value);
+          console.log("✅ Added source filter:", kpi.sourceFilter.value);
 
           // Add any additional filters (for whatsapp servicetype, etc.)
           if (kpi.sourceFilter.additionalFilters) {
-            kpi.sourceFilter.additionalFilters.forEach(filter => {
+            kpi.sourceFilter.additionalFilters.forEach((filter) => {
               queryFilters.push({
                 member: filter.dimension,
-                operator: 'equals',
+                operator: "equals",
                 values: [filter.value],
               });
-              console.log('✅ Added additional filter:', filter.dimension, '=', filter.value);
+              console.log(
+                "✅ Added additional filter:",
+                filter.dimension,
+                "=",
+                filter.value,
+              );
             });
           }
         }
 
         // Validate we have the required filters
-        console.log('📊 Available filters for daily query:', {
-          department: filters.department || 'N/A',
-          category: filters.category || 'N/A',
-          subcategory: filters.subcategory || 'N/A',
-          source: kpi.sourceFilter?.value || 'N/A',
+        console.log("📊 Available filters for daily query:", {
+          department: filters.department || "N/A",
+          category: filters.category || "N/A",
+          subcategory: filters.subcategory || "N/A",
+          source: kpi.sourceFilter?.value || "N/A",
         });
 
         if (queryFilters.length === 0) {
-          console.warn('⚠️ WARNING: No filters available for daily breakdown!');
-          console.warn('⚠️ Will fetch all data for the date range');
+          console.warn("⚠️ WARNING: No filters available for daily breakdown!");
+          console.warn("⚠️ Will fetch all data for the date range");
         }
 
-        console.log('🔍 Daily breakdown filters applied - showing all grievances for selected criteria');
-        console.log('🔍 Daily Query Debug Info:', {
+        console.log(
+          "🔍 Daily breakdown filters applied - showing all grievances for selected criteria",
+        );
+        console.log("🔍 Daily Query Debug Info:", {
           department: filters.department,
           category: filters.category,
           subcategory: filters.subcategory,
@@ -1742,29 +2281,40 @@ const UniversalScreen = ({ screenId }) => {
           allFilters: filters,
         });
 
-        console.log('📅 Level 5 Daily Query - ACTUAL FILTERS BEING USED:', {
+        console.log("📅 Level 5 Daily Query - ACTUAL FILTERS BEING USED:", {
           measure: kpi.measure,
-          queryFilters: queryFilters.map(f => ({ member: f.member, values: f.values })),
+          queryFilters: queryFilters.map((f) => ({
+            member: f.member,
+            values: f.values,
+          })),
           dateRange: timeDateRange,
           filtersObject: filters,
         });
-          const dailyQueryTest = currentLevelConfig.dataQuery({ filters: filters, rowItem: rowItem })
+        const dailyQueryTest = currentLevelConfig.dataQuery({
+          filters: filters,
+          rowItem: rowItem,
+        });
         console.log({ dailyQueryTest });
 
         const cubeQuery = {
           measures: [kpi.measure],
-          timeDimensions: [{
-            dimension: kpi.timeDimension,
-            granularity: 'day',
-            dateRange: timeDateRange,
-          }],
+          timeDimensions: [
+            {
+              dimension: kpi.timeDimension,
+              granularity: "day",
+              dateRange: timeDateRange,
+            },
+          ],
           filters: dailyQueryTest?.filters || undefined,
           order: {
-            [kpi.timeDimension]: 'asc',
+            [kpi.timeDimension]: "asc",
           },
         };
 
-        console.log('🔍 CUBE.JS QUERY FOR DAILY BREAKDOWN:', JSON.stringify(cubeQuery, null, 2));
+        console.log(
+          "🔍 CUBE.JS QUERY FOR DAILY BREAKDOWN:",
+          JSON.stringify(cubeQuery, null, 2),
+        );
 
         const resultSet = await cubejsApi.load(cubeQuery);
 
@@ -1772,31 +2322,42 @@ const UniversalScreen = ({ screenId }) => {
         console.log({ resultSetData: data });
         const dailyData = {};
 
-        console.log('📋 Raw daily data from Cube.js - Count:', data.length);
+        console.log("📋 Raw daily data from Cube.js - Count:", data.length);
         if (data.length === 0) {
-          console.warn('⚠️ NO DATA returned from Cube.js for Level 5 daily breakdown!');
-          console.warn('⚠️ This means either:');
-          console.warn('   1. The filters are too restrictive');
-          console.warn('   2. There is no data for this combination');
-          console.warn('   3. The measure does not support this level of filtering');
-          console.warn('⚠️ DEBUG INFO:');
-          console.warn('   - KPI:', kpi.id, kpi.label);
-          console.warn('   - Measure:', kpi.measure);
-          console.warn('   - Time Dimension:', kpi.timeDimension);
-          console.warn('   - Date Range:', timeDateRange);
-          console.warn('   - Filters Applied:', queryFilters);
-          console.warn('   - Department:', filters.department);
-          console.warn('   - Category:', filters.category);
-          console.warn('   - Subcategory:', filters.subcategory);
-          console.warn('   - Month:', filters.month, 'Start:', filters.monthDateStart, 'End:', filters.monthDateEnd);
+          console.warn(
+            "⚠️ NO DATA returned from Cube.js for Level 5 daily breakdown!",
+          );
+          console.warn("⚠️ This means either:");
+          console.warn("   1. The filters are too restrictive");
+          console.warn("   2. There is no data for this combination");
+          console.warn(
+            "   3. The measure does not support this level of filtering",
+          );
+          console.warn("⚠️ DEBUG INFO:");
+          console.warn("   - KPI:", kpi.id, kpi.label);
+          console.warn("   - Measure:", kpi.measure);
+          console.warn("   - Time Dimension:", kpi.timeDimension);
+          console.warn("   - Date Range:", timeDateRange);
+          console.warn("   - Filters Applied:", queryFilters);
+          console.warn("   - Department:", filters.department);
+          console.warn("   - Category:", filters.category);
+          console.warn("   - Subcategory:", filters.subcategory);
+          console.warn(
+            "   - Month:",
+            filters.month,
+            "Start:",
+            filters.monthDateStart,
+            "End:",
+            filters.monthDateEnd,
+          );
         } else {
-          console.log('📋 First row sample:', data[0]);
-          console.log('📋 First row keys:', Object.keys(data[0]));
-          console.log('📋 Total rows returned:', data.length);
+          console.log("📋 First row sample:", data[0]);
+          console.log("📋 First row keys:", Object.keys(data[0]));
+          console.log("📋 Total rows returned:", data.length);
         }
 
         data.forEach((row) => {
-          // Get the actual date key from Cube.js 
+          // Get the actual date key from Cube.js
           // With granularity: 'day', the key formats can be:
           // - 'EgPgrService.createdDate' (full timestamp)
           // - 'EgPgrService.createdDate.day' (day-specific)
@@ -1807,13 +2368,26 @@ const UniversalScreen = ({ screenId }) => {
           // Try different key formats Cube.js might use
           if (row[dateKey]) {
             dateValue = row[dateKey];
-            console.log('✅ Found date using key:', dateKey, 'Value:', dateValue);
+            console.log(
+              "✅ Found date using key:",
+              dateKey,
+              "Value:",
+              dateValue,
+            );
           } else if (row[`${dateKey}.day`]) {
             dateValue = row[`${dateKey}.day`];
-            console.log('✅ Found date using key:', `${dateKey}.day`, 'Value:', dateValue);
+            console.log(
+              "✅ Found date using key:",
+              `${dateKey}.day`,
+              "Value:",
+              dateValue,
+            );
           } else {
             // Log all available keys if we can't find the date
-            console.warn('⚠️ Could not find date key. Available keys:', Object.keys(row));
+            console.warn(
+              "⚠️ Could not find date key. Available keys:",
+              Object.keys(row),
+            );
           }
 
           if (dateValue) {
@@ -1821,41 +2395,60 @@ const UniversalScreen = ({ screenId }) => {
 
             // If measure value is not found, try alternative key formats
             if (measureValue === undefined) {
-              console.warn('⚠️ Measure not found with key:', kpi.measure);
-              console.warn('   Available row keys:', Object.keys(row));
+              console.warn("⚠️ Measure not found with key:", kpi.measure);
+              console.warn("   Available row keys:", Object.keys(row));
 
               // Try finding any numeric value that could be the measure
               // (Cube.js might return measure with different key formatting)
-              const numericKeys = Object.keys(row).filter(key => {
+              const numericKeys = Object.keys(row).filter((key) => {
                 const val = row[key];
-                return typeof val === 'number' || (typeof val === 'string' && !isNaN(val));
+                return (
+                  typeof val === "number" ||
+                  (typeof val === "string" && !isNaN(val))
+                );
               });
 
-              console.warn('   Numeric keys available:', numericKeys);
+              console.warn("   Numeric keys available:", numericKeys);
 
               // Use the first numeric key found, or fallback to a count from the dimension
               if (numericKeys.length > 0) {
                 measureValue = row[numericKeys[0]];
-                console.log('✅ Found measure value using alternate key:', numericKeys[0], 'Value:', measureValue);
+                console.log(
+                  "✅ Found measure value using alternate key:",
+                  numericKeys[0],
+                  "Value:",
+                  measureValue,
+                );
               }
             }
 
             if (measureValue !== undefined) {
-              console.log('📅 Processing date:', dateValue, 'with value:', measureValue);
+              console.log(
+                "📅 Processing date:",
+                dateValue,
+                "with value:",
+                measureValue,
+              );
               // Use the actual date string from Cube.js as the key
               dailyData[dateValue] = {
-                value: typeof measureValue === 'number' ? measureValue : (parseInt(measureValue) || 0),
+                value:
+                  typeof measureValue === "number"
+                    ? measureValue
+                    : parseInt(measureValue) || 0,
                 date: dateValue,
               };
             } else {
-              console.warn('⚠️ CRITICAL: Could not extract measure value for date:', dateValue);
-              console.warn('   Row data:', JSON.stringify(row, null, 2));
+              console.warn(
+                "⚠️ CRITICAL: Could not extract measure value for date:",
+                dateValue,
+              );
+              console.warn("   Row data:", JSON.stringify(row, null, 2));
             }
           }
         });
 
-        console.log('📊 Daily data fetched for Level 5:', dailyData);
-        console.log('📊 Total days:', Object.keys(dailyData).length);
+        console.log("📊 Daily data fetched for Level 5:", dailyData);
+        console.log("📊 Total days:", Object.keys(dailyData).length);
 
         // Close selection modal before showing daily data
         setShowDepartmentSelection(false);
@@ -1866,15 +2459,30 @@ const UniversalScreen = ({ screenId }) => {
         let subcategoryValue = filters.subcategory;
 
         // If both category and subcategory exist, verify they're different
-        if (categoryValue && subcategoryValue && categoryValue === subcategoryValue) {
-          console.warn('⚠️ CRITICAL BUG: Category and subcategory have the same value!');
-          console.warn('   Category:', categoryValue);
-          console.warn('   Subcategory:', subcategoryValue);
-          console.warn('   This indicates filters.category was contaminated with subcategory value');
-          console.warn('   Full filters object:', filters);
+        if (
+          categoryValue &&
+          subcategoryValue &&
+          categoryValue === subcategoryValue
+        ) {
+          console.warn(
+            "⚠️ CRITICAL BUG: Category and subcategory have the same value!",
+          );
+          console.warn("   Category:", categoryValue);
+          console.warn("   Subcategory:", subcategoryValue);
+          console.warn(
+            "   This indicates filters.category was contaminated with subcategory value",
+          );
+          console.warn("   Full filters object:", filters);
           // Try to recover by only keeping the one that matches the dimension at its level
-          const categoryDim = drilldownPathArray.find(p => p.dimension?.includes('category') && !p.dimension?.includes('subcategory'));
-          console.warn('   Expected category dimension:', categoryDim?.dimension);
+          const categoryDim = drilldownPathArray.find(
+            (p) =>
+              p.dimension?.includes("category") &&
+              !p.dimension?.includes("subcategory"),
+          );
+          console.warn(
+            "   Expected category dimension:",
+            categoryDim?.dimension,
+          );
         }
 
         const displayFilters = {
@@ -1884,15 +2492,26 @@ const UniversalScreen = ({ screenId }) => {
           monthDateStart: filters.monthDateStart || undefined,
           monthDateEnd: filters.monthDateEnd || undefined,
           // Explicitly DO NOT include subcategory unless it comes BEFORE daily
-          ...(subcategoryLevelIndex >= 0 && subcategoryLevelIndex < levelIndex && subcategoryValue ? { subcategory: subcategoryValue } : {}),
+          ...(subcategoryLevelIndex >= 0 &&
+          subcategoryLevelIndex < levelIndex &&
+          subcategoryValue
+            ? { subcategory: subcategoryValue }
+            : {}),
         };
 
-        console.log('🔍 Setting daily drilldown filters:');
-        console.log('   Original filters object:', filters);
-        console.log('   Display filters:', displayFilters);
-        console.log('   Category index:', categoryLevelIndex, 'Subcategory index:', subcategoryLevelIndex, 'Current level:', levelIndex);
-        console.log('   Category value:', categoryValue);
-        console.log('   Subcategory value:', subcategoryValue);
+        console.log("🔍 Setting daily drilldown filters:");
+        console.log("   Original filters object:", filters);
+        console.log("   Display filters:", displayFilters);
+        console.log(
+          "   Category index:",
+          categoryLevelIndex,
+          "Subcategory index:",
+          subcategoryLevelIndex,
+          "Current level:",
+          levelIndex,
+        );
+        console.log("   Category value:", categoryValue);
+        console.log("   Subcategory value:", subcategoryValue);
 
         setDailyDrilldownData(dailyData);
         setDailyDrilldownFilters(displayFilters);
@@ -1900,13 +2519,16 @@ const UniversalScreen = ({ screenId }) => {
         await fetchDailyChartData(kpi, dailyData);
         setDrilldownLevel(5);
         setShowDailyDrilldown(true);
-        console.log('✅ Level 5 complete - showing daily data');
+        console.log("✅ Level 5 complete - showing daily data");
         return;
       }
 
-      console.warn('⚠️ No matching drilldown level found for:', currentLevelConfig);
+      console.warn(
+        "⚠️ No matching drilldown level found for:",
+        currentLevelConfig,
+      );
     } catch (error) {
-      console.error('❌ Error in multi-level drilldown:', error);
+      console.error("❌ Error in multi-level drilldown:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -1915,7 +2537,7 @@ const UniversalScreen = ({ screenId }) => {
 
   // ==================== KPI DRILLING ====================
   const handleKPIDrilldown = async (kpi) => {
-    console.log('🎯 handleKPIDrilldown called with kpi:', {
+    console.log("🎯 handleKPIDrilldown called with kpi:", {
       id: kpi.id,
       label: kpi.label,
       drilldownPath: kpi.drilldownPath,
@@ -1927,13 +2549,17 @@ const UniversalScreen = ({ screenId }) => {
     // first measure from `kpi.customQuery.measures` (useful for KPIs that only
     // define `customQuery` like `totalGovtFund`). This prevents sending
     // `measures: [undefined]` to Cube.js which becomes `measures: [null]`.
-    const measureKey = kpi.measure ?? (kpi.customQuery && Array.isArray(kpi.customQuery.measures) ? kpi.customQuery.measures[0] : undefined);
+    const measureKey =
+      kpi.measure ??
+      (kpi.customQuery && Array.isArray(kpi.customQuery.measures)
+        ? kpi.customQuery.measures[0]
+        : undefined);
 
     // Normalize value (support raw number/string or structured object { value, label })
     let value;
     if (kpi.value !== undefined) {
       value = kpi.value;
-    } else if (kpi.id && kpi.id.includes('_')) {
+    } else if (kpi.id && kpi.id.includes("_")) {
       // synthetic KPI id (from dynamic cards)
       value = 1;
     } else {
@@ -1942,20 +2568,27 @@ const UniversalScreen = ({ screenId }) => {
 
     // Derive numericValue for presence check
     let numericValue;
-    if (typeof value === 'object' && value?.value !== undefined) {
+    if (typeof value === "object" && value?.value !== undefined) {
       numericValue = Number(value.value);
-    } else if (typeof value === 'string') {
+    } else if (typeof value === "string") {
       // Try to extract the first numeric token from strings like "1 / 1" or "Counter 36 | ₹300,000"
-      const match = value.match(/([-+]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
-      numericValue = match ? Number(match[0].replace(/,/g, '')) : NaN;
+      const match = value.match(
+        /([-+]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/,
+      );
+      numericValue = match ? Number(match[0].replace(/,/g, "")) : NaN;
     } else {
       numericValue = Number(value);
     }
 
-    console.log('📊 Card value:', value, 'numericValue:', numericValue);
+    console.log("📊 Card value:", value, "numericValue:", numericValue);
 
-    if (value === undefined || value === null || isNaN(numericValue) || numericValue === 0) {
-      console.log('⚠️ No data to drill down (value is 0 or missing)');
+    if (
+      value === undefined ||
+      value === null ||
+      isNaN(numericValue) ||
+      numericValue === 0
+    ) {
+      console.log("⚠️ No data to drill down (value is 0 or missing)");
       return;
     }
 
@@ -1968,31 +2601,37 @@ const UniversalScreen = ({ screenId }) => {
       if (kpi.departmentFilter) {
         // 🔥 FIX: Extract the key name from the dimension to match what the drilldown handler expects
         // e.g., "TresCollReceiptHdr.departmentName" → "departmentName"
-        const dimParts = kpi.departmentFilter.dimension ? kpi.departmentFilter.dimension.split('.') : [];
-        const filterKey = dimParts[dimParts.length - 1] || 'department';
+        const dimParts = kpi.departmentFilter.dimension
+          ? kpi.departmentFilter.dimension.split(".")
+          : [];
+        const filterKey = dimParts[dimParts.length - 1] || "department";
 
         initialFilters[filterKey] = kpi.departmentFilter.value;
         initialFilters.department = kpi.departmentFilter.value; // Keep for backward compatibility
         initialFilters.selectedValue = kpi.departmentFilter.value;
-        console.log(`📍 Starting with ${filterKey} filter:`, kpi.departmentFilter.value);
+        console.log(
+          `📍 Starting with ${filterKey} filter:`,
+          kpi.departmentFilter.value,
+        );
       }
       await handleMultiLevelDrilldown(kpi, 0, initialFilters);
       return;
     }
 
     try {
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
 
       // Check if first level is department selection
       const firstLevel = kpi.drilldownPath?.[0];
-      console.log('🔍 First drilldown level:', firstLevel);
+      console.log("🔍 First drilldown level:", firstLevel);
 
-      if (firstLevel?.type === 'selection' && firstLevel?.dimension) {
-
+      if (firstLevel?.type === "selection" && firstLevel?.dimension) {
         // If filterValue exists, skip to monthly breakdown directly for that department
         if (firstLevel.filterValue) {
           // Determine a valid time dimension to use for monthly breakdowns
-          const tdDim = kpi.timeDimension || (measureKey ? `${measureKey.split('.')[0]}.systemDate` : undefined);
+          const tdDim =
+            kpi.timeDimension ||
+            (measureKey ? `${measureKey.split(".")[0]}.systemDate` : undefined);
 
           // Build load query defensively: only include timeDimensions if tdDim is valid
           const loadQuery = {
@@ -2000,7 +2639,7 @@ const UniversalScreen = ({ screenId }) => {
             filters: [
               {
                 member: firstLevel.dimension,
-                operator: 'equals',
+                operator: "equals",
                 values: [firstLevel.filterValue],
               },
             ],
@@ -2010,11 +2649,11 @@ const UniversalScreen = ({ screenId }) => {
             loadQuery.timeDimensions = [
               {
                 dimension: tdDim,
-                granularity: 'month',
+                granularity: "month",
                 dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
               },
             ];
-            loadQuery.order = { [tdDim]: 'asc' };
+            loadQuery.order = { [tdDim]: "asc" };
           }
 
           const resultSet = await cubejsApi.load(loadQuery);
@@ -2024,25 +2663,40 @@ const UniversalScreen = ({ screenId }) => {
           const monthlyData = {};
 
           data.forEach((row) => {
-            const monthKey = row[`${(kpi.timeDimension || (measureKey ? `${measureKey.split('.')[0]}.systemDate` : ''))}.month`];
+            const monthKey =
+              row[
+                `${kpi.timeDimension || (measureKey ? `${measureKey.split(".")[0]}.systemDate` : "")}.month`
+              ];
             if (monthKey) {
-              const [year, month] = monthKey.split('-');
+              const [year, month] = monthKey.split("-");
               const monthNames = [
-                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
               ];
               const monthName = monthNames[parseInt(month) - 1];
               const displayKey = `${monthName} ${year}`;
               const measureValue = row[measureKey];
 
               monthlyData[displayKey] = {
-                value: typeof measureValue === 'number' ? measureValue : (parseInt(measureValue) || 0),
+                value:
+                  typeof measureValue === "number"
+                    ? measureValue
+                    : parseInt(measureValue) || 0,
                 monthKey: monthKey,
               };
             }
           });
           console.log({ monthlyData });
-
 
           setSelectedKPI(kpi);
           setMonthlyDrilldownData({
@@ -2063,14 +2717,21 @@ const UniversalScreen = ({ screenId }) => {
 
         // Original behavior: Fetch department list with their total collections
         // Build department list query; include timeDimensions only if we have a valid dimension
-        const deptTd = kpi.timeDimension || (measureKey ? `${measureKey.split('.')[0]}.systemDate` : undefined);
+        const deptTd =
+          kpi.timeDimension ||
+          (measureKey ? `${measureKey.split(".")[0]}.systemDate` : undefined);
         const deptQuery = {
           dimensions: [firstLevel.dimension],
           measures: [measureKey],
-          order: { [measureKey]: 'desc' },
+          order: { [measureKey]: "desc" },
         };
         if (deptTd) {
-          deptQuery.timeDimensions = [{ dimension: deptTd, dateRange: [`${startYear}-04-01`, `${endYear}-03-31`] }];
+          deptQuery.timeDimensions = [
+            {
+              dimension: deptTd,
+              dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
+            },
+          ];
         }
 
         const resultSet = await cubejsApi.load(deptQuery);
@@ -2098,7 +2759,9 @@ const UniversalScreen = ({ screenId }) => {
       }
 
       // Default behavior: Show monthly breakdown
-      const tdDim = kpi.timeDimension || (measureKey ? `${measureKey.split('.')[0]}.systemDate` : undefined);
+      const tdDim =
+        kpi.timeDimension ||
+        (measureKey ? `${measureKey.split(".")[0]}.systemDate` : undefined);
       const query = {
         measures: [measureKey],
         order: {},
@@ -2108,14 +2771,14 @@ const UniversalScreen = ({ screenId }) => {
         query.timeDimensions = [
           {
             dimension: tdDim,
-            granularity: 'month',
+            granularity: "month",
             dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
           },
         ];
-        query.order = { [tdDim]: 'asc' };
+        query.order = { [tdDim]: "asc" };
       } else {
         // If we don't have a time dimension, fallback to ordering by measure
-        query.order = { [measureKey]: 'desc' };
+        query.order = { [measureKey]: "desc" };
       }
 
       // Build filters array
@@ -2125,7 +2788,7 @@ const UniversalScreen = ({ screenId }) => {
       if (kpi.departmentFilter) {
         filters.push({
           member: kpi.departmentFilter.dimension,
-          operator: 'equals',
+          operator: "equals",
           values: [kpi.departmentFilter.value],
         });
       }
@@ -2134,16 +2797,16 @@ const UniversalScreen = ({ screenId }) => {
       if (kpi.sourceFilter) {
         filters.push({
           member: kpi.sourceFilter.dimension,
-          operator: 'equals',
+          operator: "equals",
           values: [kpi.sourceFilter.value],
         });
 
         // Add any additional filters (for whatsapp servicetype)
         if (kpi.sourceFilter.additionalFilters) {
-          kpi.sourceFilter.additionalFilters.forEach(filter => {
+          kpi.sourceFilter.additionalFilters.forEach((filter) => {
             filters.push({
               member: filter.dimension,
-              operator: 'equals',
+              operator: "equals",
               values: [filter.value],
             });
           });
@@ -2164,17 +2827,30 @@ const UniversalScreen = ({ screenId }) => {
       data.forEach((row) => {
         const monthKey = row[`${kpi.timeDimension}.month`];
         if (monthKey) {
-          const [year, month] = monthKey.split('-');
+          const [year, month] = monthKey.split("-");
           const monthNames = [
-            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
           ];
           const monthName = monthNames[parseInt(month) - 1];
           const displayKey = `${monthName} ${year}`;
           const measureValue = row[kpi.measure];
 
           monthlyData[displayKey] = {
-            value: typeof measureValue === 'number' ? measureValue : (parseInt(measureValue) || 0),
+            value:
+              typeof measureValue === "number"
+                ? measureValue
+                : parseInt(measureValue) || 0,
             monthKey: monthKey,
           };
         }
@@ -2190,16 +2866,16 @@ const UniversalScreen = ({ screenId }) => {
         filters: { department: kpi.departmentFilter?.value },
       });
 
-      console.log('📊 Monthly drilldown data at line 1180:', {
+      console.log("📊 Monthly drilldown data at line 1180:", {
         department: kpi.departmentFilter?.value,
-        'kpi.departmentFilter': kpi.departmentFilter,
-        'kpi.name': kpi.name,
+        "kpi.departmentFilter": kpi.departmentFilter,
+        "kpi.name": kpi.name,
       });
 
       setDrilldownLevel(kpi.departmentFilter ? 2 : 1); // Level 2 if from department, Level 1 otherwise
       setShowMonthlyDrilldown(true);
     } catch (error) {
-      console.error('❌ Error drilling down KPI:', error);
+      console.error("❌ Error drilling down KPI:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -2216,9 +2892,16 @@ const UniversalScreen = ({ screenId }) => {
 
       console.log(`📍 handleDepartmentSelect called`);
       console.log(`   Selected value: ${departmentName}`);
-      console.log(`   Current level: ${currentLevel} (index ${currentLevelIndex})`);
-      console.log(`   Current level config dimension: ${selectedKPI.drilldownPath[currentLevelIndex]?.dimension}`);
-      console.log(`   Existing filters before update:`, departmentListData.filters);
+      console.log(
+        `   Current level: ${currentLevel} (index ${currentLevelIndex})`,
+      );
+      console.log(
+        `   Current level config dimension: ${selectedKPI.drilldownPath[currentLevelIndex]?.dimension}`,
+      );
+      console.log(
+        `   Existing filters before update:`,
+        departmentListData.filters,
+      );
       console.log(`   Full drilldown path:`, selectedKPI.drilldownPath);
       console.log(`   rowItem:`, rowItem);
 
@@ -2230,8 +2913,18 @@ const UniversalScreen = ({ screenId }) => {
       const currentPathConfig = drilldownPath[currentLevelIndex];
 
       if (!currentPathConfig) {
-        console.warn('⚠️ No config found for current level index:', currentLevelIndex);
-        console.warn('   Available indices:', drilldownPath.map((cfg, idx) => ({ idx, type: cfg.type, dimension: cfg.dimension })));
+        console.warn(
+          "⚠️ No config found for current level index:",
+          currentLevelIndex,
+        );
+        console.warn(
+          "   Available indices:",
+          drilldownPath.map((cfg, idx) => ({
+            idx,
+            type: cfg.type,
+            dimension: cfg.dimension,
+          })),
+        );
         return;
       }
 
@@ -2245,30 +2938,53 @@ const UniversalScreen = ({ screenId }) => {
       // in the serviceType handler) and overwrite filters.businessService with it, keeping
       // filters.level1Dimension pointing at egcl_paymentdetail.businessService — so every
       // downstream dataQuery (which reads getLevel1Filter(filters)) works completely unchanged.
-      if (currentPathConfig.type === 'serviceType') {
-        const fullValue = rowItem?.businessServiceFull || `${newFilters.businessService}.${departmentName}`;
+      // 🔥 PAYMENT TYPE FIX (combined Non-Cash card): a "Cheque"/"DD" card click needs to store
+      // filters.paymentmode so every downstream level's kpi.getMeasure(filters) can resolve the
+      // correct measure (chequeSum vs DDSum). Uses the rowItem built in the paymentTypeSelection
+      // handler rather than the display label, so it stays correct even if the label is reworded.
+      if (currentPathConfig.type === "paymentTypeSelection") {
+        const paymentType =
+          rowItem?.paymentType || (departmentName === "DD" ? "DD" : "CHEQUE");
+        newFilters.paymentmode = paymentType;
+        newFilters.paymentTypeLabel = departmentName; // kept for display/back-navigation only
+        console.log("📍 Stored payment type:", paymentType);
+      } else if (currentPathConfig.type === "serviceType") {
+        const fullValue =
+          rowItem?.businessServiceFull ||
+          `${newFilters.businessService}.${departmentName}`;
         newFilters.businessService = fullValue;
         newFilters.serviceType = departmentName; // kept for display/back-navigation only
-        console.log('📍 Stored full service (category + type):', fullValue);
+        console.log("📍 Stored full service (category + type):", fullValue);
       } else {
         // Determine the dimension actually used (accounts for the tenant/service toggle)
         let effectiveDimension = currentPathConfig.dimension;
         if (currentPathConfig.viewOptions?.length) {
-          const activeViewId = drilldownView || currentPathConfig.viewOptions[0].id;
-          const match = currentPathConfig.viewOptions.find(v => v.id === activeViewId);
+          const activeViewId =
+            drilldownView || currentPathConfig.viewOptions[0].id;
+          const match = currentPathConfig.viewOptions.find(
+            (v) => v.id === activeViewId,
+          );
           if (match) effectiveDimension = match.dimension;
         }
 
-        const dimParts = (effectiveDimension || '').split('.');
+        const dimParts = (effectiveDimension || "").split(".");
         const keyName = dimParts[dimParts.length - 1];
         if (keyName) {
           newFilters[keyName] = departmentName;
           if (currentPathConfig.viewOptions?.length) {
             newFilters.level1Dimension = effectiveDimension; // remembered for all downstream levels
           }
-          console.log(`📍 Stored: ${keyName} =`, departmentName, 'via dimension:', effectiveDimension);
+          console.log(
+            `📍 Stored: ${keyName} =`,
+            departmentName,
+            "via dimension:",
+            effectiveDimension,
+          );
         } else {
-          console.warn('⚠️ Could not derive keyName for dimension:', effectiveDimension);
+          console.warn(
+            "⚠️ Could not derive keyName for dimension:",
+            effectiveDimension,
+          );
         }
       }
 
@@ -2289,56 +3005,81 @@ const UniversalScreen = ({ screenId }) => {
       const detailGroup = selectedKPI?.detailGroup;
       if (detailGroup) {
         try {
-          console.log('🔎 Running detailGroup query for KPI:', selectedKPI?.id, 'detailGroup:', detailGroup);
+          console.log(
+            "🔎 Running detailGroup query for KPI:",
+            selectedKPI?.id,
+            "detailGroup:",
+            detailGroup,
+          );
 
           const query = {
             measures: detailGroup.measures || [selectedKPI.measure],
             dimensions: [detailGroup.dimension],
             order: {
-              [detailGroup.measures?.[0] || selectedKPI.measure]: detailGroup.orderDirection || 'desc',
+              [detailGroup.measures?.[0] || selectedKPI.measure]:
+                detailGroup.orderDirection || "desc",
             },
             limit: detailGroup.limit || 100,
           };
 
           // Build filters: department filter is added by default when available
           const dgFilters = [];
-          const deptMember = detailGroup.departmentMember || selectedKPI.drilldownPath?.[0]?.dimension || detailGroup.defaultDepartmentMember;
+          const deptMember =
+            detailGroup.departmentMember ||
+            selectedKPI.drilldownPath?.[0]?.dimension ||
+            detailGroup.defaultDepartmentMember;
           if (deptMember) {
             // derive key name to look up the selected filter value in newFilters
-            const keyName = String(deptMember).split('.').pop();
+            const keyName = String(deptMember).split(".").pop();
             // Prefer an explicit filter in newFilters, fall back to the clicked item name
-            let filterValue = newFilters[keyName] || newFilters.department || undefined;
+            let filterValue =
+              newFilters[keyName] || newFilters.department || undefined;
             if (!filterValue) filterValue = departmentName;
 
             // If the member refers to fundType but the value is a label (e.g. 'BEUP Fund'),
             // resolve the numeric fundTypeCode and use that for filtering (c.fundtype = 3).
-            if (filterValue && String(deptMember).toLowerCase().includes('fundtype') && isNaN(Number(filterValue))) {
+            if (
+              filterValue &&
+              String(deptMember).toLowerCase().includes("fundtype") &&
+              isNaN(Number(filterValue))
+            ) {
               try {
                 const lookup = await cubejsApi.load({
-                  dimensions: ['ComRegisteredNumber.fundTypeCode'],
+                  dimensions: ["ComRegisteredNumber.fundTypeCode"],
                   filters: [
-                    { member: 'ComRegisteredNumber.fundType', operator: 'equals', values: [filterValue] },
+                    {
+                      member: "ComRegisteredNumber.fundType",
+                      operator: "equals",
+                      values: [filterValue],
+                    },
                   ],
                   limit: 1,
                 });
                 const rows = lookup.tablePivot();
-                const code = rows?.[0]?.['ComRegisteredNumber.fundTypeCode'];
+                const code = rows?.[0]?.["ComRegisteredNumber.fundTypeCode"];
                 if (code !== undefined && code !== null) {
                   filterValue = code;
                 }
               } catch (e) {
-                console.warn('⚠️ fundType lookup failed, falling back to label filter:', e);
+                console.warn(
+                  "⚠️ fundType lookup failed, falling back to label filter:",
+                  e,
+                );
               }
             }
 
             if (filterValue) {
-              dgFilters.push({ member: deptMember, operator: 'equals', values: [filterValue] });
+              dgFilters.push({
+                member: deptMember,
+                operator: "equals",
+                values: [filterValue],
+              });
             }
           }
 
           // Allow static filters from config
           if (Array.isArray(detailGroup.filters)) {
-            detailGroup.filters.forEach(f => dgFilters.push(f));
+            detailGroup.filters.forEach((f) => dgFilters.push(f));
           }
 
           if (dgFilters.length > 0) query.filters = dgFilters;
@@ -2349,11 +3090,16 @@ const UniversalScreen = ({ screenId }) => {
           } else if (detailGroup.onlyToday) {
             const today = new Date();
             const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
             const todayStr = `${yyyy}-${mm}-${dd}`;
-            const tdDim = detailGroup.timeDimension || selectedKPI.timeDimension || `${selectedKPI.measure?.split('.')?.[0] || ''}.systemDate`;
-            query.timeDimensions = [{ dimension: tdDim, dateRange: [todayStr, todayStr] }];
+            const tdDim =
+              detailGroup.timeDimension ||
+              selectedKPI.timeDimension ||
+              `${selectedKPI.measure?.split(".")?.[0] || ""}.systemDate`;
+            query.timeDimensions = [
+              { dimension: tdDim, dateRange: [todayStr, todayStr] },
+            ];
           }
 
           const result = await cubejsApi.load(query);
@@ -2363,20 +3109,33 @@ const UniversalScreen = ({ screenId }) => {
           const cardItems = rows.map((r) => {
             const dimKey = detailGroup.dimension;
             // If config requests a composite pair like "total_*", format first/second measure
-            if (detailGroup.measures && detailGroup.measures.length >= 2 && String(detailGroup.cardFormat || '').toLowerCase().startsWith('total')) {
+            if (
+              detailGroup.measures &&
+              detailGroup.measures.length >= 2 &&
+              String(detailGroup.cardFormat || "")
+                .toLowerCase()
+                .startsWith("total")
+            ) {
               const first = Number(r[detailGroup.measures[0]] ?? 0);
               const second = Number(r[detailGroup.measures[1]] ?? 0);
-              return { name: r[dimKey] ?? 'Unknown', value: `${first} / ${second}` };
+              return {
+                name: r[dimKey] ?? "Unknown",
+                value: `${first} / ${second}`,
+              };
             }
 
             // Default: show first measure numeric value
-            const val = Number(r[detailGroup.measures?.[0] ?? selectedKPI.measure] ?? 0);
-            return { name: r[dimKey] ?? 'Unknown', value: val };
+            const val = Number(
+              r[detailGroup.measures?.[0] ?? selectedKPI.measure] ?? 0,
+            );
+            return { name: r[dimKey] ?? "Unknown", value: val };
           });
 
           const chartItems = rows.map((r) => ({
-            name: r[detailGroup.dimension] ?? 'Unknown',
-            value: Number(r[detailGroup.measures?.[0] ?? selectedKPI.measure] ?? 0),
+            name: r[detailGroup.dimension] ?? "Unknown",
+            value: Number(
+              r[detailGroup.measures?.[0] ?? selectedKPI.measure] ?? 0,
+            ),
           }));
 
           setSelectedKPI(selectedKPI);
@@ -2384,8 +3143,11 @@ const UniversalScreen = ({ screenId }) => {
             kpi: selectedKPI,
             year: selectedYear,
             departments: cardItems,
-            title: detailGroup.title || `${newFilters.department} - ${detailGroup.dimension?.split('.')?.pop() || 'Items'}`,
-            selectionLabel: detailGroup.selectionLabel || detailGroup.title || 'Select Item',
+            title:
+              detailGroup.title ||
+              `${newFilters.department} - ${detailGroup.dimension?.split(".")?.pop() || "Items"}`,
+            selectionLabel:
+              detailGroup.selectionLabel || detailGroup.title || "Select Item",
             currentLevel: currentLevel,
             nextLevel: currentLevel + 1,
             levelIndex: currentLevelIndex + 1,
@@ -2395,10 +3157,12 @@ const UniversalScreen = ({ screenId }) => {
           await fetchDepartmentChartData(selectedKPI, chartItems);
           setDrilldownLevel(currentLevel);
           setShowDepartmentSelection(true);
-          console.log(`✅ Shown ${cardItems.length} items for department ${newFilters.department}`);
+          console.log(
+            `✅ Shown ${cardItems.length} items for department ${newFilters.department}`,
+          );
           return;
         } catch (err) {
-          console.error('❌ Error running detailGroup query:', err);
+          console.error("❌ Error running detailGroup query:", err);
           // fall through to default behavior on error
         }
       }
@@ -2406,22 +3170,33 @@ const UniversalScreen = ({ screenId }) => {
       // Move to next level (levelIndex + 1)
       const nextLevelIndex = currentLevelIndex + 1;
 
-      console.log(`🔄 Proceeding to level index ${nextLevelIndex} with filters:`, newFilters);
+      console.log(
+        `🔄 Proceeding to level index ${nextLevelIndex} with filters:`,
+        newFilters,
+      );
 
-      setDrilldownStack(prev => [...prev, {
-        type: 'selection',
-        levelIndex: currentLevelIndex,
-        snapshot: {
-          departmentListData,
-          departmentChartData,
-          departmentChartType,
-          modalFilter,
+      setDrilldownStack((prev) => [
+        ...prev,
+        {
+          type: "selection",
+          levelIndex: currentLevelIndex,
+          snapshot: {
+            departmentListData,
+            departmentChartData,
+            departmentChartType,
+            modalFilter,
+          },
         },
-      }]);
+      ]);
 
-      await handleMultiLevelDrilldown(selectedKPI, nextLevelIndex, newFilters, rowItem);
+      await handleMultiLevelDrilldown(
+        selectedKPI,
+        nextLevelIndex,
+        newFilters,
+        rowItem,
+      );
     } catch (error) {
-      console.error('❌ Error in handleDepartmentSelect:', error);
+      console.error("❌ Error in handleDepartmentSelect:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -2514,7 +3289,12 @@ const UniversalScreen = ({ screenId }) => {
   // };
 
   const handleMonthClick = async (monthKey, monthName) => {
-    console.log("handleMonthClick", { monthKey, monthName, selectedKPI, monthlyDrilldownData });
+    console.log("handleMonthClick", {
+      monthKey,
+      monthName,
+      selectedKPI,
+      monthlyDrilldownData,
+    });
 
     // if (!selectedKPI || !monthlyDrilldownData) {
     //   console.warn('⚠️ handleMonthClick: Missing selectedKPI or monthlyDrilldownData');
@@ -2522,7 +3302,7 @@ const UniversalScreen = ({ screenId }) => {
     // }
 
     try {
-      const [year, month] = monthKey.split('-');
+      const [year, month] = monthKey.split("-");
       const startDate = `${year}-${month}-01`;
       const endDate = new Date(year, parseInt(month), 0);
       const endDateStr = `${year}-${month}-${endDate.getDate()}`;
@@ -2530,8 +3310,8 @@ const UniversalScreen = ({ screenId }) => {
       console.log(`📍 Month clicked: ${monthName} (${monthKey})`);
       console.log(`📅 Date range: ${startDate} to ${endDateStr}`);
 
-      console.log({monthlyDrilldownData});
-      
+      console.log({ monthlyDrilldownData });
+
       // Build new filters for next level
       const newFilters = {
         ...(monthlyDrilldownData?.filters || {}),
@@ -2547,41 +3327,66 @@ const UniversalScreen = ({ screenId }) => {
       }
 
       // Fallback: if department is not in monthlyDrilldownData, try to get from filters
-      if (!newFilters?.department && monthlyDrilldownData?.filters?.department) {
+      if (
+        !newFilters?.department &&
+        monthlyDrilldownData?.filters?.department
+      ) {
         newFilters.department = monthlyDrilldownData.filters.department;
       }
 
       if (!newFilters?.department) {
-        console.warn('⚠️ WARNING: No department found in newFilters!');
-        console.warn('monthlyDrilldownData.department:', monthlyDrilldownData?.department);
-        console.warn('monthlyDrilldownData.filters:', monthlyDrilldownData?.filters);
+        console.warn("⚠️ WARNING: No department found in newFilters!");
+        console.warn(
+          "monthlyDrilldownData.department:",
+          monthlyDrilldownData?.department,
+        );
+        console.warn(
+          "monthlyDrilldownData.filters:",
+          monthlyDrilldownData?.filters,
+        );
       }
 
-      console.log('🔄 Calling handleMultiLevelDrilldown with filters:', newFilters);
+      console.log(
+        "🔄 Calling handleMultiLevelDrilldown with filters:",
+        newFilters,
+      );
 
       // Determine the index of the monthly level in the drilldown path (could be different per KPI)
-      const monthlyIndex = (selectedKPI?.drilldownPath || []).findIndex(p => p.type === 'monthly');
+      const monthlyIndex = (selectedKPI?.drilldownPath || []).findIndex(
+        (p) => p.type === "monthly",
+      );
       const nextLevelIndex = monthlyIndex >= 0 ? monthlyIndex + 1 : 1; // fall back to 1 if not found
-      console.log({ selectedKPIdrilldownPath: selectedKPI?.drilldownPath, monthlyDrilldownData });
-      console.log(nextLevelIndex,{monthlyModalRowItem});
+      console.log({
+        selectedKPIdrilldownPath: selectedKPI?.drilldownPath,
+        monthlyDrilldownData,
+      });
+      console.log(nextLevelIndex, { monthlyModalRowItem });
 
-      setDrilldownStack(prev => [...prev, {
-        type: 'monthly',
-        levelIndex: monthlyIndex,
-        snapshot: {
-          monthlyDrilldownData,
-          monthlyChartData,
-          monthlyChartType,
-          monthlyModalFilter,
+      setDrilldownStack((prev) => [
+        ...prev,
+        {
+          type: "monthly",
+          levelIndex: monthlyIndex,
+          snapshot: {
+            monthlyDrilldownData,
+            monthlyChartData,
+            monthlyChartType,
+            monthlyModalFilter,
+          },
         },
-      }]);
+      ]);
 
       setShowMonthlyDrilldown(false);
 
       // Move to the next level after monthly: could be daily or category depending on config
-      await handleMultiLevelDrilldown(selectedKPI, monthlyIndex === -1 ? 0 : nextLevelIndex, newFilters, monthlyModalRowItem);
+      await handleMultiLevelDrilldown(
+        selectedKPI,
+        monthlyIndex === -1 ? 0 : nextLevelIndex,
+        newFilters,
+        monthlyModalRowItem,
+      );
     } catch (error) {
-      console.error('❌ Error in handleMonthClick:', error);
+      console.error("❌ Error in handleMonthClick:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -2593,8 +3398,8 @@ const UniversalScreen = ({ screenId }) => {
     if (!kpi || !departments) return;
 
     try {
-      const labels = departments.map(d => formatCardLabel(d.name));
-      const values = departments.map(d => d.value);
+      const labels = departments.map((d) => formatCardLabel(d.name));
+      const values = departments.map((d) => d.value);
 
       // Generate vibrant random colors for each data point
       const generateRandomColor = () => {
@@ -2608,27 +3413,31 @@ const UniversalScreen = ({ screenId }) => {
 
       const chartData = {
         labels: labels,
-        datasets: [{
-          label: kpi.label,
-          data: values,
-          backgroundColor: colors,
-          borderColor: colors.map(color => color.replace('hsl', 'hsla').replace(')', ', 1)')), // Solid border
-          borderWidth: 2,
-        }],
+        datasets: [
+          {
+            label: kpi.label,
+            data: values,
+            backgroundColor: colors,
+            borderColor: colors.map((color) =>
+              color.replace("hsl", "hsla").replace(")", ", 1)"),
+            ), // Solid border
+            borderWidth: 2,
+          },
+        ],
       };
 
-      console.log('📊 Department Chart Data:', {
+      console.log("📊 Department Chart Data:", {
         hasLabels: !!(labels && labels.length > 0),
         labelCount: labels?.length,
         hasDatasets: true,
         dataLength: values?.length,
         isValid: !!(labels && labels.length > 0 && values && values.length > 0),
-        chartData
+        chartData,
       });
 
       setDepartmentChartData(chartData);
     } catch (error) {
-      console.error('❌ Error fetching department chart data:', error);
+      console.error("❌ Error fetching department chart data:", error);
     }
   };
 
@@ -2637,7 +3446,7 @@ const UniversalScreen = ({ screenId }) => {
 
     try {
       const labels = Object.keys(monthlyData);
-      const values = labels.map(label => monthlyData[label].value);
+      const values = labels.map((label) => monthlyData[label].value);
 
       // Generate vibrant random colors for each data point
       const generateRandomColor = () => {
@@ -2651,27 +3460,31 @@ const UniversalScreen = ({ screenId }) => {
 
       const chartData = {
         labels: labels,
-        datasets: [{
-          label: kpi.label,
-          data: values,
-          backgroundColor: colors,
-          borderColor: colors.map(color => color.replace('hsl', 'hsla').replace(')', ', 1)')), // Solid border
-          borderWidth: 2,
-        }],
+        datasets: [
+          {
+            label: kpi.label,
+            data: values,
+            backgroundColor: colors,
+            borderColor: colors.map((color) =>
+              color.replace("hsl", "hsla").replace(")", ", 1)"),
+            ), // Solid border
+            borderWidth: 2,
+          },
+        ],
       };
 
-      console.log('📊 Monthly Chart Data:', {
+      console.log("📊 Monthly Chart Data:", {
         hasLabels: !!(labels && labels.length > 0),
         labelCount: labels?.length,
         hasDatasets: true,
         dataLength: values?.length,
         isValid: !!(labels && labels.length > 0 && values && values.length > 0),
-        chartData
+        chartData,
       });
 
       setMonthlyChartData(chartData);
     } catch (error) {
-      console.error('❌ Error fetching monthly chart data:', error);
+      console.error("❌ Error fetching monthly chart data:", error);
     }
   };
 
@@ -2680,11 +3493,11 @@ const UniversalScreen = ({ screenId }) => {
 
     try {
       const sortedDates = Object.keys(dailyData).sort();
-      const labels = sortedDates.map(date => {
+      const labels = sortedDates.map((date) => {
         const d = new Date(date);
         return `${d.getDate()}/${d.getMonth() + 1}`;
       });
-      const values = sortedDates.map(date => dailyData[date].value);
+      const values = sortedDates.map((date) => dailyData[date].value);
 
       // Generate vibrant random colors for each data point
       const generateRandomColor = () => {
@@ -2698,27 +3511,31 @@ const UniversalScreen = ({ screenId }) => {
 
       const chartData = {
         labels: labels,
-        datasets: [{
-          label: kpi.label,
-          data: values,
-          backgroundColor: colors,
-          borderColor: colors.map(color => color.replace('hsl', 'hsla').replace(')', ', 1)')), // Solid border
-          borderWidth: 2,
-        }],
+        datasets: [
+          {
+            label: kpi.label,
+            data: values,
+            backgroundColor: colors,
+            borderColor: colors.map((color) =>
+              color.replace("hsl", "hsla").replace(")", ", 1)"),
+            ), // Solid border
+            borderWidth: 2,
+          },
+        ],
       };
 
-      console.log('📊 Daily Chart Data:', {
+      console.log("📊 Daily Chart Data:", {
         hasLabels: !!(labels && labels.length > 0),
         labelCount: labels?.length,
         hasDatasets: true,
         dataLength: values?.length,
         isValid: !!(labels && labels.length > 0 && values && values.length > 0),
-        chartData
+        chartData,
       });
 
       setDailyChartData(chartData);
     } catch (error) {
-      console.error('❌ Error fetching daily chart data:', error);
+      console.error("❌ Error fetching daily chart data:", error);
     }
   };
 
@@ -2728,7 +3545,7 @@ const UniversalScreen = ({ screenId }) => {
 
     try {
       setLoading(true);
-      const [startYear, endYear] = selectedYear.split('-');
+      const [startYear, endYear] = selectedYear.split("-");
 
       // Build query to get detailed data for clicked segment
       const query = {
@@ -2737,12 +3554,12 @@ const UniversalScreen = ({ screenId }) => {
         filters: [
           {
             member: chart.dimension,
-            operator: 'equals',
+            operator: "equals",
             values: [segmentData.name],
           },
         ],
         order: {
-          [chart.measure]: chart.order?.direction || 'desc',
+          [chart.measure]: chart.order?.direction || "desc",
         },
       };
 
@@ -2752,7 +3569,9 @@ const UniversalScreen = ({ screenId }) => {
       if (!timeDimensionField && screenConfig.schema?.cubeName) {
         // Fallback to schema if available
         const cubeName = screenConfig.schema.cubeName;
-        const timeDimension = screenConfig.schema.dimensions?.find(dim => dim.type === 'time');
+        const timeDimension = screenConfig.schema.dimensions?.find(
+          (dim) => dim.type === "time",
+        );
         if (timeDimension) {
           timeDimensionField = `${cubeName}.${timeDimension.name}`;
         }
@@ -2763,7 +3582,7 @@ const UniversalScreen = ({ screenId }) => {
         query.timeDimensions = [
           {
             dimension: timeDimensionField,
-            granularity: 'month',
+            granularity: "month",
             dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
           },
         ];
@@ -2776,20 +3595,33 @@ const UniversalScreen = ({ screenId }) => {
       const monthlyData = {};
       data.forEach((row) => {
         // Try to find time dimension column
-        const timeKey = Object.keys(row).find(key => key.includes('.month'));
+        const timeKey = Object.keys(row).find((key) => key.includes(".month"));
         if (timeKey) {
           const monthKey = row[timeKey];
-          const [year, month] = monthKey.split('-');
+          const [year, month] = monthKey.split("-");
           const monthNames = [
-            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
           ];
           const monthName = monthNames[parseInt(month) - 1];
           const displayKey = `${monthName} ${year}`;
           const measureValue = row[chart.measure];
 
           monthlyData[displayKey] = {
-            value: typeof measureValue === 'number' ? measureValue : (parseInt(measureValue) || 0),
+            value:
+              typeof measureValue === "number"
+                ? measureValue
+                : parseInt(measureValue) || 0,
             monthKey: monthKey,
           };
         }
@@ -2803,9 +3635,8 @@ const UniversalScreen = ({ screenId }) => {
         total: segmentData.value,
       });
       setShowChartDrilldown(true);
-
     } catch (error) {
-      console.error('❌ Error in chart drilldown:', error);
+      console.error("❌ Error in chart drilldown:", error);
       if (handleAuthError(error)) {
         return;
       }
@@ -2835,38 +3666,69 @@ const UniversalScreen = ({ screenId }) => {
     console.log("businessServices", businessServices);
 
     const filteredTypes = businessServices
-      .filter(item => item.code.startsWith(`${value}.`))
-      .map(item => {
+      .filter((item) => item.code.startsWith(`${value}.`))
+      .map((item) => {
         const [, serviceType] = item.businessService.split(".", 2);
         const [, codeSuffix] = item.code.split(".", 2);
 
         return {
           value: codeSuffix.trim(),
-          label: serviceType.trim()
+          label: serviceType.trim(),
         };
       });
 
     setServiceTypeOptions(filteredTypes);
   };
 
+  // ==================== HANDLE ORGANIZATION CHANGE ================
+
+  const handleOrganizationChange = (selectedOrgCode) => {
+    console.log("selectedOrgCode", selectedOrgCode);
+
+    const ulbOptions = allOrganizationOptions
+      .filter((item) => !item.isParent && item.parent === selectedOrgCode)
+      .map((item) => ({
+        value: item.code,
+        label: item.name,
+      }));
+
+    setUlbOptions(ulbOptions);
+  };
+
+  // =================== HANDLE RESET ===============================
+
+  const handleReset = () => {
+    setOrganization("");
+    setUlb("");
+    setUlbOptions([]);
+  };
+
   // ==================== HANDLE TOGGLE ============================
   const handleViewToggle = async (viewId) => {
-    if (!selectedKPI || !departmentListData || departmentListData.levelIndex !== 0) return;
+    if (!selectedKPI || !departmentListData) return;
+    const levelIdx = departmentListData.levelIndex;
+    if (levelIdx === undefined || levelIdx === null) return;
     setDrilldownView(viewId);
-    await handleMultiLevelDrilldown(selectedKPI, 0, departmentListData.filters || {}, undefined, viewId);
-};
+    await handleMultiLevelDrilldown(
+      selectedKPI,
+      levelIdx,
+      departmentListData.filters || {},
+      undefined,
+      viewId,
+    );
+  };
 
   // ==================== MANUAL REFRESH HANDLER ====================
   const handleManualRefresh = async () => {
-    console.log('🔄 Manual refresh triggered');
+    console.log("🔄 Manual refresh triggered");
     setRefreshing(true);
-    
+
     try {
       // Note: cubejsApi.invalidateCache() is not available in client-side API
       // Instead, we'll just reload all data. Since pre-aggregations are disabled,
       // each query will hit the database directly and get fresh data.
-      console.log('⚡ Reloading all dashboard data...');
-      
+      console.log("⚡ Reloading all dashboard data...");
+
       // Reload all data with fresh queries
       await Promise.all([
         fetchHeaderKPIs(),
@@ -2874,15 +3736,17 @@ const UniversalScreen = ({ screenId }) => {
         fetchDepartmentWiseCollection(),
         fetchBodySectionsData(),
         fetchBodyKPIs(),
-        Object.keys(filterValues).length > 0 ? fetchTableData() : Promise.resolve()
+        // Object.keys(filterValues).length > 0 ?
+        fetchTableData(),
+        // : Promise.resolve()
       ]);
-      
-      console.log('✅ Manual refresh completed successfully');
+
+      console.log("✅ Manual refresh completed successfully");
     } catch (error) {
-      console.error('❌ Error during manual refresh:', error);
+      console.error("❌ Error during manual refresh:", error);
       if (!handleAuthError(error)) {
         // Show error to user if it's not an auth error
-        alert('Failed to refresh data. Please try again.');
+        alert("Failed to refresh data. Please try again.");
       }
     } finally {
       setRefreshing(false);
@@ -2904,40 +3768,44 @@ const UniversalScreen = ({ screenId }) => {
   };
 
   // ==================== FORMAT EXCEL DATA FUNCTION ================
-      const formatCellValue = (value, type) => {
-      if (value === null || value === undefined) return '';
+  const formatCellValue = (value, type) => {
+    if (value === null || value === undefined) return "";
 
-      switch (type) {
-        case 'date':
-          return value ? new Date(value).toLocaleDateString('en-IN') : '';
-        case 'currency':
-          return value ? Number(value) : 0;
-        default:
-          return value;
-      }
-    };
+    switch (type) {
+      case "date":
+        return value ? new Date(value).toLocaleDateString("en-IN") : "";
+      case "currency":
+        return value ? Number(value) : 0;
+      default:
+        return value;
+    }
+  };
   // ===================== HANDLE EXPORT EXCEL =====================
-  
-    const exportTableToExcel = async (tableConfig, filters, fileName = 'export') => {
+
+  const exportTableToExcel = async (
+    tableConfig,
+    filters,
+    fileName = "export",
+  ) => {
     setIsExporting(true);
     try {
       // Cube.js has a hard max limit of 50,000 rows per query
       const query = tableConfig.dataQuery(filters, 0, 50000);
 
-      console.log('📊 Exporting with query:', query);
+      console.log("📊 Exporting with query:", query);
 
       const resultSet = await cubejsApi.load(query);
       const rawData = resultSet.tablePivot();
 
       if (!rawData.length) {
-        alert('No data available to export.');
+        alert("No data available to export.");
         return;
       }
 
       const exportRows = rawData.map((row, idx) => {
         const exportRow = {};
         tableConfig.columns.forEach((col) => {
-          if (col.type === 'serial') {
+          if (col.type === "serial") {
             exportRow[col.label] = idx + 1;
           } else {
             exportRow[col.label] = formatCellValue(row[col.key], col.type);
@@ -2951,16 +3819,16 @@ const UniversalScreen = ({ screenId }) => {
       const colWidths = tableConfig.columns.map((col) => ({
         wch: Math.max(col.label.length + 2, 15),
       }));
-      worksheet['!cols'] = colWidths;
+      worksheet["!cols"] = colWidths;
 
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
 
       XLSX.writeFile(workbook, `${fileName}_${Date.now()}.xlsx`);
     } catch (error) {
-      console.error('❌ Error exporting to Excel:', error);
+      console.error("❌ Error exporting to Excel:", error);
       if (handleAuthError(error)) return;
-      alert('Failed to export data. Please try again.');
+      alert("Failed to export data. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -2970,7 +3838,9 @@ const UniversalScreen = ({ screenId }) => {
     try {
       const payload = {
         RequestInfo: {
-          authToken: localStorage.getItem("token") || "8d787150-2f96-4695-9757-666dd71d1de2", // or wherever your token is stored
+          authToken:
+            localStorage.getItem("token") ||
+            "8d787150-2f96-4695-9757-666dd71d1de2", // or wherever your token is stored
         },
         MdmsCriteria: {
           tenantId: "pg",
@@ -2990,40 +3860,133 @@ const UniversalScreen = ({ screenId }) => {
 
       const response = await axios.post(
         "/egov-mdms-service/v1/_search",
-        payload
+        payload,
       );
-      console.log("sevice type call",response );
-      
+      console.log("sevice type call", response);
+
       const services =
-          response.data?.MdmsRes?.BillingService?.BusinessService || [];
+        response.data?.MdmsRes?.BillingService?.BusinessService || [];
 
-        const options = services.map((item) => ({
+      const options = services.map((item) => ({
+        value: item.code,
+        label: item.businessService,
+      }));
+      console.log("options", options);
+
+      setBusinessServices(services);
+
+      const categoryMap = new Map();
+
+      services.forEach((item) => {
+        const catValue = item.code.split(".")[0].trim();
+        const catLabel = item.businessService.split(".")[0].trim();
+
+        if (!categoryMap.has(catValue)) {
+          categoryMap.set(catValue, catLabel);
+        }
+      });
+
+      const serviceCatOptions = Array.from(categoryMap, ([value, label]) => ({
+        value,
+        label,
+      }));
+
+      console.log("serviceCatOptions", serviceCatOptions);
+
+      setServiceCatOptions(serviceCatOptions);
+    } catch (error) {
+      console.error("Error loading Service Types", error);
+    }
+  };
+
+  // =================== Fetch Organization and ULD Data ================
+
+  const fetchOrganizationOptions = async () => {
+    try {
+      // const payload = {
+      //   RequestInfo: {
+      //     authToken:
+      //       localStorage.getItem("token") ||
+      //       "8d787150-2f96-4695-9757-666dd71d1de2", // or wherever your token is stored
+      //   },
+      //   MdmsCriteria: {
+      //     tenantId: "pg",
+      //     moduleDetails: [
+      //       {
+      //         moduleName: "BillingService",
+      //         masterDetails: [
+      //           {
+      //             name: "BusinessService",
+      //             filter: "[?(@.type in [Finance])]",
+      //           },
+      //         ],
+      //       },
+      //     ],
+      //   },
+      // };
+
+      const payload = {
+        RequestInfo: {
+          apiId: "Rainmaker",
+          ver: ".01",
+          ts: "",
+          action: "_search",
+          did: "1",
+          key: "",
+          msgId: "20170310130900|en_IN",
+          authToken:
+            localStorage.getItem("token") ||
+            "8d787150-2f96-4695-9757-666dd71d1de2",
+        },
+        MdmsCriteria: {
+          tenantId: "pg",
+          moduleDetails: [
+            {
+              moduleName: "common-masters",
+              masterDetails: [
+                {
+                  name: "StateInfo",
+                },
+              ],
+            },
+            {
+              moduleName: "tenant",
+              masterDetails: [
+                {
+                  name: "tenants",
+                },
+                {
+                  name: "citymodule",
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      const response = await axios.post(
+        "/egov-mdms-service/v1/_search",
+        payload,
+      );
+      console.log("Organization ", response);
+
+      const tenants = response.data?.MdmsRes?.tenant?.tenants || [];
+
+      // Keep the complete tenant list for ULB filtering later
+      setAllOrganizationOptions(tenants);
+
+      // Only show parent organizations
+      const organizationOptions = tenants
+        .filter((item) => item.isParent)
+        .map((item) => ({
           value: item.code,
-          label: item.businessService,
-        }));
-        console.log("options", options);
-
-        setBusinessServices(services);
-
-        const categoryMap = new Map();
-
-        services.forEach((item) => {
-          const catValue = item.code.split(".")[0].trim();
-          const catLabel = item.businessService.split(".")[0].trim();
-
-          if (!categoryMap.has(catValue)) {
-            categoryMap.set(catValue, catLabel);
-          }
-        });
-
-        const serviceCatOptions = Array.from(categoryMap, ([value, label]) => ({
-          value,
-          label,
+          label: item.name,
         }));
 
-        console.log("serviceCatOptions", serviceCatOptions);
+      console.log("All Tenants", tenants);
+      console.log("Organization Options", organizationOptions);
 
-        setServiceCatOptions(serviceCatOptions);
+      setOrganizationOptions(organizationOptions);
     } catch (error) {
       console.error("Error loading Service Types", error);
     }
@@ -3033,6 +3996,12 @@ const UniversalScreen = ({ screenId }) => {
 
   // Fetch all data when financial year changes
   useEffect(() => {
+    const resetReportFields = () => {
+      setFromDate("");
+      setToDate("");
+      setServiceCategory("");
+      setServiceType("");
+    };
     const loadAllData = async () => {
       setLoading(true);
       try {
@@ -3041,18 +4010,20 @@ const UniversalScreen = ({ screenId }) => {
           fetchHeaderKPIs(),
           fetchChartData(),
           fetchDepartmentWiseCollection(),
-          fetchBodySectionsData()
+          fetchBodySectionsData(),
+          fetchTableData(),
         ]);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("Error loading data:", error);
       } finally {
         setLoading(false);
       }
     };
 
+    resetReportFields();
     loadAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedYear]);
+  }, [selectedYear, organization, ulb]);
 
   useEffect(() => {
     fetchFilterOptions();
@@ -3062,35 +4033,35 @@ const UniversalScreen = ({ screenId }) => {
   useEffect(() => {
     // if (Object.keys(filterValues).length > 0) {
 
-      fetchTableData();
+    fetchTableData();
     // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filterValues, handleAuthError]);
 
-  useEffect(()=>{
-    fetchServiceCatOptions()
-  },[])
+  useEffect(() => {
+    fetchServiceCatOptions();
+    fetchOrganizationOptions();
+  }, []);
 
   // ==================== POLL DATA (EVERY 5 SECONDS) ====================
-  useEffect(() => {
-    // const intervalId = setInterval(() => {
-    //   // Fetch all data silently (isBackground = true where supported)
-    //   fetchHeaderKPIs();
-    //   fetchChartData();
-    //   fetchDepartmentWiseCollection();
-    //   fetchBodySectionsData();
-    //   fetchBodyKPIs(true);
-    //   fetchTableData(true);
-    // }, 300000);
-
-    // return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedYear, filterValues, currentPage, screenId]);
+  // useEffect(() => {
+  // const intervalId = setInterval(() => {
+  //   // Fetch all data silently (isBackground = true where supported)
+  //   fetchHeaderKPIs();
+  //   fetchChartData();
+  //   fetchDepartmentWiseCollection();
+  //   fetchBodySectionsData();
+  //   fetchBodyKPIs(true);
+  //   fetchTableData(true);
+  // }, 300000);
+  // return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [selectedYear, filterValues, currentPage, screenId]);
 
   // ==================== VALIDATION (AFTER HOOKS) ====================
   if (!screenConfig) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
+      <div style={{ padding: "40px", textAlign: "center" }}>
         <h2>Screen Not Found</h2>
         <p>Screen ID "{screenId}" does not exist in configuration.</p>
       </div>
@@ -3099,7 +4070,7 @@ const UniversalScreen = ({ screenId }) => {
 
   if (!screenConfig.enabled) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
+      <div style={{ padding: "40px", textAlign: "center" }}>
         <h2>Screen Disabled</h2>
         <p>Screen "{screenConfig.displayName}" is currently disabled.</p>
       </div>
@@ -3110,10 +4081,32 @@ const UniversalScreen = ({ screenId }) => {
   return (
     <div className="universal-screen">
       {departmentLoading && (
-        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 9999 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.95)', padding: '8px 12px', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.12)' }}>
-            <div className="mini-spinner" style={{ width: 18, height: 18, border: '3px solid #eee', borderTop: '3px solid #1e73be', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <div style={{ fontSize: 13, color: '#1e73be', fontWeight: 600 }}>Loading…</div>
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: "rgba(255,255,255,0.95)",
+              padding: "8px 12px",
+              borderRadius: 8,
+              boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+            }}
+          >
+            <div
+              className="mini-spinner"
+              style={{
+                width: 18,
+                height: 18,
+                border: "3px solid #eee",
+                borderTop: "3px solid #1e73be",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <div style={{ fontSize: 13, color: "#1e73be", fontWeight: 600 }}>
+              Loading…
+            </div>
           </div>
         </div>
       )}
@@ -3130,22 +4123,17 @@ const UniversalScreen = ({ screenId }) => {
       {/* Header */}
       <div className="screen-header">
         <div className="header-left">
-          {/* <button
-            onClick={() => navigate(-1)}
-            // className="back-button"
-            title="Go back"
-          >
-           
-            
-          </button> */}
-           <IoArrowBackCircleSharp size={42} color="#302ba0"  onClick={() => navigate(-1)} style={{marginRight:"5px", cursor:"pointer"}}/>
-          {/* <span className="screen-icon">{screenConfig.icon}</span> */}
-          <h2 style={{ color: '#2c3e50', fontSize: '22px', fontWeight: '600' }}>
-            {screenConfig.displayName}
-          </h2>
+          <span className="back-icon">
+            <IoArrowBackCircleSharp
+              size={42}
+              color="#302ba0"
+              onClick={() => navigate(-1)}
+              style={{ cursor: "pointer" }}
+            />
+          </span>
+          <h2 className="screen-title">{screenConfig.displayName}</h2>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="header-right">
           {/* Refresh Button */}
           <button
             onClick={handleManualRefresh}
@@ -3178,25 +4166,95 @@ const UniversalScreen = ({ screenId }) => {
               ↻
             </span>
 
-            {refreshing ? "Refreshing..." : "Refresh"}
+            <span className="refresh-text">
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </span>
           </button>
-          {/* Financial Year Selector */}
-          {screenConfig.financialYear?.enabled && (
-            <div className="year-selector">
-              <label style={{color:"#302ba0"}}>Financial Year:</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-              >
-                {screenConfig.financialYear.availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
+      </div>
+
+      <div>
+        {(screenConfig.organization?.enabled ||
+          screenConfig.ulb?.enabled ||
+          screenConfig.financialYear?.enabled) && (
+          <div className="main-filter-row">
+            {screenConfig.organization?.enabled && (
+              <div className="main-filter-group">
+                <label className="main-filter-label">
+                  Organization:
+                  <select
+                    className="main-filter-select"
+                    value={organization}
+                    name="organization"
+                    onChange={(e) => {
+                      setOrganization(e.target.value);
+                      setUlb(""); // clear stale ULB from a previously selected organization
+                      handleOrganizationChange(e.target.value);
+                    }}
+                  >
+                    <option value="">Select Organization</option>
+
+                    {organizationOptions.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+            {screenConfig.ulb?.enabled && (
+              <div className="main-filter-group">
+                <label className="main-filter-label">
+                  ULB:
+                  <select
+                    className="main-filter-select"
+                    value={ulb}
+                    disabled={ulbOptions?.length == 0}
+                    name="ulb"
+                    onChange={(e) => {
+                      console.log("ulb", e.target.value);
+                      setUlb(e.target.value);
+                    }}
+                  >
+                    <option value="">Select ULB</option>
+                    {ulbOptions.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+
+            {screenConfig.financialYear?.enabled && (
+              <div className="main-filter-group">
+                <label className="main-filter-label">
+                  Financial Year:
+                  <select
+                    className="main-filter-select"
+                    name="selectedYear"
+                    id="selectedYear"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                  >
+                    {screenConfig.financialYear.availableYears.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+            <div className="btn-reset-wrapper">
+              <button className="btn-reset" onClick={handleReset}>
+                Reset
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Header KPIs */}
@@ -3205,22 +4263,25 @@ const UniversalScreen = ({ screenId }) => {
           <div className="kpi-grid">
             {screenConfig.kpis.map((kpi) => {
               let value = headerKPIs[kpi.id];
-              const isClickable = kpi.isDrillingRequired && value && Number((value?.value ?? value)) > 0;
+              const isClickable =
+                kpi.isDrillingRequired &&
+                value &&
+                Number(value?.value ?? value) > 0;
               // Custom style for Today Collection
               let cardStyle = {};
               if (kpi.isTodayBased) {
                 cardStyle = {
-                  textColor: kpi.cardStyle?.textColor || 'red',
-                  fontSize: kpi.cardStyle?.fontSize || '20px',
-                  borderColor: kpi.cardStyle?.borderColor || 'red',
-                  borderWidth: kpi.cardStyle?.borderWidth || '3px',
+                  textColor: kpi.cardStyle?.textColor || "red",
+                  fontSize: kpi.cardStyle?.fontSize || "20px",
+                  borderColor: kpi.cardStyle?.borderColor || "red",
+                  borderWidth: kpi.cardStyle?.borderWidth || "3px",
                 };
               } else if (kpi.cardStyle) {
                 cardStyle = kpi.cardStyle;
               }
               let displayValue = value;
               // If KPI returns structured object with a label, show the label
-              if (value && typeof value === 'object') {
+              if (value && typeof value === "object") {
                 if (value.label) {
                   displayValue = value.label;
                 } else if (value.value !== undefined) {
@@ -3239,8 +4300,10 @@ const UniversalScreen = ({ screenId }) => {
                   icon={kpi.icon}
                   color={kpi.color}
                   drilldownLevel={0}
-                  onClick={isClickable ? () => handleKPIDrilldown(kpi) : undefined}
-                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                  onClick={
+                    isClickable ? () => handleKPIDrilldown(kpi) : undefined
+                  }
+                  style={{ cursor: isClickable ? "pointer" : "default" }}
                   cardStyle={cardStyle}
                 />
               );
@@ -3252,7 +4315,7 @@ const UniversalScreen = ({ screenId }) => {
       {/* Filter Form */}
       {screenConfig.filters?.enabled && (
         <div className="filter-section">
-          <h2>{screenConfig.filters.title || 'Filters'}</h2>
+          <h2>{screenConfig.filters.title || "Filters"}</h2>
           <form onSubmit={handleFilterSubmit} className="filter-form">
             <div
               className="filter-grid"
@@ -3264,10 +4327,10 @@ const UniversalScreen = ({ screenId }) => {
                 <div key={field.id} className="filter-field">
                   <label>{field.label}</label>
 
-                  {field.type === 'date' && (
+                  {field.type === "date" && (
                     <input
                       type="date"
-                      value={filterValues[field.id] || ''}
+                      value={filterValues[field.id] || ""}
                       onChange={(e) =>
                         setFilterValues({
                           ...filterValues,
@@ -3279,7 +4342,7 @@ const UniversalScreen = ({ screenId }) => {
                     />
                   )}
 
-                  {field.type === 'select' && (
+                  {field.type === "select" && (
                     <Select
                       options={filterOptions[field.id] || []}
                       value={filterValues[field.id] || null}
@@ -3295,10 +4358,10 @@ const UniversalScreen = ({ screenId }) => {
                     />
                   )}
 
-                  {field.type === 'text' && (
+                  {field.type === "text" && (
                     <input
                       type="text"
-                      value={filterValues[field.id] || ''}
+                      value={filterValues[field.id] || ""}
                       onChange={(e) =>
                         setFilterValues({
                           ...filterValues,
@@ -3318,7 +4381,9 @@ const UniversalScreen = ({ screenId }) => {
                 <button
                   key={action.id}
                   type={action.type}
-                  onClick={action.type === 'reset' ? handleFilterReset : undefined}
+                  onClick={
+                    action.type === "reset" ? handleFilterReset : undefined
+                  }
                   style={{ backgroundColor: action.color }}
                 >
                   {action.label}
@@ -3332,14 +4397,16 @@ const UniversalScreen = ({ screenId }) => {
       {/* Body KPIs (Filtered Results) */}
       {screenConfig.bodyKpis?.enabled && Object.keys(bodyKPIs).length > 0 && (
         <div className="kpi-section">
-          <h2>{screenConfig.bodyKpis.title || 'Results'}</h2>
+          <h2>{screenConfig.bodyKpis.title || "Results"}</h2>
           <div className="kpi-grid">
             {screenConfig.bodyKpis.kpis.map((kpi) => (
               <KPICard
                 key={kpi.id}
                 title={kpi.label}
                 value={formatValue(bodyKPIs[kpi.id], kpi.format)}
-                subtitle={kpi?.isDrillingRequired ? `👆 Click - Monthly Breakdown` : ''}
+                subtitle={
+                  kpi?.isDrillingRequired ? `👆 Click - Monthly Breakdown` : ""
+                }
                 icon={kpi.icon}
                 color={kpi.color}
                 drilldownLevel={0}
@@ -3350,615 +4417,558 @@ const UniversalScreen = ({ screenId }) => {
       )}
 
       {/* Body Sections (Dynamic from screenRegistry) - MOVED BEFORE CHARTS */}
-      {screenConfig?.bodyConfig?.sections && Object.keys(bodySectionsData).length > 0 && (
-
-        <>
-          {screenConfig.bodyConfig.sections.map((section) => {
-            const sectionData = bodySectionsData[section.id];
-            if (!sectionData) return null;
-            console.log({ sectionData });
-            return (
-              <div key={section.id} className="kpi-section" style={{ marginTop: '30px' }}>
-                <h2 style={{ marginBottom: '20px', color: '#2c3e50', fontSize: '22px', fontWeight: '600', textTransform: 'capitalize' }}>
-                  {section.title}
-                </h2>
-
-                {/* Dynamic query-based cards (e.g., department-wise) */}
-                {sectionData.type === 'dynamic' && sectionData.data && (
-                  <div
-                    className="kpi-grid"
+      {screenConfig?.bodyConfig?.sections &&
+        Object.keys(bodySectionsData).length > 0 && (
+          <>
+            {screenConfig.bodyConfig.sections.map((section) => {
+              const sectionData = bodySectionsData[section.id];
+              if (!sectionData) return null;
+              console.log({ sectionData });
+              return (
+                <div
+                  key={section.id}
+                  className="kpi-section"
+                  style={{ marginTop: "30px" }}
+                >
+                  <h2
                     style={{
-                      gridTemplateColumns: `repeat(${section.columns || 4}, 1fr)`,
-                      gap: '20px',
+                      marginBottom: "20px",
+                      color: "#2c3e50",
+                      fontSize: "22px",
+                      fontWeight: "600",
+                      textTransform: "capitalize",
                     }}
                   >
-                    {(() => {
-                      const cfg = sectionData.config || {};
+                    {section.title}
+                  </h2>
 
-                      // ---------------- DEDUPE LOGIC ----------------
-                      let rowsToRender = sectionData.data;
-                      if (cfg.dedupeByTitle) {
-                        const map = new Map();
-                        const valueField = cfg.valueField;
-                        const secondaryField = cfg.secondaryValueField;
+                  {/* Dynamic query-based cards (e.g., department-wise) */}
+                  {sectionData.type === "dynamic" && sectionData.data && (
+                    <div
+                      className="kpi-grid"
+                      style={{
+                        gridTemplateColumns: `repeat(${section.columns || 4}, 1fr)`,
+                        gap: "20px",
+                      }}
+                    >
+                      {(() => {
+                        const cfg = sectionData.config || {};
 
-                        rowsToRender.forEach((r) => {
-                          const titleKey = cfg.titleTemplate
+                        // ---------------- DEDUPE LOGIC ----------------
+                        let rowsToRender = sectionData.data;
+                        if (cfg.dedupeByTitle) {
+                          const map = new Map();
+                          const valueField = cfg.valueField;
+                          const secondaryField = cfg.secondaryValueField;
+
+                          rowsToRender.forEach((r) => {
+                            const titleKey = cfg.titleTemplate
+                              ? cfg.titleTemplate
+                                  .replace(/\{([^}]+)\}/g, (_, k) =>
+                                    r && r[k] !== undefined && r[k] !== null
+                                      ? String(r[k])
+                                      : "",
+                                  )
+                                  .trim()
+                              : r && cfg.titleField
+                                ? r[cfg.titleField]
+                                : null;
+
+                            if (!map.has(titleKey)) {
+                              map.set(titleKey, {
+                                _title: titleKey,
+                                _row: r,
+                                _value: Number(r[valueField] || 0),
+                                _secondary: Number(r[secondaryField] || 0),
+                              });
+                            } else {
+                              const entry = map.get(titleKey);
+                              entry._value += Number(r[valueField] || 0);
+                              entry._secondary += Number(
+                                r[secondaryField] || 0,
+                              );
+                            }
+                          });
+
+                          rowsToRender = Array.from(map.values())
+                            .filter(
+                              (e) => e._title && String(e._title).trim() !== "",
+                            )
+                            .map((e) => ({
+                              ...e._row,
+                              [cfg.valueField]: e._value,
+                              [cfg.secondaryValueField]: e._secondary,
+                            }));
+                        }
+
+                        // Filter out any rows that don't have a usable title (e.g., bankName null/empty)
+                        rowsToRender = rowsToRender.filter((r) => {
+                          const titleFromTemplate = cfg.titleTemplate
                             ? cfg.titleTemplate
-                              .replace(/\{([^}]+)\}/g, (_, k) =>
-                                r && r[k] !== undefined && r[k] !== null ? String(r[k]) : ''
-                              )
-                              .trim()
-                            : r && cfg.titleField
-                              ? r[cfg.titleField]
-                              : null;
-
-                          if (!map.has(titleKey)) {
-                            map.set(titleKey, {
-                              _title: titleKey,
-                              _row: r,
-                              _value: Number(r[valueField] || 0),
-                              _secondary: Number(r[secondaryField] || 0),
-                            });
-                          } else {
-                            const entry = map.get(titleKey);
-                            entry._value += Number(r[valueField] || 0);
-                            entry._secondary += Number(r[secondaryField] || 0);
-                          }
+                                .replace(/\{([^}]+)\}/g, (_, k) =>
+                                  r && r[k] !== undefined && r[k] !== null
+                                    ? String(r[k])
+                                    : "",
+                                )
+                                .trim()
+                            : null;
+                          const titleFromField =
+                            r && cfg.titleField ? r[cfg.titleField] : null;
+                          const finalTitle =
+                            titleFromTemplate || titleFromField;
+                          return finalTitle && String(finalTitle).trim() !== "";
                         });
 
-                        rowsToRender = Array.from(map.values())
-                          .filter((e) => e._title && String(e._title).trim() !== "")
-                          .map((e) => ({
-                            ...e._row,
-                            [cfg.valueField]: e._value,
-                            [cfg.secondaryValueField]: e._secondary,
-                          }));
-                      }
+                        // ---------------- RENDER KPI CARDS ----------------
+                        return rowsToRender.map((row, index) => {
+                          // ---- Title handling (template OR field) ----
+                          if (cfg.isMonthly) {
+                            const monthKey = cfg.titleField;
+                            const [year, month] = row[monthKey].split("-");
 
-                      // Filter out any rows that don't have a usable title (e.g., bankName null/empty)
-                      rowsToRender = rowsToRender.filter((r) => {
-                        const titleFromTemplate = cfg.titleTemplate
-                          ? cfg.titleTemplate.replace(/\{([^}]+)\}/g, (_, k) => (r && r[k] !== undefined && r[k] !== null) ? String(r[k]) : "").trim()
-                          : null;
-                        const titleFromField = r && cfg.titleField ? r[cfg.titleField] : null;
-                        const finalTitle = titleFromTemplate || titleFromField;
-                        return finalTitle && String(finalTitle).trim() !== "";
-                      });
+                            const monthNames = [
+                              "Jan",
+                              "Feb",
+                              "Mar",
+                              "Apr",
+                              "May",
+                              "Jun",
+                              "Jul",
+                              "Aug",
+                              "Sep",
+                              "Oct",
+                              "Nov",
+                              "Dec",
+                            ];
+                            const monthName = monthNames[parseInt(month) - 1];
+                            const displayKey = `${monthName} ${year}`;
+                            const titleFromTemplate = cfg.titleTemplate
+                              ? monthName ||
+                                cfg.titleTemplate
+                                  .replace(/\{([^}]+)\}/g, (_, k) =>
+                                    row &&
+                                    row[k] !== undefined &&
+                                    row[k] !== null
+                                      ? String(row[k])
+                                      : "",
+                                  )
+                                  .trim()
+                              : null;
+                            const titleFromField =
+                              row && cfg.titleField
+                                ? displayKey || row[cfg.titleField]
+                                : null;
+                            cfg.titleTemplate =
+                              displayKey || titleFromTemplate || titleFromField;
+                          }
+                          let title = null;
+                          if (cfg.titleTemplate) {
+                            title = cfg.titleTemplate
+                              .replace(/\{([^}]+)\}/g, (_, key) =>
+                                row &&
+                                row[key] !== undefined &&
+                                row[key] !== null
+                                  ? String(row[key])
+                                  : "",
+                              )
+                              .trim();
+                          } else {
+                            title =
+                              row && cfg.titleField
+                                ? row[cfg.titleField]
+                                : null;
+                          }
 
-                      // ---------------- RENDER KPI CARDS ----------------
-                      return rowsToRender.map((row, index) => {
-                        // ---- Title handling (template OR field) ----
-                        if (cfg.isMonthly) {
-                          const monthKey = cfg.titleField;
-                          const [year, month] = row[monthKey].split('-');
-
-                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                          const monthName = monthNames[parseInt(month) - 1];
-                          const displayKey = `${monthName} ${year}`;
-                          const titleFromTemplate = cfg.titleTemplate
-                            ? monthName || cfg.titleTemplate.replace(/\{([^}]+)\}/g, (_, k) => (row && row[k] !== undefined && row[k] !== null) ? String(row[k]) : "").trim()
+                          let value = "";
+                          if (cfg.isMultipleStringValue) {
+                            value = cfg.renderValue([row]).label;
+                          } else {
+                            value = row[cfg.valueField];
+                          }
+                          const secondaryValue = cfg.secondaryValueField
+                            ? row[cfg.secondaryValueField]
                             : null;
-                          const titleFromField = row && cfg.titleField ? (displayKey || row[cfg.titleField]) : null;
-                          cfg.titleTemplate = displayKey || titleFromTemplate || titleFromField;
-                        }
-                        let title = null;
-                        if (cfg.titleTemplate) {
-                          title = cfg.titleTemplate
-                            .replace(/\{([^}]+)\}/g, (_, key) =>
-                              row && row[key] !== undefined && row[key] !== null
-                                ? String(row[key])
-                                : ''
-                            )
-                            .trim();
-                        } else {
-                          title = row && cfg.titleField ? row[cfg.titleField] : null;
-                        }
 
-
-                        let value = "";
-                        if (cfg.isMultipleStringValue) {
-                          value = cfg.renderValue([row]).label;
-                        } else {
-                          value = row[cfg.valueField];
-                        }
-                        const secondaryValue = cfg.secondaryValueField
-                          ? row[cfg.secondaryValueField]
-                          : null;
-
-                        // ---------------- SAFE TEMP KPI FOR DRILLDOWN ----------------
-                        const tempKPI =
-                          cfg.enableDrilldown
+                          // ---------------- SAFE TEMP KPI FOR DRILLDOWN ----------------
+                          const tempKPI = cfg.enableDrilldown
                             ? {
-                              id: `${section.id}_${index}`,
-                              label: title,
-                              icon: cfg.icon,
-                              color: cfg.secondaryValueColor || '#4CAF50',
-                              format: cfg.format || 'number',
+                                id: `${section.id}_${index}`,
+                                label: title,
+                                icon: cfg.icon,
+                                color: cfg.secondaryValueColor || "#4CAF50",
+                                format: cfg.format || "number",
 
-                              // ✅ REAL Cube measure ONLY
-                              measure: cfg.measure || cfg.valueField,
-                              keyFieldValue: row?.[cfg.keyField],
+                                // ✅ REAL Cube measure ONLY
+                                measure: cfg.measure || cfg.valueField,
+                                keyFieldValue: row?.[cfg.keyField],
 
-                              // ✅ Add timeDimension ONLY if defined at section level
-                              ...(sectionData.timeDimension
-                                ? { timeDimension: sectionData.timeDimension || cfg.timeDimension }
-                                : { timeDimension: cfg.timeDimension }),
+                                // ✅ Add timeDimension ONLY if defined at section level
+                                ...(sectionData.timeDimension
+                                  ? {
+                                      timeDimension:
+                                        sectionData.timeDimension ||
+                                        cfg.timeDimension,
+                                    }
+                                  : { timeDimension: cfg.timeDimension }),
 
-                              isDrillingRequired: true,
+                                isDrillingRequired: true,
 
-                              // ✅ Proper Cube filters (Bank → Branch etc.)
-                              // If keyField is provided, use it. Otherwise fall back to titleField.
-                              filters:
-                                (cfg.keyField && row[cfg.keyField] !== undefined)
-                                  ? [
-                                    {
-                                      member: cfg.titleField, // Map the filter to the DISPLAY dimension (e.g. fundType)
-                                      operator: 'equals',
-                                      values: [row[cfg.titleField]], // But filter by the value of titleField (e.g. "BEUP Fund")
-                                    },
-                                    // If we also want to filter by the code, we might need a separate mechanism,
-                                    // but for now, let's assume filtering by the dimension name is what we want
-                                    // based on how the previous levels worked.
-                                    // Actually, let's look at how handleKPIDrilldown uses this.
-                                    // It creates a `sourceFilter` or `departmentFilter` on the KPI.
-                                  ]
-                                  : (cfg.titleField && row[cfg.titleField])
+                                // ✅ Proper Cube filters (Bank → Branch etc.)
+                                // If keyField is provided, use it. Otherwise fall back to titleField.
+                                filters:
+                                  cfg.keyField &&
+                                  row[cfg.keyField] !== undefined
                                     ? [
-                                      {
-                                        member: cfg.titleField,
-                                        operator: 'equals',
-                                        values: [row[cfg.titleField]]
+                                        {
+                                          member: cfg.titleField, // Map the filter to the DISPLAY dimension (e.g. fundType)
+                                          operator: "equals",
+                                          values: [row[cfg.titleField]], // But filter by the value of titleField (e.g. "BEUP Fund")
+                                        },
+                                        // If we also want to filter by the code, we might need a separate mechanism,
+                                        // but for now, let's assume filtering by the dimension name is what we want
+                                        // based on how the previous levels worked.
+                                        // Actually, let's look at how handleKPIDrilldown uses this.
+                                        // It creates a `sourceFilter` or `departmentFilter` on the KPI.
+                                      ]
+                                    : cfg.titleField && row[cfg.titleField]
+                                      ? [
+                                          {
+                                            member: cfg.titleField,
+                                            operator: "equals",
+                                            values: [row[cfg.titleField]],
+                                          },
+                                        ]
+                                      : [],
+
+                                // Store the specific filter context for the drilldown handler
+                                departmentFilter:
+                                  cfg.titleField && row[cfg.titleField]
+                                    ? {
+                                        dimension: cfg.titleField,
+                                        value: row[cfg.titleField],
                                       }
-                                    ]
-                                    : [],
+                                    : undefined,
 
-                              // Store the specific filter context for the drilldown handler
-                              departmentFilter: (cfg.titleField && row[cfg.titleField]) ? {
-                                dimension: cfg.titleField,
-                                value: row[cfg.titleField]
-                              } : undefined,
-
-                              drilldownPath: cfg.drilldownPath || [],
-                            }
+                                drilldownPath: cfg.drilldownPath || [],
+                              }
                             : null;
-                        return (
-                          <KPICard
-                            key={index}
-                            title={title}
-                            value={formatValue(value, cfg.format || 'number')}
-                            subtitle={
-                              secondaryValue !== null
-                                ? `${cfg.secondaryValueLabel}: ${formatValue(
-                                  secondaryValue,
-                                  'string'
-                                )}`
-                                : cfg.enableDrilldown
-                                  ? '👆 Click to drill down'
+                          return (
+                            <KPICard
+                              key={index}
+                              title={title}
+                              value={formatValue(value, cfg.format || "number")}
+                              subtitle={
+                                secondaryValue !== null
+                                  ? `${cfg.secondaryValueLabel}: ${formatValue(
+                                      secondaryValue,
+                                      "string",
+                                    )}`
+                                  : cfg.enableDrilldown
+                                    ? "👆 Click to drill down"
+                                    : undefined
+                              }
+                              icon={cfg.icon}
+                              color={cfg.secondaryValueColor}
+                              drilldownLevel={0}
+                              onClick={
+                                cfg.enableDrilldown && tempKPI
+                                  ? async () => {
+                                      if (cfg.isMonthly) {
+                                        setSelectedKPI(tempKPI);
+                                        setMonthlyDrilldownData({
+                                          kpi: tempKPI,
+                                          year: selectedYear,
+                                          months: [
+                                            {
+                                              month: tempKPI.keyFieldValue,
+                                              value: value,
+                                              secondaryValue:
+                                                tempKPI.secondaryValue,
+                                            },
+                                          ],
+                                          department: "4517940",
+                                          filters: { department: "4517940" },
+                                        });
+                                        await handleMonthClick(
+                                          tempKPI.keyFieldValue,
+                                          tempKPI.label,
+                                        );
+                                      } else {
+                                        await handleKPIDrilldown(tempKPI);
+                                      }
+                                    }
                                   : undefined
-                            }
-                            icon={cfg.icon}
-                            color={cfg.secondaryValueColor}
-                            drilldownLevel={0}
-                            onClick={
-                              cfg.enableDrilldown && tempKPI
-                                ? async () => {
-                                  if (cfg.isMonthly) {
-                                    setSelectedKPI(tempKPI);
-                                    setMonthlyDrilldownData({
-                                      kpi: tempKPI,
-                                      year: selectedYear,
-                                      months: [{
-                                        month: tempKPI.keyFieldValue,
-                                        value: value,
-                                        secondaryValue: tempKPI.secondaryValue,
-                                      }],
-                                      department: '4517940',
-                                      filters: { department: '4517940' },
-                                    });
-                                    await handleMonthClick(tempKPI.keyFieldValue, tempKPI.label);
-                                  } else {
-                                    await handleKPIDrilldown(tempKPI);
-                                  }
-                                }
-                                : undefined
-                            }
-                            style={{
-                              cursor:
-                                cfg.enableDrilldown
-                                  ? 'pointer'
-                                  : 'default',
-                            }}
-                          />
-                        );
-                      });
-                    })()}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </>
-      )}
+                              }
+                              style={{
+                                cursor: cfg.enableDrilldown
+                                  ? "pointer"
+                                  : "default",
+                              }}
+                            />
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
 
       {/* Charts - MOVED AFTER BODY SECTIONS */}
-      {screenConfig.charts && screenConfig.charts.length > 0 && Object.keys(chartData).length > 0 && (
-        <div className="charts-section">
-          {screenConfig.charts.map((chart) => {
-            const currentChartType = chartTypes[chart.id] || chart.defaultType || 'pie';
-            const data = chartData[chart.id] || [];
+      {screenConfig.charts &&
+        screenConfig.charts.length > 0 &&
+        Object.keys(chartData).length > 0 && (
+          <div className="charts-section">
+            {screenConfig.charts.map((chart) => {
+              const currentChartType =
+                chartTypes[chart.id] || chart.defaultType || "pie";
+              const data = chartData[chart.id] || [];
 
-            return (
-              <div key={chart.id} className="chart-section">
-                <div className="chart-header">
-                  <h2>
-                    {chart.title}
-                    {chart.enableDrilldown && (
-                      <span style={{ fontSize: '12px', color: '#999', marginLeft: '10px', fontWeight: 'normal' }}>
-                        👆 Click on any segment to view monthly breakdown
-                      </span>
+              return (
+                <div key={chart.id} className="chart-section">
+                  <div className="chart-header">
+                    <h2>
+                      {chart.title}
+                      {chart.enableDrilldown && (
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "#999",
+                            marginLeft: "10px",
+                            fontWeight: "normal",
+                          }}
+                        >
+                          👆 Click on any segment to view monthly breakdown
+                        </span>
+                      )}
+                    </h2>
+                    {chart.types && chart.types.length > 1 && (
+                      <select
+                        value={currentChartType}
+                        onChange={(e) =>
+                          setChartTypes({
+                            ...chartTypes,
+                            [chart.id]: e.target.value,
+                          })
+                        }
+                        className="chart-type-selector"
+                      >
+                        {chart.types.map((type) => (
+                          <option key={type} value={type}>
+                            {type === "pie"
+                              ? "🥧 Pie Chart"
+                              : type === "bar"
+                                ? "📊 Bar Chart"
+                                : "📈 Line Chart"}
+                          </option>
+                        ))}
+                      </select>
                     )}
-                  </h2>
-                  {chart.types && chart.types.length > 1 && (
-                    <select
-                      value={currentChartType}
-                      onChange={(e) => setChartTypes({
-                        ...chartTypes,
-                        [chart.id]: e.target.value
-                      })}
-                      className="chart-type-selector"
-                    >
-                      {chart.types.map((type) => (
-                        <option key={type} value={type}>
-                          {type === 'pie' ? '🥧 Pie Chart' :
-                            type === 'bar' ? '📊 Bar Chart' :
-                              '📈 Line Chart'}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                  </div>
 
-                <div className="chart-container">
-                  {currentChartType === 'pie' && (
-                    <PieChart
-                      data={data}
-                      onSegmentClick={chart.enableDrilldown ? (segmentData) => handleChartClick(segmentData, chart) : null}
-                    />
-                  )}
-                  {currentChartType === 'bar' && (
-                    <BarChart
-                      data={data}
-                      onBarClick={chart.enableDrilldown ? (segmentData) => handleChartClick(segmentData, chart) : null}
-                    />
-                  )}
-                  {currentChartType === 'line' && (
-                    <LineChart
-                      data={data}
-                      onPointClick={chart.enableDrilldown ? (segmentData) => handleChartClick(segmentData, chart) : null}
-                    />
-                  )}
+                  <div className="chart-container">
+                    {currentChartType === "pie" && (
+                      <PieChart
+                        data={data}
+                        onSegmentClick={
+                          chart.enableDrilldown
+                            ? (segmentData) =>
+                                handleChartClick(segmentData, chart)
+                            : null
+                        }
+                      />
+                    )}
+                    {currentChartType === "bar" && (
+                      <BarChart
+                        data={data}
+                        onBarClick={
+                          chart.enableDrilldown
+                            ? (segmentData) =>
+                                handleChartClick(segmentData, chart)
+                            : null
+                        }
+                      />
+                    )}
+                    {currentChartType === "line" && (
+                      <LineChart
+                        data={data}
+                        onPointClick={
+                          chart.enableDrilldown
+                            ? (segmentData) =>
+                                handleChartClick(segmentData, chart)
+                            : null
+                        }
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
 
       {/* Report fields input form  */}
       {(screenConfig.financialYear?.enabled ||
         screenConfig.fromDate?.enabled ||
         screenConfig.toDate?.enabled ||
         screenConfig.serviceCategory?.enabled) && (
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e2e8f0",
-          borderRadius: "8px",
-          padding: "16px 20px",
-          display: "flex",
-          alignItems: "flex-end",
-          gap: "18px",
-          boxShadow: "0 2px 8px rgba(15,23,42,0.08)",
-          marginBottom: "20px",
-          flexWrap: "wrap",
-        }}
-      >
+        <div className="report-search-filter-container">
+          {screenConfig.fromDate?.enabled && (
+            <div className="report-search-filter-group">
+              <label htmlFor="fromDate" className="report-search-filter-label">
+                From Date:
+                <input
+                  id="fromDate"
+                  type="date"
+                  name="fromDate"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="report-search-filter-input"
+                />
+              </label>
+            </div>
+          )}
 
-        {screenConfig.fromDate?.enabled && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "7px",
-              minWidth: "200px",
-              flex:1
-            }}
-          >
-            <label
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#1f3558",
-              }}
+          {screenConfig.toDate?.enabled && (
+            <div className="report-search-filter-group">
+              <label htmlFor="toDate" className="report-search-filter-label">
+                To Date:
+                <input
+                  id="toDate"
+                  type="date"
+                  name="toDate"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="report-search-filter-input"
+                />
+              </label>
+            </div>
+          )}
+
+          {screenConfig.serviceCategory?.enabled && (
+            <div className="report-search-filter-group">
+              <label
+                htmlFor="serviceCategory"
+                className="report-search-filter-label"
+              >
+                Service Category:
+                <select
+                  id="serviceCategory"
+                  name="serviceCategory"
+                  value={serviceCategory}
+                  onChange={(e) => {
+                    setServiceCategory(e.target.value);
+                    handleServiceCategoryChange(e.target.value);
+                  }}
+                  className="report-search-filter-select"
+                >
+                  <option value="">Select Category</option>
+
+                  {serviceCatOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
+          {screenConfig.serviceType?.enabled && (
+            <div className="report-search-filter-group">
+              <label
+                htmlFor="serviceType"
+                className="report-search-filter-label"
+              >
+                Service Type:
+                <select
+                  id="serviceType"
+                  disabled={serviceTypeOptions.length == 0}
+                  name="serviceType"
+                  value={serviceType}
+                  onChange={(e) => setServiceType(e.target.value)}
+                  className="report-search-filter-select"
+                >
+                  <option value="">Select Type</option>
+
+                  {serviceTypeOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
+          <div className="report-search-go-btn-wrapper">
+            <button
+              className="report-search-go-btn"
+              onClick={handleFilterSearch}
             >
-              From Date:
-            </label>
-
-            <input
-              type="date"
-              value={fromDate}
-              name='fromDate'
-              onChange={(e) => setFromDate(e.target.value)}
-                style={{
-                  height: "40px",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "0 12px",
-                  fontSize: "14px",
-                     color:  "#333",
-                  outline: "none",
-                  background: "#fff",
-                }}
-            />
+              Go
+            </button>
           </div>
-        )}
-
-
-        {screenConfig.toDate?.enabled && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "7px",
-              minWidth: "200px",
-              flex:1
-            }}
-          >
-            <label
-              style={{
-                 fontSize: "14px",
-                fontWeight: "600",
-                color: "#1f3558",
-              }}
-            >
-              To Date:
-            </label>
-
-            <input
-              type="date"
-              value={toDate}
-              name="toDate"
-              onChange={(e) => setToDate(e.target.value)}
-               style={{
-                  height: "40px",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "0 12px",
-                  fontSize: "14px",
-                     color:  "#333",
-                  outline: "none",
-                  background: "#fff",
-                }}
-            />
-          </div>
-        )}
-
-
-        {screenConfig.serviceCategory?.enabled && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "7px",
-              minWidth: "200px",
-              flex:1,
-            }}
-          >
-            <label
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#1f3558",
-              }}
-            >
-              Service Category:
-            </label>
-
-            <select
-              value={serviceCategory}
-              name='serviceCategory'
-              onChange={(e) => {
-                setServiceCategory(e.target.value)
-                handleServiceCategoryChange(e.target.value)
-              }}
-                style={{
-                  height: "40px",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "0 12px",
-                  fontSize: "14px",
-                     color:  "#333",
-                  outline: "none",
-                  background: "#fff",
-                }}
-            >
-              <option value="">Select Category</option>
-
-              {serviceCatOptions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-         {screenConfig.serviceType?.enabled && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "7px",
-              minWidth: "200px",
-              flex:1,
-            }}
-          >
-            <label
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#1f3558",
-              }}
-            >
-              Service Type:
-            </label>
-
-            <select
-              value={serviceType}
-              name='serviceType'
-              onChange={(e) => setServiceType(e.target.value)}
-                style={{
-                  height: "40px",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "0 12px",
-                  fontSize: "14px",
-                  color:  "#333",
-                  outline: "none",
-                  background: "#fff",
-                }}
-            >
-              <option value="">Select Type</option>
-
-              {serviceTypeOptions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-
-        {/* {screenConfig.financialYear?.enabled && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "7px",
-              minWidth: "200px",
-              flex:1
-            }}
-          >
-            <label
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#1f3558",
-              }}
-            >
-              Financial Year:
-            </label>
-
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              style={{
-                height: "40px",
-                border: "1px solid #cbd5e1",
-                borderRadius: "8px",
-                padding: "0 12px",
-                fontSize: "14px",
-                color: "#333",
-                background: "#fff",
-                outline: "none",
-              }}
-            >
-              {screenConfig.financialYear.availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-        )} */}
-        <button
-          onClick={handleFilterSearch}
-            style={{
-            height: "40px",
-            padding: "0 30px",
-            background: "rgb(254, 122, 81)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            fontSize: "15px",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            boxShadow: "0 2px 6px rgba(254,122,81,0.25)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgb(240, 100, 60)";
-            e.currentTarget.style.boxShadow =
-              "0 5px 12px rgba(254,122,81,0.3)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgb(254, 122, 81)";
-            e.currentTarget.style.boxShadow =
-              "0 2px 6px rgba(254,122,81,0.25)";
-          }}
-        >
-          Go
-        </button>
-
-      </div>
+        </div>
       )}
 
       {/* Table */}
-      {screenConfig.table && tableData.length > 0 && (
+      {screenConfig.table && tableData.length > 0 ? (
         <div className="table-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom:"10px" }}>
-            <h2 style={{color:"#302ba0", fontSize:"18px"}}>{screenConfig.table.title}</h2>
-            <button 
+          <div
             style={{
-            // height: "40px",
-            padding: "10px 20px",
-            background: "rgb(254, 122, 81)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            fontSize: "15px",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            boxShadow: "0 2px 6px rgba(254,122,81,0.25)"
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: "10px",
             }}
-             onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgb(240, 100, 60)";
-                e.currentTarget.style.boxShadow =
-                  "0 5px 12px rgba(254,122,81,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgb(254, 122, 81)";
-                e.currentTarget.style.boxShadow =
-                  "0 2px 6px rgba(254,122,81,0.25)";
-              }}
-             onClick={() =>
+          >
+            <h2 style={{ color: "#302ba0", fontSize: "18px" }}>
+              {screenConfig.table.title}
+            </h2>
+            <IoMdDownload
+              className="export-icon"
+              size={28}
+              color="rgb(240, 100, 60)"
+              onClick={() =>
                 exportTableToExcel(
                   screenConfig.table,
                   {
-                    fromDate: fromDate? fromDate : undefined,
+                    fromDate: fromDate ? fromDate : undefined,
                     toDate: toDate ? toDate : undefined,
-                    serviceCategory:serviceCategory? serviceCategory: undefined,
-                    serviceType:serviceType ? serviceType : undefined ,
+                    serviceCategory: serviceCategory
+                      ? serviceCategory
+                      : undefined,
+                    serviceType: serviceType ? serviceType : undefined,
                   },
-                  screenConfig.table.title.replace(/\s+/g, '_')
+                  screenConfig.table.title.replace(/\s+/g, "_"),
                 )
               }
               disabled={isExporting}
-            
-            >Export to Excel</button>
+              style={{ cursor: "pointer" }}
+            />
+            <button
+              className="export-to-excel-btn export-btn"
+              onClick={() =>
+                exportTableToExcel(
+                  screenConfig.table,
+                  {
+                    fromDate: fromDate ? fromDate : undefined,
+                    toDate: toDate ? toDate : undefined,
+                    serviceCategory: serviceCategory
+                      ? serviceCategory
+                      : undefined,
+                    serviceType: serviceType ? serviceType : undefined,
+                  },
+                  screenConfig.table.title.replace(/\s+/g, "_"),
+                )
+              }
+              disabled={isExporting}
+            >
+              Export to Excel
+            </button>
           </div>
           <div className="table-container">
             <table>
@@ -3969,7 +4979,7 @@ const UniversalScreen = ({ screenId }) => {
                       key={col.key}
                       style={{
                         width: col.width,
-                        textAlign: col.align || 'left',
+                        textAlign: col.align || "left",
                       }}
                     >
                       {col.label}
@@ -3981,9 +4991,14 @@ const UniversalScreen = ({ screenId }) => {
                 {tableData.map((row, idx) => (
                   <tr key={idx}>
                     {screenConfig.table.columns.map((col) => (
-                      <td key={col.key} style={{ textAlign: col.align || 'left' }}>
-                        {col.type === 'serial'
-                          ? (currentPage - 1) * screenConfig.table.pageSize + idx + 1
+                      <td
+                        key={col.key}
+                        style={{ textAlign: col.align || "left" }}
+                      >
+                        {col.type === "serial"
+                          ? (currentPage - 1) * screenConfig.table.pageSize +
+                            idx +
+                            1
                           : formatValue(row[col.key], col.type)}
                       </td>
                     ))}
@@ -4007,65 +5022,117 @@ const UniversalScreen = ({ screenId }) => {
             </button>
           </div>
         </div>
+      ) : (
+        <div className="table-section-not-found-container">
+          <p className="not-found-title">No Records Found.</p>
+        </div>
       )}
 
-      {/* Department Selection Modal (NEW) -drilldown 1 */} 
+      {/* Department Selection Modal (NEW) -drilldown 1 */}
       {showDepartmentSelection && departmentListData && (
-        <div className="modal-overlay-crn" onClick={() => resetDrilldownState()}>
-          <div className="modal-content-crn" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-crn" style={{ borderBottomColor: '#302ba0' }}>
+        <div
+          className="modal-overlay-crn"
+          onClick={() => resetDrilldownState()}
+        >
+          <div
+            className="modal-content-crn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-header-crn"
+              style={{ borderBottomColor: "#302ba0" }}
+            >
               <div className="modal-header-row">
-                <div className="modal-title-wrapper" 
-                style={{
-                  paddingLeft: drilldownStack.length > 0 ? "52px" : "0",
-                  }}>
-                  {drilldownStack.length > 0 && 
-                  <IoArrowBackCircleSharp size={42} color="#302ba0"  
-                  onClick={(e) => { e.stopPropagation(); handleGoBack(); }} 
-                  style={{ cursor:"pointer",  position: "absolute",
-                    left: "0",
-                    top: "2px",}}/>}
+                <div
+                  className="modal-title-wrapper"
+                  style={{
+                    paddingLeft: drilldownStack.length > 0 ? "52px" : "0",
+                  }}
+                >
+                  {drilldownStack.length > 0 && (
+                    <IoArrowBackCircleSharp
+                      size={42}
+                      color="#302ba0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGoBack();
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        position: "absolute",
+                        left: "0",
+                        top: "2px",
+                      }}
+                    />
+                  )}
                   <h2 className="modal-title-crn">
                     {/* <span className="modal-icon-large">{selectedKPI?.icon}</span> */}
-                    {selectedKPI?.label} - {departmentListData.selectionLabel || departmentListData.title || 'Select Department'}
+                    {selectedKPI?.label} -{" "}
+                    {departmentListData.selectionLabel ||
+                      departmentListData.title ||
+                      "Select Department"}
                   </h2>
                   <p className="modal-subtitle">
-                    Financial Year: {departmentListData.year} | Click on any {departmentListData.selectionLabel?.toLowerCase().includes('category') ? 'category' : 'item'} to continue
+                    Financial Year: {departmentListData.year} | Click on any{" "}
+                    {departmentListData.selectionLabel
+                      ?.toLowerCase()
+                      .includes("category")
+                      ? "category"
+                      : "item"}{" "}
+                    to continue
                   </p>
                 </div>
-                <div style={{ display: 'flex' }}>
-                  <button className="modal-close-btn" onClick={() => resetDrilldownState()}>
+                <div style={{ display: "flex" }}>
+                  <button
+                    className="modal-close-btn"
+                    onClick={() => resetDrilldownState()}
+                  >
                     ✖
                   </button>
                 </div>
               </div>
-             {departmentListData?.levelIndex === 0 &&
-              selectedKPI?.drilldownPath?.[0]?.viewOptions?.length > 0 && (
-                <div className="drilldown-toggle">
-                  {selectedKPI.drilldownPath[0].viewOptions.map((view) => (
-                    <button
-                      key={view.id}
-                      className={`toggle-btn ${drilldownView === view.id ? "active" : ""}`}
-                      onClick={() => handleViewToggle(view.id)}
-                    >
-                      {view.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const currentLevelCfg =
+                  selectedKPI?.drilldownPath?.[departmentListData?.levelIndex];
+                const toggleOptions = currentLevelCfg?.viewOptions;
+                if (!toggleOptions?.length) return null;
+                return (
+                  <div className="drilldown-toggle">
+                    {toggleOptions.map((view) => (
+                      <button
+                        key={view.id}
+                        className={`toggle-btn ${drilldownView === view.id ? "active" : ""}`}
+                        onClick={() => handleViewToggle(view.id)}
+                      >
+                        {view.label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="modal-body-crn">
-
-             { console.log({ departmentListData })}
               {/* Department Cards Grid */}
               {departmentListData.departments.length > 0 ? (
-                <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+                <div
+                  className="kpi-grid"
+                  style={{ gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}
+                >
                   {departmentListData.departments.map((dept) => {
                     const dg = selectedKPI?.detailGroup;
-                    const defaultSubtitle = departmentListData.selectionLabel?.toLowerCase().includes('category') ? 'Click for sub-categories' : 'Click to continue';
-                    const cardSubtitle = dg?.cardSubtitle || (dg?.cardFormat && String(dg.cardFormat).toLowerCase().startsWith('total') ? (dg.cardSubtitle || 'Total / Secondary') : defaultSubtitle);
-                    console.log({ departmentListData__dept:dept });
+                    const defaultSubtitle = departmentListData.selectionLabel
+                      ?.toLowerCase()
+                      .includes("category")
+                      ? "Click for sub-categories"
+                      : "Click to continue";
+                    const cardSubtitle =
+                      dg?.cardSubtitle ||
+                      (dg?.cardFormat &&
+                      String(dg.cardFormat).toLowerCase().startsWith("total")
+                        ? dg.cardSubtitle || "Total / Secondary"
+                        : defaultSubtitle);
+                    console.log({ departmentListData__dept: dept });
 
                     return (
                       <KPICard
@@ -4074,7 +5141,9 @@ const UniversalScreen = ({ screenId }) => {
                         value={formatValue(dept.value, selectedKPI?.format)}
                         subtitle={cardSubtitle}
                         icon={selectedKPI?.icon}
-                        onClick={() => handleDepartmentSelect(dept.name, dept.rowItem)}
+                        onClick={() =>
+                          handleDepartmentSelect(dept.name, dept.rowItem)
+                        }
                         drilldownLevel={1}
                       />
                     );
@@ -4083,35 +5152,87 @@ const UniversalScreen = ({ screenId }) => {
               ) : (
                 <div className="empty-modal-state">
                   <div className="empty-modal-icon">📭</div>
-                  <div className="empty-modal-text">No {departmentListData.selectionLabel?.toLowerCase() || 'items'} available</div>
+                  <div className="empty-modal-text">
+                    No{" "}
+                    {departmentListData.selectionLabel?.toLowerCase() ||
+                      "items"}{" "}
+                    available
+                  </div>
                 </div>
               )}
               {/* Chart Visualization */}
-              {departmentChartData && departmentChartData.labels && departmentChartData.labels.length > 0 && departmentChartData.datasets && departmentChartData.datasets.length > 0 && (
-                <div className="modal-chart-section" style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ margin: 0, color: '#333', fontSize: '16px', fontWeight: '600' }}>
-                      📊 {departmentListData.selectionLabel || departmentListData.title || 'Department'}-wise {selectedKPI?.label}
-                    </h3>
-                    <select
-                      value={departmentChartType}
-                      onChange={(e) => setDepartmentChartType(e.target.value)}
-                      className="chart-type-selector"
-                      style={{ padding: '5px 10px', borderRadius: '4px', border: '1px solid #ddd' }}
+              {departmentChartData &&
+                departmentChartData.labels &&
+                departmentChartData.labels.length > 0 &&
+                departmentChartData.datasets &&
+                departmentChartData.datasets.length > 0 && (
+                  <div
+                    className="modal-chart-section"
+                    style={{
+                      marginBottom: "30px",
+                      padding: "20px",
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "15px",
+                      }}
                     >
-                      <option value="bar">📊 Bar Chart</option>
-                      <option value="line">📈 Line Chart</option>
-                      <option value="pie">🥧 Pie Chart</option>
-                    </select>
-                  </div>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#333",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        📊{" "}
+                        {departmentListData.selectionLabel ||
+                          departmentListData.title ||
+                          "Department"}
+                        -wise {selectedKPI?.label}
+                      </h3>
+                      <select
+                        value={departmentChartType}
+                        onChange={(e) => setDepartmentChartType(e.target.value)}
+                        className="chart-type-selector"
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "4px",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        <option value="bar">📊 Bar Chart</option>
+                        <option value="line">📈 Line Chart</option>
+                        <option value="pie">🥧 Pie Chart</option>
+                      </select>
+                    </div>
 
-                  <div style={{ height: '450px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {departmentChartType === 'bar' && <BarChart data={departmentChartData} />}
-                    {departmentChartType === 'line' && <LineChart data={departmentChartData} />}
-                    {departmentChartType === 'pie' && <PieChart data={departmentChartData} />}
+                    <div
+                      style={{
+                        height: "450px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {departmentChartType === "bar" && (
+                        <BarChart data={departmentChartData} />
+                      )}
+                      {departmentChartType === "line" && (
+                        <LineChart data={departmentChartData} />
+                      )}
+                      {departmentChartType === "pie" && (
+                        <PieChart data={departmentChartData} />
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="modal-footer-crn">
@@ -4128,46 +5249,86 @@ const UniversalScreen = ({ screenId }) => {
 
       {/* Monthly Drilldown Modal  -drilldown 2*/}
       {showMonthlyDrilldown && monthlyDrilldownData && (
-        <div className="modal-overlay-crn" onClick={() => setShowMonthlyDrilldown(false)}>
-          <div className="modal-content-crn" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-crn" style={{ borderBottomColor: '#302ba0' }}>
+        <div
+          className="modal-overlay-crn"
+          onClick={() => setShowMonthlyDrilldown(false)}
+        >
+          <div
+            className="modal-content-crn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-header-crn"
+              style={{ borderBottomColor: "#302ba0" }}
+            >
               <div className="modal-header-row">
-                <div className="modal-title-wrapper" 
-                style={{
-                  paddingLeft: drilldownStack.length > 0 ? "52px" : "0",
-                  }}>
-                  {drilldownStack.length > 0 && 
-                  <IoArrowBackCircleSharp size={42} color="#302ba0"  
-                  onClick={(e) => { e.stopPropagation(); handleGoBack(); }} 
-                  style={{ cursor:"pointer",  position: "absolute",
-                    left: "0",
-                    top: "2px",}}/>}
+                <div
+                  className="modal-title-wrapper"
+                  style={{
+                    paddingLeft: drilldownStack.length > 0 ? "52px" : "0",
+                  }}
+                >
+                  {drilldownStack.length > 0 && (
+                    <IoArrowBackCircleSharp
+                      size={42}
+                      color="#302ba0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGoBack();
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        position: "absolute",
+                        left: "0",
+                        top: "2px",
+                      }}
+                    />
+                  )}
                   <h2 className="modal-title-crn">
                     {/* <span className="modal-icon-large">{selectedKPI?.icon}</span> */}
                     {selectedKPI?.label} - Monthly Breakdown
                     {monthlyDrilldownData.department && (
-                      <span style={{ fontSize: '16px', color: '#666', fontWeight: 'normal' }}>
-                        {' '}→ {formatCardLabel(monthlyDrilldownData.department)}
+                      <span
+                        style={{
+                          fontSize: "16px",
+                          color: "#666",
+                          fontWeight: "normal",
+                        }}
+                      >
+                        {" "}
+                        → {formatCardLabel(monthlyDrilldownData.department)}
                       </span>
                     )}
                     {/* If a specific month is present in the filters, show it next to the title as well */}
                     {monthlyDrilldownData.filters?.month && (
-                      <span style={{ fontSize: '16px', color: '#666', fontWeight: 'normal', marginLeft: '8px' }}>
-                        {' '}| {monthlyDrilldownData.filters.month}
+                      <span
+                        style={{
+                          fontSize: "16px",
+                          color: "#666",
+                          fontWeight: "normal",
+                          marginLeft: "8px",
+                        }}
+                      >
+                        {" "}
+                        | {monthlyDrilldownData.filters.month}
                       </span>
                     )}
                   </h2>
                   <p className="modal-subtitle">
-                    Financial Year: {monthlyDrilldownData.year} | Click on any month to view daily breakdown
+                    Financial Year: {monthlyDrilldownData.year} | Click on any
+                    month to view daily breakdown
                   </p>
                 </div>
-                <div style={{ display: 'flex' }}>
+                <div style={{ display: "flex" }}>
                   {/* {drilldownStack.length > 0 && (
                     <button className="modal-back-btn" onClick={(e) => { e.stopPropagation(); handleGoBack(); }}>
                       ← Back
                     </button>
                   )} */}
-                  <button className="modal-close-btn" onClick={() => resetDrilldownState()}>
+                  <button
+                    className="modal-close-btn"
+                    onClick={() => resetDrilldownState()}
+                  >
                     ✖
                   </button>
                 </div>
@@ -4175,59 +5336,109 @@ const UniversalScreen = ({ screenId }) => {
             </div>
 
             <div className="modal-body-crn">
-
-
               {/* Monthly Cards Grid */}
               {Object.keys(monthlyDrilldownData.months).length > 0 ? (
-                <div className={'month-grid-4col'}>
-                  {Object.entries(monthlyDrilldownData.months).map(([month, data]) => (
-                    <div
-                      key={month}
-                      className={`month-card-clickable drilldown-level-${drilldownLevel}`}
-                      onClick={() => handleMonthClick(data.monthKey, month)}
-                    >
-                      <div className="month-name">{month}</div>
-                      <div className="month-value">
-                        {formatValue(data.value, selectedKPI?.format)}
-                      </div>
-                      <div className="month-hint" 
+                <div className={"month-grid-4col"}>
+                  {Object.entries(monthlyDrilldownData.months).map(
+                    ([month, data]) => (
+                      <div
+                        key={month}
+                        className={`month-card-clickable drilldown-level-${drilldownLevel}`}
+                        onClick={() => handleMonthClick(data.monthKey, month)}
                       >
-                        View Daily Breakdown <GrFormNextLink size={12} color="#302ba0" style={{marginTop:"3px"}}/></div>
-                    </div>
-                  ))}
+                        <div className="month-name">{month}</div>
+                        <div className="month-value">
+                          {formatValue(data.value, selectedKPI?.format)}
+                        </div>
+                        <div className="month-hint">
+                          View Daily Breakdown{" "}
+                          <GrFormNextLink
+                            size={12}
+                            color="#302ba0"
+                            style={{ marginTop: "3px" }}
+                          />
+                        </div>
+                      </div>
+                    ),
+                  )}
                 </div>
               ) : (
                 <div className="empty-modal-state">
                   <div className="empty-modal-icon">📭</div>
-                  <div className="empty-modal-text">No data available for this period</div>
+                  <div className="empty-modal-text">
+                    No data available for this period
+                  </div>
                 </div>
               )}
               {/* Chart Visualization */}
-              {monthlyChartData && monthlyChartData.labels && monthlyChartData.labels.length > 0 && monthlyChartData.datasets && monthlyChartData.datasets.length > 0 && (
-                <div className="modal-chart-section" style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ margin: 0, color: '#333', fontSize: '16px', fontWeight: '600' }}>
-                      📊 Monthly Trend
-                    </h3>
-                    <select
-                      value={monthlyChartType}
-                      onChange={(e) => setMonthlyChartType(e.target.value)}
-                      className="chart-type-selector"
-                      style={{ padding: '5px 10px', borderRadius: '4px', border: '1px solid #ddd' }}
+              {monthlyChartData &&
+                monthlyChartData.labels &&
+                monthlyChartData.labels.length > 0 &&
+                monthlyChartData.datasets &&
+                monthlyChartData.datasets.length > 0 && (
+                  <div
+                    className="modal-chart-section"
+                    style={{
+                      marginBottom: "30px",
+                      padding: "20px",
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "15px",
+                      }}
                     >
-                      <option value="bar">📊 Bar Chart</option>
-                      <option value="line">📈 Line Chart</option>
-                      <option value="pie">🥧 Pie Chart</option>
-                    </select>
-                  </div>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#333",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        📊 Monthly Trend
+                      </h3>
+                      <select
+                        value={monthlyChartType}
+                        onChange={(e) => setMonthlyChartType(e.target.value)}
+                        className="chart-type-selector"
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "4px",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        <option value="bar">📊 Bar Chart</option>
+                        <option value="line">📈 Line Chart</option>
+                        <option value="pie">🥧 Pie Chart</option>
+                      </select>
+                    </div>
 
-                  <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {monthlyChartType === 'bar' && <BarChart data={monthlyChartData} />}
-                    {monthlyChartType === 'line' && <LineChart data={monthlyChartData} />}
-                    {monthlyChartType === 'pie' && <PieChart data={monthlyChartData} />}
+                    <div
+                      style={{
+                        height: "300px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {monthlyChartType === "bar" && (
+                        <BarChart data={monthlyChartData} />
+                      )}
+                      {monthlyChartType === "line" && (
+                        <LineChart data={monthlyChartData} />
+                      )}
+                      {monthlyChartType === "pie" && (
+                        <PieChart data={monthlyChartData} />
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="modal-footer-crn">
@@ -4244,56 +5455,82 @@ const UniversalScreen = ({ screenId }) => {
 
       {/* Daily Drilldown Modal -drilldown 3*/}
       {showDailyDrilldown && dailyDrilldownData && (
-        <div className="modal-overlay-crn" onClick={() => resetDrilldownState()}>
-          <div className="modal-content-crn" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-crn" style={{ borderBottomColor:'#302ba0' }}>
+        <div
+          className="modal-overlay-crn"
+          onClick={() => resetDrilldownState()}
+        >
+          <div
+            className="modal-content-crn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-header-crn"
+              style={{ borderBottomColor: "#302ba0" }}
+            >
               <div className="modal-header-row">
-                <div className="modal-title-wrapper"  
-                style={{
-                  paddingLeft: drilldownStack.length > 0 ? "52px" : "0",
-                  }}>
-                   {drilldownStack.length > 0 && 
-                  <IoArrowBackCircleSharp size={42} color="#302ba0"  
-                  onClick={(e) => { e.stopPropagation(); handleGoBack(); }} 
-                  style={{ cursor:"pointer",  position: "absolute",
-                    left: "0",
-                    top: "2px",}}/>}
+                <div
+                  className="modal-title-wrapper"
+                  style={{
+                    paddingLeft: drilldownStack.length > 0 ? "52px" : "0",
+                  }}
+                >
+                  {drilldownStack.length > 0 && (
+                    <IoArrowBackCircleSharp
+                      size={42}
+                      color="#302ba0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGoBack();
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        position: "absolute",
+                        left: "0",
+                        top: "2px",
+                      }}
+                    />
+                  )}
                   <h2 className="modal-title-crn">
                     {/* <span className="modal-icon-large">{selectedKPI?.icon}</span> */}
                     {selectedKPI?.label} - Daily Breakdown
                     {/* Display selected month in header (like department) for clarity during drilldowns */}
                     {dailyDrilldownFilters?.month && (
-                      <span style={{ fontSize: '16px', color: '#666', fontWeight: 'normal' }}>
-                        {' '}→ {dailyDrilldownFilters.month}
+                      <span
+                        style={{
+                          fontSize: "16px",
+                          color: "#666",
+                          fontWeight: "normal",
+                        }}
+                      >
+                        {" "}
+                        → {dailyDrilldownFilters.month}
                       </span>
                     )}
                   </h2>
                   <p className="modal-subtitle">
                     {dailyDrilldownFilters?.department && (
-                      <>
-                        Building: {dailyDrilldownFilters.department} |
-                      </>
+                      <>Building: {dailyDrilldownFilters.department} |</>
                     )}
                     {dailyDrilldownFilters?.category && (
-                      <>
-                        Category: {dailyDrilldownFilters.category} |
-                      </>
+                      <>Category: {dailyDrilldownFilters.category} |</>
                     )}
                     {dailyDrilldownFilters?.subcategory && (
-                      <>
-                        SubCategory: {dailyDrilldownFilters.subcategory} |
-                      </>
+                      <>SubCategory: {dailyDrilldownFilters.subcategory} |</>
                     )}
-                    Month: {dailyDrilldownFilters?.month || 'N/A'} | Total Days: {Object.keys(dailyDrilldownData).length}
+                    Month: {dailyDrilldownFilters?.month || "N/A"} | Total Days:{" "}
+                    {Object.keys(dailyDrilldownData).length}
                   </p>
                 </div>
-                <div style={{ display: 'flex'}}>
+                <div style={{ display: "flex" }}>
                   {/* {drilldownStack.length > 0 && (
                     <button className="modal-back-btn" onClick={(e) => { e.stopPropagation(); handleGoBack(); }}>
                       ← Back
                     </button>
                   )} */}
-                  <button className="modal-close-btn" onClick={() => resetDrilldownState()}>
+                  <button
+                    className="modal-close-btn"
+                    onClick={() => resetDrilldownState()}
+                  >
                     ✖
                   </button>
                 </div>
@@ -4301,97 +5538,169 @@ const UniversalScreen = ({ screenId }) => {
             </div>
 
             <div className="modal-body-crn">
-
-
               {/* Daily Breakdown Table */}
               {Object.keys(dailyDrilldownData).length > 0 ? (
                 <table className="daily-breakdown-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '80px' }}>Srl no.</th>
+                      <th style={{ width: "80px" }}>Srl no.</th>
                       <th>Date</th>
-                      <th style={{ textAlign: 'right' }}>{selectedKPI?.label}</th>
+                      <th style={{ textAlign: "right" }}>
+                        {selectedKPI?.label}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.entries(dailyDrilldownData).map(([date, data], idx) => {
-                      // Parse date - it might be in format "YYYY-MM-DD" or just "DD"
-                      let displayDate = date;
-                      try {
-                        if (date && date.length > 2) {
-                          // If it looks like a full date (YYYY-MM-DD or similar)
-                          displayDate = new Date(date).toLocaleDateString('en-IN', {
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          });
-                        } else {
-                          // If it's just a day number, construct the date from filters
-                          if (dailyDrilldownFilters?.monthDateStart) {
-                            const [year, month] = dailyDrilldownFilters.monthDateStart.split('-');
-                            const fullDate = new Date(`${year}-${month}-${String(parseInt(date)).padStart(2, '0')}`);
-                            displayDate = fullDate.toLocaleDateString('en-IN', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            });
+                    {Object.entries(dailyDrilldownData).map(
+                      ([date, data], idx) => {
+                        // Parse date - it might be in format "YYYY-MM-DD" or just "DD"
+                        let displayDate = date;
+                        try {
+                          if (date && date.length > 2) {
+                            // If it looks like a full date (YYYY-MM-DD or similar)
+                            displayDate = new Date(date).toLocaleDateString(
+                              "en-IN",
+                              {
+                                weekday: "short",
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            );
+                          } else {
+                            // If it's just a day number, construct the date from filters
+                            if (dailyDrilldownFilters?.monthDateStart) {
+                              const [year, month] =
+                                dailyDrilldownFilters.monthDateStart.split("-");
+                              const fullDate = new Date(
+                                `${year}-${month}-${String(parseInt(date)).padStart(2, "0")}`,
+                              );
+                              displayDate = fullDate.toLocaleDateString(
+                                "en-IN",
+                                {
+                                  weekday: "short",
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              );
+                            }
                           }
+                        } catch (e) {
+                          console.log("Date parse error:", e, date);
+                          displayDate = date;
                         }
-                      } catch (e) {
-                        console.log('Date parse error:', e, date);
-                        displayDate = date;
-                      }
 
-                      return (
-                        <tr key={date}>
-                          <td style={{ color: '#999' }}>{idx + 1}</td>
-                          <td>{displayDate}</td>
-                          <td style={{ textAlign: 'right', fontWeight: '600', color: selectedKPI?.color }}>
-                            {formatValue(data?.value || data, selectedKPI?.format)}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                        return (
+                          <tr key={date}>
+                            <td style={{ color: "#999" }}>{idx + 1}</td>
+                            <td>{displayDate}</td>
+                            <td
+                              style={{
+                                textAlign: "right",
+                                fontWeight: "600",
+                                color: selectedKPI?.color,
+                              }}
+                            >
+                              {formatValue(
+                                data?.value || data,
+                                selectedKPI?.format,
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      },
+                    )}
                   </tbody>
                 </table>
               ) : (
                 <div className="empty-modal-state">
                   <div className="empty-modal-icon">📭</div>
-                  <div className="empty-modal-text">No data available for this period</div>
+                  <div className="empty-modal-text">
+                    No data available for this period
+                  </div>
                 </div>
               )}
 
               {/* Chart Visualization */}
-              {dailyChartData && dailyChartData.labels && dailyChartData.labels.length > 0 && dailyChartData.datasets && dailyChartData.datasets.length > 0 && (
-                <div className="modal-chart-section" style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ margin: 0, color: '#333', fontSize: '16px', fontWeight: '600' }}>
-                      📊 Daily Trend {dailyDrilldownFilters?.category && ` - ${dailyDrilldownFilters.category}`}{dailyDrilldownFilters?.month && ` (${dailyDrilldownFilters.month})`}
-                    </h3>
-                    <select
-                      value={dailyChartType}
-                      onChange={(e) => setDailyChartType(e.target.value)}
-                      className="chart-type-selector"
-                      style={{ padding: '5px 10px', borderRadius: '4px', border: '1px solid #ddd' }}
+              {dailyChartData &&
+                dailyChartData.labels &&
+                dailyChartData.labels.length > 0 &&
+                dailyChartData.datasets &&
+                dailyChartData.datasets.length > 0 && (
+                  <div
+                    className="modal-chart-section"
+                    style={{
+                      marginBottom: "30px",
+                      padding: "20px",
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "15px",
+                      }}
                     >
-                      <option value="bar">📊 Bar Chart</option>
-                      <option value="line">📈 Line Chart</option>
-                      <option value="pie">🥧 Pie Chart</option>
-                    </select>
-                  </div>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#333",
+                          fontSize: "16px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        📊 Daily Trend{" "}
+                        {dailyDrilldownFilters?.category &&
+                          ` - ${dailyDrilldownFilters.category}`}
+                        {dailyDrilldownFilters?.month &&
+                          ` (${dailyDrilldownFilters.month})`}
+                      </h3>
+                      <select
+                        value={dailyChartType}
+                        onChange={(e) => setDailyChartType(e.target.value)}
+                        className="chart-type-selector"
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "4px",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        <option value="bar">📊 Bar Chart</option>
+                        <option value="line">📈 Line Chart</option>
+                        <option value="pie">🥧 Pie Chart</option>
+                      </select>
+                    </div>
 
-                  <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {dailyChartType === 'bar' && <BarChart data={dailyChartData} />}
-                    {dailyChartType === 'line' && <LineChart data={dailyChartData} />}
-                    {dailyChartType === 'pie' && <PieChart data={dailyChartData} />}
+                    <div
+                      style={{
+                        height: "300px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {dailyChartType === "bar" && (
+                        <BarChart data={dailyChartData} />
+                      )}
+                      {dailyChartType === "line" && (
+                        <LineChart data={dailyChartData} />
+                      )}
+                      {dailyChartType === "pie" && (
+                        <PieChart data={dailyChartData} />
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
-            <div className="modal-footer-crn" style={{ display: 'flex', gap: '12px' }}>
+            <div
+              className="modal-footer-crn"
+              style={{ display: "flex", gap: "12px" }}
+            >
               {/* <button
                 className="btn-modal-close"
                 onClick={() => {
@@ -4422,9 +5731,18 @@ const UniversalScreen = ({ screenId }) => {
 
       {/* Chart Drilldown Modal */}
       {showChartDrilldown && chartDrilldownData && (
-        <div className="modal-overlay-crn" onClick={() => setShowChartDrilldown(false)}>
-          <div className="modal-content-crn" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-crn" style={{ borderBottomColor: selectedChart?.color || '#4CAF50' }}>
+        <div
+          className="modal-overlay-crn"
+          onClick={() => setShowChartDrilldown(false)}
+        >
+          <div
+            className="modal-content-crn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-header-crn"
+              style={{ borderBottomColor: selectedChart?.color || "#4CAF50" }}
+            >
               <div className="modal-header-row">
                 <div className="modal-title-wrapper">
                   <h2 className="modal-title-crn">
@@ -4432,12 +5750,15 @@ const UniversalScreen = ({ screenId }) => {
                     {selectedChart?.title} - {chartDrilldownData.segment}
                   </h2>
                   <p className="modal-subtitle">
-                    Total: {formatValue(chartDrilldownData.total, 'currency')} |
-                    Financial Year: {selectedYear} |
-                    Click on any month to view details
+                    Total: {formatValue(chartDrilldownData.total, "currency")} |
+                    Financial Year: {selectedYear} | Click on any month to view
+                    details
                   </p>
                 </div>
-                <button className="modal-close-btn" onClick={() => setShowChartDrilldown(false)}>
+                <button
+                  className="modal-close-btn"
+                  onClick={() => setShowChartDrilldown(false)}
+                >
                   ✖
                 </button>
               </div>
@@ -4445,23 +5766,33 @@ const UniversalScreen = ({ screenId }) => {
 
             <div className="modal-body-crn">
               {Object.keys(chartDrilldownData.months).length > 0 ? (
-                <div className={screenConfig.id === 'crn_management' ? 'month-grid-4col' : 'month-grid-auto'}>
-                  {Object.entries(chartDrilldownData.months).map(([month, data]) => (
-                    <div
-                      key={month}
-                      className="month-card-clickable drilldown-level-1"
-                    >
-                      <div className="month-name">{month}</div>
-                      <div className="month-value">
-                        {formatValue(data.value, 'currency')}
+                <div
+                  className={
+                    screenConfig.id === "crn_management"
+                      ? "month-grid-4col"
+                      : "month-grid-auto"
+                  }
+                >
+                  {Object.entries(chartDrilldownData.months).map(
+                    ([month, data]) => (
+                      <div
+                        key={month}
+                        className="month-card-clickable drilldown-level-1"
+                      >
+                        <div className="month-name">{month}</div>
+                        <div className="month-value">
+                          {formatValue(data.value, "currency")}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               ) : (
                 <div className="empty-modal-state">
                   <div className="empty-modal-icon">📭</div>
-                  <div className="empty-modal-text">No monthly data available for this segment</div>
+                  <div className="empty-modal-text">
+                    No monthly data available for this segment
+                  </div>
                 </div>
               )}
             </div>

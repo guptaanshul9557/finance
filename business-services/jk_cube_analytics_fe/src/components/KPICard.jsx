@@ -193,10 +193,10 @@ const KPICard = ({
         {icon && drilldownLevel === 0 && (
           <div
             style={{
-              width: '44px',
-              height: '44px',
-              minWidth: '44px',
-              minHeight: '44px',
+              width: '34px',
+              height: '34px',
+              minWidth: '34px',
+              minHeight: '34px',
               flexShrink: 0,
               borderRadius: '10px',
               backgroundColor: 'rgba(48,43,160,.08)',

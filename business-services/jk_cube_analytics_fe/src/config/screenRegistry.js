@@ -13,7 +13,6 @@
 
 import { MdCurrencyRupee } from "react-icons/md";
 import { BsCashStack } from "react-icons/bs";
-import { CiMoneyCheck1 } from "react-icons/ci";
 import { LiaMoneyCheckSolid } from "react-icons/lia";
 import { MdDashboard } from "react-icons/md";
 import { FaAward } from "react-icons/fa";
@@ -42,6 +41,19 @@ const SERVICE_TYPE_STEP = {
   label: "Select Service Type",
 };
 
+// ---- Payment Type sub-level (used only by the combined Cheque+DD card) ----
+// The "Non-Cash" KPI card combines egcl_payment.chequeSum + egcl_payment.DDSum into one
+// dashboard tile. Clicking it should first ask "Cheque or DD?" before continuing into the
+// exact same Tenant/Service → Service Type → Monthly → Daily drilldown each already had.
+// This step has no dataQuery — UniversalScreen.jsx recognizes `type: "paymentTypeSelection"`,
+// fetches both totals in one query, and shows two cards (Cheque / DD). Whichever is clicked
+// sets filters.paymentmode, which every downstream level in this KPI's drilldownPath reads via
+// `kpi.getMeasure(filters)` to decide whether to query chequeSum or DDSum.
+const PAYMENT_TYPE_STEP = {
+  type: "paymentTypeSelection",
+  label: "Select Payment Type",
+};
+
 // After a level-1 card is clicked, UniversalScreen stores the value under
 // filters[<lastSegmentOfDimension>] plus filters.level1Dimension. This reads
 // it back out regardless of which dimension was active.
@@ -51,12 +63,33 @@ const getLevel1Filter = (filters) => {
   return { dimension, value: filters?.[key] };
 };
 
+// Returns the current financial year in the format "2026-2027"
+function getCurrentFinancialYear() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0 = Jan, 3 = Apr
+
+  const startYear = month >= 3 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
+// Returns the last N financial years (including current)
+function getLastFinancialYears(count = 5) {
+  const currentFY = getCurrentFinancialYear();
+  const currentStartYear = parseInt(currentFY.split("-")[0], 10);
+
+  return Array.from({ length: count }, (_, index) => {
+    const startYear = currentStartYear - index;
+    return `${startYear}-${startYear + 1}`;
+  });
+}
+
 export const screenRegistry = [
   // ==================== ULB PAYMENT COLLECTION DASHBOARD ====================
   {
     id: "egcl_payment",
     name: "J&K Dashboard",
-    displayName: "J&K Finance and Accounting Dashboard",
+    displayName: "J&K HUDD Finance and Accounting Dashboard",
     route: "/modules/payment-collection",
     icon: <MdDashboard size={24} color="#302ba0"/>,
     color: "#302ba0",
@@ -64,13 +97,36 @@ export const screenRegistry = [
     enableInHomescreen: true,
     enableInSidebar: true,
 
-    // ==================== Report Fields =========================== 
+    organization: {
+      enabled: true,
+      defaultValue: "",
+      availableOptions: [],
+    },
+
+    ulb: {
+      enabled: true,
+      defaultValue: "",
+      availableOptions: [],
+    },
+
+    // 🔥 Wires the Organization/ULB dropdowns to actual data filtering for the header KPI cards.
+    // Opt-in and generic: UniversalScreen.jsx only applies this when a screen defines it, so
+    // other screens using the same dropdowns/component are unaffected if they omit this block.
+    // egcl_payment.tenantid is stored as UPPER(tenantid), so filter values are upper-cased
+    // before matching. (The report table's tenant filter is wired separately below, directly
+    // in table.dataQuery, since receipt_register.tenantId stores the raw/lowercase code.)
+    tenantFilter: {
+      dimension: "egcl_payment.tenantid",
+      uppercase: true,
+    },
 
     financialYear: {
       enabled: true,
-      defaultYear: "2026-2027",
-      availableYears: ["2023-2024", "2024-2025", "2025-2026", "2026-2027"],
+      defaultYear: getCurrentFinancialYear(),
+      availableYears: getLastFinancialYears(),
     },
+
+    // ==================== Report Fields ===========================
     fromDate: {
       enabled: true,
       defaultYear: "",
@@ -104,8 +160,8 @@ export const screenRegistry = [
       {
         id: "egclTotalSum",
         label: "Total Revenue",
-        icon: <MdCurrencyRupee size={24} color="#302ba0" />,
-        color: "#2196F3",
+        icon: <MdCurrencyRupee size={22} color="#302ba0" />,
+        color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.totalSum",
         timeDimension: "egcl_payment.transactionDate",
@@ -199,8 +255,8 @@ export const screenRegistry = [
       {
         id: "egclCashSum",
         label: "Cash Transactions",
-        icon: <BsCashStack size={24} color="#302ba0" />,
-        color: "#4CAF50",
+        icon: <BsCashStack size={20} color="#302ba0" />,
+        color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.cashSum",
         timeDimension: "egcl_payment.transactionDate",
@@ -270,32 +326,51 @@ export const screenRegistry = [
         ],
         },
       {
-        id: "egclChequeSum",
-        label: "Cheque Transactions",
-        icon: <CiMoneyCheck1 size={24} color="#302ba0" />,
-        color: "#050605",
+        id: "egclNonCash",
+        label: "Non-Cash Transactions",
+        icon: <LiaMoneyCheckSolid size={22} color="#302ba0" />,
+        color: "#302ba0",
         format: "currency",
-        measure: "egcl_payment.chequeSum",
+        // No single `measure` — the card's displayed value is chequeSum + DDSum, computed via
+        // customQuery + renderValue (the same pattern topPerformingOrganization already uses).
+        customQuery: {
+          measures: ["egcl_payment.chequeSum", "egcl_payment.DDSum"],
+        },
+        renderValue: (data) => {
+          const row = data?.[0] || {};
+          const cheque = Number(row["egcl_payment.chequeSum"]) || 0;
+          const dd = Number(row["egcl_payment.DDSum"]) || 0;
+          return cheque + dd;
+        },
         timeDimension: "egcl_payment.transactionDate",
         isDrillingRequired: true,
+        // 🔥 Every downstream level in this drilldownPath reads filters.paymentmode (set at the
+        // PAYMENT_TYPE_STEP below) to decide which single measure to actually query. Existing
+        // KPIs don't define `getMeasure`, so this has zero effect on any other card.
+        getMeasure: (filters) =>
+          filters?.paymentmode === "DD" ? "egcl_payment.DDSum" : "egcl_payment.chequeSum",
         drilldownPath: [
+          PAYMENT_TYPE_STEP,
           {
             order: 1,
             type: "selection",
-            dimension: "egcl_payment.tenantid",
+            dimension: "egcl_payment.tenantid", // fallback label source
             label: "Select Tenant",
             viewOptions: LEVEL1_VIEW_OPTIONS,
-            dataQuery: ({ filters, view }) => ({
-              measures: ["egcl_payment.chequeSum"],
-              dimensions: [getLevel1Dimension(view)],
-              timeDimensions: [
-                {
-                  dimension: "egcl_payment.transactionDate",
-                  dateRange: filters?.dateRange || "This year",
-                },
-              ],
-              order: { "egcl_payment.chequeSum": "desc" },
-            }),
+            dataQuery: ({ filters, view }) => {
+              const measure = filters.paymentmode === "DD" ? "egcl_payment.DDSum" : "egcl_payment.chequeSum";
+              return {
+                measures: [measure],
+                dimensions: [getLevel1Dimension(view)],
+                timeDimensions: [
+                  {
+                    dimension: "egcl_payment.transactionDate",
+                    dateRange: filters?.dateRange || "This year",
+                  },
+                ],
+                order: { [measure]: "desc" },
+              };
+            },
           },
           SERVICE_TYPE_STEP,
           {
@@ -305,8 +380,9 @@ export const screenRegistry = [
             order: 2,
             dataQuery: ({ filters }) => {
               const level1 = getLevel1Filter(filters);
+              const measure = filters.paymentmode === "DD" ? "egcl_payment.DDSum" : "egcl_payment.chequeSum";
               return {
-                measures: ["egcl_payment.chequeSum"],
+                measures: [measure],
                 filters: [
                   { dimension: level1.dimension, operator: "equals", values: [level1.value] },
                 ],
@@ -326,81 +402,9 @@ export const screenRegistry = [
             order: 3,
             dataQuery: ({ filters }) => {
               const level1 = getLevel1Filter(filters);
+              const measure = filters.paymentmode === "DD" ? "egcl_payment.DDSum" : "egcl_payment.chequeSum";
               return {
-                measures: ["egcl_payment.chequeSum"],
-                filters: [
-                  { dimension: level1.dimension, operator: "equals", values: [level1.value] },
-                ],
-                timeDimensions: [
-                  {
-                    dimension: "egcl_payment.transactionDate",
-                    dateRange: filters?.dateRange || "This year",
-                  },
-                ],
-              };
-            },
-          },
-        ],
-      },
-      {
-        id: "egclDDSum",
-        label: "DD Transactions",
-        icon: <LiaMoneyCheckSolid size={24} color="#302ba0"/>,
-        color: "#4CAF50",
-        format: "currency",
-        measure: "egcl_payment.DDSum",
-        timeDimension: "egcl_payment.transactionDate",
-        isDrillingRequired: true,
-        drilldownPath: [
-          {
-            order: 1,
-            type: "selection",
-            dimension: "egcl_payment.tenantid",
-            label: "Select Tenant",
-            viewOptions: LEVEL1_VIEW_OPTIONS,
-            dataQuery: ({ filters, view }) => ({
-              measures: ["egcl_payment.DDSum"],
-              dimensions: [getLevel1Dimension(view)],
-              timeDimensions: [
-                {
-                  dimension: "egcl_payment.transactionDate",
-                  dateRange: filters?.dateRange || "This year",
-                },
-              ],
-              order: { "egcl_payment.DDSum": "desc" },
-            }),
-          },
-          SERVICE_TYPE_STEP,
-          {
-            type: "monthly",
-            label: "Monthly Breakdown",
-            granularity: "month",
-            order: 2,
-            dataQuery: ({ filters }) => {
-              const level1 = getLevel1Filter(filters);
-              return {
-                measures: ["egcl_payment.DDSum"],
-                filters: [
-                  { dimension: level1.dimension, operator: "equals", values: [level1.value] },
-                ],
-                timeDimensions: [
-                  {
-                    dimension: "egcl_payment.transactionDate",
-                    dateRange: filters?.dateRange || "This year",
-                  },
-                ],
-              };
-            },
-          },
-          {
-            type: "daily",
-            label: "Daily Breakdown",
-            granularity: "day",
-            order: 3,
-            dataQuery: ({ filters }) => {
-              const level1 = getLevel1Filter(filters);
-              return {
-                measures: ["egcl_payment.DDSum"],
+                measures: [measure],
                 filters: [
                   { dimension: level1.dimension, operator: "equals", values: [level1.value] },
                 ],
@@ -418,8 +422,8 @@ export const screenRegistry = [
       {
         id: "egclTodayCollection",
         label: "Today's Collection Amount",
-        icon: <MdCurrencyRupee size={24} color="#302ba0" />,
-        color: "#FF9800",
+        icon: <MdCurrencyRupee size={22} color="#302ba0" />,
+        color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.todaysCollection",
         isTodayBased: true,
@@ -428,8 +432,8 @@ export const screenRegistry = [
       {
         id: "topPerformingOrganization",
         label: "Top Performing Organization",
-        icon: <FaAward size={24} color="#302ba0" />,
-        color: "#FF9800",
+        icon: <FaAward size={22} color="#302ba0" />,
+        color: "#302ba0",
         format: "org",
         customQuery: {
           measures: ["egcl_payment.totalSum"],
@@ -622,11 +626,13 @@ export const screenRegistry = [
           type: "org"
         }
       ],
-      dataQuery: (filters, offset, limit) => {
+      dataQuery: (filters, offset, limit, selectedYear) => {
+        const [startYear, endYear] = selectedYear?.split('-');
         const query = {
           measures: [
             "receipt_register.amountPaid"
           ],
+
 
           dimensions: [
             "receipt_register.receiptNumber",
@@ -642,8 +648,19 @@ export const screenRegistry = [
           limit,
           offset
         };
+        // Filter data based on the selected year
+        if(selectedYear){
+          query.timeDimensions = [
+            {
+              dimension: "receipt_register.createdTime",
+              dateRange: [`${startYear}-04-01`, `${endYear}-03-31`],
+            }
+          ];
+
+        }
 
         // Only add date filter if both dates are actually selected
+        // If fromDate and toDate present, override  
         if (filters.fromDate && filters.toDate) {
           query.timeDimensions = [
             {
@@ -669,6 +686,17 @@ export const screenRegistry = [
             member: "receipt_register.serviceType",
             operator: "equals",
              values: [filters.serviceType.replace(/_/g, ' ')]
+          });
+        }
+
+        // 🔥 ORGANIZATION / ULB FILTER: UniversalScreen.jsx resolves the selected
+        // Organization/ULB into a concrete list of tenant codes (tenantIdValues) and passes it
+        // in via `filters`. Absent (both dropdowns empty) => no filter => unchanged behavior.
+        if (filters.tenantIdValues && filters.tenantIdValues.length > 0) {
+          queryFilters.push({
+            member: "receipt_register.tenantId",
+            operator: "equals",
+            values: filters.tenantIdValues,
           });
         }
 

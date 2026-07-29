@@ -3,16 +3,16 @@ cube(`egcl_paymentdetail`, {
 
   dimensions: {
     id: {
-      sql: `id`,
+      sql: `${CUBE}.id`,
       type: `string`,
       primaryKey: true,
     },
     paymentid: {
-      sql: `paymentid`,
+      sql: `${CUBE}.paymentid`,
       type: `string`,
     },
     businessService: {
-      sql: `businessservice`,
+      sql: `${CUBE}.businessservice`,
       type: `string`,
       title: `Business Service`,
     },
