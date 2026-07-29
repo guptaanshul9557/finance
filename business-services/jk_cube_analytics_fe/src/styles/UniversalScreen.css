@@ -16,12 +16,31 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid rgb(254, 122, 81);
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 0;
+}
+.header-right {
+  display: flex;
+  align-items: center; 
+  gap: 16px;
+
+}
+.screen-title {
+  color: #2c3e50;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.back-icon {
+  display: flex;
+  margin-right: 5px;
+  flex-shrink: 0;
 }
 
 .back-button {
@@ -85,7 +104,7 @@
 .refresh-button {
   background: #fff;
   color: #302ba0;
-  border: 1px solid #302ba0;
+  border: 1.5px solid #302ba0;
   border-radius: 5px;
   transition: all 0.25s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -110,6 +129,68 @@
   cursor: not-allowed;
 }
 
+/* ==================== MAIN FILTER SECTION =============== */
+
+.main-filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.main-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.main-filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f3558;
+}
+
+.main-filter-select {
+  width: 100%;
+  height: 40px;
+  margin-top: 7px;
+  padding: 0 40px 0 12px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.main-filter-select:hover:not(:disabled),
+.main-filter-select:focus {
+  border-color: #302ba0;
+  box-shadow: 0 0 0 3px rgba(48, 43, 160, 0.08);
+}
+
+/* Disabled State */
+.main-filter-select:disabled {
+  background: #f3f4f6;
+  color: #94a3b8;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 1; /* override browser opacity */
+}
+
+/* Disabled Hover */
+.main-filter-select:disabled:hover {
+  background: #eceff3;
+  border-color: #cbd5e1;
+}
+
+/* Optional label style when disabled */
+.main-filter-select:disabled + span {
+  color: #94a3b8;
+}
+
 /* ==================== KPI SECTION ==================== */
 .kpi-section {
   margin-bottom: 15px;
@@ -124,7 +205,7 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 15px;
   margin-bottom: 10px;
 }
@@ -345,6 +426,17 @@
   font-weight: 500;
   color: #666;
   font-size: 12px;
+}
+
+.table-section-not-found-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.not-found-title{
+  color: #2c3e50
 }
 
 /* ==================== MODAL OVERLAY ==================== */
@@ -706,24 +798,191 @@
   transform: none !important;
 }
 
+/* ======================= EXPORT BUTTON ======================  */
+
+.export-to-excel-btn {
+  padding: 10px 20px;
+  background: rgb(254, 122, 81);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(254, 122, 81, 0.25);
+}
+
+.export-to-excel-btn:hover {
+  background: rgb(240, 100, 60);
+  box-shadow: 0 5px 12px rgba(254, 122, 81, 0.3);
+}
+
+/* Desktop: show button, hide icon */
+.export-icon {
+  display: none;
+}
+
+.export-btn {
+  display: inline-flex;
+}
+
+/* ================ REPORT FIELD FILTER ====================  */
+
+.report-search-filter-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.report-search-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.report-search-filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f3558;
+}
+
+
+
+.report-search-filter-input:hover:not(:disabled),
+.report-search-filter-input:focus {
+  border-color: #302ba0;
+  box-shadow: 0 0 0 3px rgba(48, 43, 160, 0.08);
+}
+
+.report-search-filter-input,
+.report-search-filter-select {
+  width: 100%;
+  height: 40px;
+  margin-top: 7px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+}
+
+.report-search-filter-select:hover:not(:disabled),
+.report-search-filter-select:focus {
+  border-color: #302ba0;
+  box-shadow: 0 0 0 3px rgba(48, 43, 160, 0.08);
+}
+
+
+/* Disabled State */
+.main-filter-select:disabled {
+  background: #f3f4f6;
+  color: #94a3b8;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 1; /* override browser opacity */
+}
+
+/* Disabled State */
+.report-search-filter-select:disabled {
+  background: #f3f4f6;
+  color: #94a3b8;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 1; /* override browser opacity */
+}
+
+/* Disabled Hover */
+.report-search-filter-select:disabled:hover {
+  background: #eceff3;
+  border-color: #cbd5e1;
+}
+
+/* Optional label style when disabled */
+.report-search-filter-select:disabled + span {
+  color: #94a3b8;
+}
+
+.report-search-go-btn-wrapper {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ==================== REPORT SEARCH GO BTN ================= */
+
+.report-search-go-btn {
+  height: 40px;
+  padding: 0 30px;
+  background: rgb(254, 122, 81);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(254, 122, 81, 0.25);
+}
+
+.report-search-go-btn:hover {
+  background: rgb(240, 100, 60);
+  box-shadow: 0 5px 12px rgba(254, 122, 81, 0.3);
+}
+
+.report-search-go-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
 /* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 992px){
+  /* .screen-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  } */
+
+  .kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+}
+
 @media (max-width: 768px) {
   .universal-screen {
     padding: 15px;
   }
 
-  .screen-header {
+  /* .screen-header {
     flex-direction: column;
     gap: 15px;
     align-items: flex-start;
-  }
+  } */
 
   .screen-header h1 {
     font-size: 24px;
   }
 
   .kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
   }
 
@@ -754,6 +1013,87 @@
   .table-container td {
     padding: 8px;
   }
+
+  .refresh-text {
+    display: none;
+  }
+
+  .refresh-button {
+    min-width: auto !important;
+    padding: 3px 7px !important;
+  }
+
+  .main-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+
+  }
+
+  .main-filter-group {
+    width: 100%;
+  }
+
+   .report-search-filter-group {
+    flex: 0 0 calc(50% - 9px);
+    max-width: calc(50% - 9px);
+  }
+
+  .report-search-go-btn-wrapper {
+    flex: 0 0 100%;
+    justify-content: end;
+  }
+
+   .btn-reset-wrapper {
+    width: fit-content;
+    align-self: center;
+    flex: 0 0 auto;
+  }
+
+}
+
+@media (max-width: 576px){
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+   .go-btn-wrapper {
+    width: 100%;
+    justify-content: center;
+  }
+
+   .export-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .export-btn {
+    display: none;
+  }
+   .screen-title {
+    font-size: 18px;
+  }
+   .refresh-text {
+    display: none;
+  }
+
+  .refresh-button {
+    min-width: auto !important;
+    padding: 1px 4px !important;
+  }
+
+  .report-search-filter-group {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .report-search-go-btn-wrapper {
+    width: 100%;
+    justify-content: center;
+  }
+
 }
 
 @media (max-width: 480px) {
@@ -763,6 +1103,11 @@
 
   .screen-header h1 {
     font-size: 20px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .filter-section,
@@ -777,6 +1122,10 @@
 
   .filter-actions button {
     width: 100%;
+  }
+
+   .screen-title {
+    font-size: 18px;
   }
 }
 
@@ -902,8 +1251,10 @@
 }
 
 .btn-reset {
-  padding: 10px 24px;
-  background-color: #95a5a6;
+  padding: 10px 20px;
+  height: 40px;
+  width: auto;
+  background-color: #302ba0;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -913,7 +1264,7 @@
 }
 
 .btn-reset:hover {
-  background-color: #7f8c8d;
+  background-color: #26207F;
 }
 
 /* Chart Section */

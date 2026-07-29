@@ -13,42 +13,42 @@ cube(`egcl_payment`, {
   measures: {
     totalSum: {
       type: `sum`,
-      sql: `totalamountpaid`,
+      sql: `${CUBE}.totalamountpaid`,
       title: `Total Sum`,
       format: `currency`,
     },
 
     cashSum: {
       type: `sum`,
-      sql: `CASE WHEN paymentmode = 'CASH' THEN totalamountpaid ELSE 0 END`,
+      sql: `CASE WHEN ${CUBE}.paymentmode = 'CASH' THEN ${CUBE}.totalamountpaid ELSE 0 END`,
       title: `Cash Sum`,
       format: `currency`,
     },
 
     chequeSum: {
       type: `sum`,
-      sql: `CASE WHEN paymentmode = 'CHEQUE' THEN totalamountpaid ELSE 0 END`,
+      sql: `CASE WHEN ${CUBE}.paymentmode = 'CHEQUE' THEN ${CUBE}.totalamountpaid ELSE 0 END`,
       title: `Cheque Sum`,
       format: `currency`,
     },
 
     DDSum: {
       type: `sum`,
-      sql: `CASE WHEN paymentmode = 'DD' THEN totalamountpaid ELSE 0 END`,
+      sql: `CASE WHEN ${CUBE}.paymentmode = 'DD' THEN ${CUBE}.totalamountpaid ELSE 0 END`,
       title: `DD Sum`,
       format: `currency`,
     },
 
     otherThanCashSum: {
       type: `sum`,
-      sql: `CASE WHEN paymentmode != 'CASH' THEN totalamountpaid ELSE 0 END`,
+      sql: `CASE WHEN ${CUBE}.paymentmode != 'CASH' THEN ${CUBE}.totalamountpaid ELSE 0 END`,
       title: `Non-Cash Sum`,
       format: `currency`,
     },
 
     todaysCollection: {
       type: `sum`,
-      sql: `totalamountpaid`,
+      sql: `${CUBE}.totalamountpaid`,
       filters: [
         {
           sql: `${CUBE}.transactiondate >= EXTRACT(EPOCH FROM DATE_TRUNC('day', CURRENT_TIMESTAMP)) * 1000
@@ -62,18 +62,19 @@ cube(`egcl_payment`, {
 
   dimensions: {
     id: {
-      sql: `id`,
+      sql: `${CUBE}.id`,
       type: `string`,
       primaryKey: true,
     },
     tenantid: {
-      sql: `UPPER(tenantid)`,
+      sql: `UPPER(${CUBE}.tenantid)`,
+      // sql: `${CUBE}.tenantid`,
       type: `string`,
       title: `Tenant ID`,
     },
 
     paymentmode: {
-      sql: `paymentmode`,
+      sql: `${CUBE}.paymentmode`,
       type: `string`,
       title: `Payment Mode`,
     },
