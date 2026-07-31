@@ -72,7 +72,7 @@ const KPICard = ({
   return (
     <div
       style={{
-        padding: '18px 18px 18px 22px',
+        padding: '14px 14px 14px 18px',
         backgroundColor: '#fff',
         borderRadius: '12px',
         boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
@@ -115,43 +115,71 @@ const KPICard = ({
       {/* Content */}
       <div style={{ 
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: '16px',
+          flexDirection: 'column',
+          justifyContent:"space-around",
           height: '100%',
-
         }}>
-        <div style={{ flex: 1,
-          minWidth: 0,
-          overflow: 'hidden', }}>
-          {/* Title */}
-          <div
-            style={{
-              fontSize: '15px',
-              fontWeight: '600',
-              color: globalConfig.colors.text,
-              marginBottom: '18px',
-              letterSpacing: '.2px',
-              textTransform: 'none',
-              lineHeight: '20px',
-              wordBreak: 'break-word',
-              
-            }}
-          >
-            {title}
+
+        {/* Row 1: Title + Icon */}
+        <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px',
+          }}>
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            {/* Title */}
+            <div
+              style={{
+                fontSize: '15px',
+                fontWeight: '600',
+                color: globalConfig.colors.text,
+                letterSpacing: '.2px',
+                textTransform: 'none',
+                lineHeight: '20px',
+                wordBreak: 'break-word',
+              }}
+            >
+              {title}
+            </div>
           </div>
 
+          {/* Icon */}
+          {icon && drilldownLevel === 0 && (
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                minWidth: '34px',
+                minHeight: '34px',
+                flexShrink: 0,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(48,43,160,.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                color: globalConfig.theme.secondaryColor,
+              }}
+            >
+              {icon}
+            </div>
+          )}
+        </div>
+
+        {/* Row 2: Value + Subtitle + Trend (full width now) */}
+        <div style={{ width: '100%', marginTop: '10px' }}>
           {/* Value */}
           <div
             style={{
-              fontSize: cardStyle.fontSize || '22px',
+              fontSize: cardStyle.fontSize || '18px',
               fontWeight: '500',
-              color:globalConfig.theme.primaryColor,
+              color: globalConfig.theme.primaryColor,
               marginBottom: '10px',
               lineHeight: '1.1',
-              paddingTop: '0',
               wordBreak: 'break-word',
               overflowWrap: 'anywhere',
+              width: '100%',
             }}
           >
             {value}
@@ -188,28 +216,6 @@ const KPICard = ({
             </div>
           )}
         </div>
-
-        {/* Icon */}
-        {icon && drilldownLevel === 0 && (
-          <div
-            style={{
-              width: '34px',
-              height: '34px',
-              minWidth: '34px',
-              minHeight: '34px',
-              flexShrink: 0,
-              borderRadius: '10px',
-              backgroundColor: 'rgba(48,43,160,.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              color: globalConfig.theme.secondaryColor,
-            }}
-          >
-            {icon}
-          </div>
-        )}
       </div>
     </div>
   );

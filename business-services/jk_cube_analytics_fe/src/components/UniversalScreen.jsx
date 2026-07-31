@@ -244,18 +244,19 @@ const UniversalScreen = ({ screenId }) => {
   //   - ULB selected: filter to that exact code.
   //   - Organization selected (no ULB): filter to the organization's own code plus every child
   //     ULB under it (using the tenant list already fetched into allOrganizationOptions).
+
+  const getChildTenantCodes = (orgCode) =>
+    allOrganizationOptions
+      .filter((item) => item.parent === orgCode)   // no !isParent, no code!==orgCode — just parent match
+      .map((item) => item.code);
+
   const getOrgUlbTenantValues = () => {
     if (ulb) return [ulb];
     if (organization) {
-      // const childCodes = allOrganizationOptions
-      //   .filter((item) => !item.isParent && item.parent === organization)
-      //   .map((item) => item.code);
-      // return [organization, ...childCodes];
-      return [organization];
+      return [organization, ...getChildTenantCodes(organization)];
     }
     return null;
   };
-
   // Applies the Organization/ULB filter to a header-KPI query, IN PLACE, only when this screen
   // opts in via `screenConfig.tenantFilter`. Screens that don't define it are unaffected — this
   // is a pure no-op for them.
@@ -3685,15 +3686,16 @@ const UniversalScreen = ({ screenId }) => {
   const handleOrganizationChange = (selectedOrgCode) => {
     console.log("selectedOrgCode", selectedOrgCode);
 
-    const ulbOptions = allOrganizationOptions
-      .filter((item) => !item.isParent && item.parent === selectedOrgCode)
-      .map((item) => ({
-        value: item.code,
-        label: item.name,
-      }));
+  const ulbOptions = allOrganizationOptions
+    .filter((item) => item.parent === selectedOrgCode)   // matches children AND the self-referencing record itself
+    .map((item) => ({
+      value: item.code,
+      label: item.name,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label)); 
 
-    setUlbOptions(ulbOptions);
-  };
+      setUlbOptions(ulbOptions);
+    };
 
   // =================== HANDLE RESET ===============================
 

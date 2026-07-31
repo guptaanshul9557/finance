@@ -17,7 +17,7 @@
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 3px solid rgb(254, 122, 81);
+  /* border-bottom: 3px solid rgb(254, 122, 81); */
 }
 
 .header-left {
