@@ -160,7 +160,7 @@ export const screenRegistry = [
       {
         id: "egclTotalSum",
         label: "Total Revenue",
-        icon: <MdCurrencyRupee size={22} color="#302ba0" />,
+        icon: <MdCurrencyRupee size={18} color="#302ba0" />,
         color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.totalSum",
@@ -255,7 +255,7 @@ export const screenRegistry = [
       {
         id: "egclCashSum",
         label: "Cash Transactions",
-        icon: <BsCashStack size={20} color="#302ba0" />,
+        icon: <BsCashStack size={16} color="#302ba0" />,
         color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.cashSum",
@@ -324,11 +324,11 @@ export const screenRegistry = [
             },
           },
         ],
-        },
+      },
       {
         id: "egclNonCash",
         label: "Non-Cash Transactions",
-        icon: <LiaMoneyCheckSolid size={22} color="#302ba0" />,
+        icon: <LiaMoneyCheckSolid size={18} color="#302ba0" />,
         color: "#302ba0",
         format: "currency",
         // No single `measure` — the card's displayed value is chequeSum + DDSum, computed via
@@ -422,17 +422,17 @@ export const screenRegistry = [
       {
         id: "egclTodayCollection",
         label: "Today's Collection Amount",
-        icon: <MdCurrencyRupee size={22} color="#302ba0" />,
+        icon: <MdCurrencyRupee size={18} color="#302ba0" />,
         color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.todaysCollection",
-        isTodayBased: true,
+        // isTodayBased: true,
         isDrillingRequired: true,
       },
       {
-        id: "topPerformingOrganization",
-        label: "Top Performing Organization",
-        icon: <FaAward size={22} color="#302ba0" />,
+        id: "topPerformingOrganizationRevenue",
+        label: "Top Performing Organization (Revenue)",
+        icon: <FaAward size={18} color="#302ba0" />,
         color: "#302ba0",
         format: "org",
         customQuery: {
@@ -450,7 +450,7 @@ export const screenRegistry = [
           return data?.[0]?.["egcl_payment.tenantid"] || "-";
         },
         isDrillingRequired: false,
-      }
+      },
     ],
 
     // bodyConfig: {
