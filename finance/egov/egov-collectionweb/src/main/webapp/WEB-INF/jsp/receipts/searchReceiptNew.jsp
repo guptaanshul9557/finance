@@ -249,7 +249,11 @@ function printResultTable() {
     document.body.removeChild(a);
 } 
   */
-
+  function exportAllReportToExcel(){
+	  //  window.location.href = "/services/collection/receipts/exportAllReceiptExcel-report.action";
+     document.searchReceiptForm.action = "exportAllReceiptExcel-report.action";
+     document.searchReceiptForm.submit();
+ }
 
   function exportTableToExcel() {
 
@@ -960,7 +964,7 @@ function printResultTable() {
                          onclick="printResultTable()" /> -->
                      <input type="button" class="buttonsubmit"
                        value="Export to Excel"
-                       onclick="exportTableToExcel()" />    
+                       onclick="exportAllReportToExcel()" />    
 				<%-- <egov-authz:authorize actionName="CancelReceipt">
   <input name="button32" type="button" class="buttonsubmit" id="button32" value="Cancel Receipt" onclick="return checkcancelforselectedrecord()"/>
   </egov-authz:authorize> --%>

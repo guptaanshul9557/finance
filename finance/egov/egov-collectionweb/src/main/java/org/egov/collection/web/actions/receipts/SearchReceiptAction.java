@@ -780,159 +780,141 @@ public class SearchReceiptAction extends SearchFormAction {
 	
 	@Action(value = "/receipts/searchReceipt-searchReportNew")
 	public String searchReportNew() {
+		validateSearchParams();
+		if (hasErrors())
+			return SUCCESS;
 
-	    target = "searchresult";
-	    collectionVersion = ApplicationThreadLocals.getCollectionVersion();
-	    
-	    if (getFromDate() == null || getToDate() == null) {
-	    	addActionError("From Date and To Date are required to search receipts.");
-	        return SUCCESSNEW;
-	    }
+		target = "searchresult";
+		collectionVersion = ApplicationThreadLocals.getCollectionVersion();
 
-	    List<ReceiptHeader> receiptList = new ArrayList<>();
+		List<ReceiptHeader> receiptList = new ArrayList<>();
+		/*
+		 * List<Receipt> receipts = microserviceUtils.searchReciepts("MISCELLANEOUS",
+		 * getFromDate(), getToDate(), getServiceTypeId(), (getReceiptNumber() != null
+		 * && !getReceiptNumber().isEmpty() && !"".equalsIgnoreCase(getReceiptNumber()))
+		 * ? getReceiptNumber() : null);
+		 */
 
-	    String effectiveServiceId = null;
-	    
+		/*
+		 * String effectiveServiceId = (serviceTypeId != null &&
+		 * !serviceTypeId.isEmpty() && !serviceTypeId.equals("-1")) ? serviceCategory +
+		 * "." + serviceTypeId : serviceCategory;
+		 */
+        String effectiveServiceId=null;
+        if (serviceCategory != null && !serviceCategory.isEmpty() && !serviceCategory.equals("-1")) {
+        	effectiveServiceId= (serviceTypeId != null && !serviceTypeId.isEmpty() && !serviceTypeId.equals("-1"))
+                    ? serviceCategory + "." + serviceTypeId
+                    : serviceCategory;
+        }
+        
+        Integer pageSize = 20;
+        Integer pageNo = (this.page != null && this.page > 0) ? this.page : 1;
 
-	    if (serviceCategory != null && !serviceCategory.equals("-1")) {
-	        if (serviceTypeId != null && !serviceTypeId.equals("-1") && !serviceTypeId.isEmpty()) {
-	            effectiveServiceId = serviceCategory + "." + serviceTypeId;
-	        } else {
-	            effectiveServiceId = serviceCategory;
-	        }
-	    }
-	    
-	    String serviceIdToSend = effectiveServiceId;
-//		 if (serviceIdToSend == null) {
-//		     serviceIdToSend = "";  
-//		 }
+        Integer offset = (page - 1) * pageSize;
 
-	    //  Department map
-	    Map<String, String> dplist = getAlldepartment();
+        List<Receipt> receipts = microserviceUtils.searchReciepts(
+                "MISCELLANEOUS", getFromDate(), getToDate(),
+                  (effectiveServiceId !=null && !effectiveServiceId.isEmpty() && !effectiveServiceId.equals("-1") ?effectiveServiceId:null),
+                 (getReceiptNumber() != null && !getReceiptNumber().isEmpty())
+                      ? getReceiptNumber() : null,offset,pageSize);
+        
+//        List<Receipt> receipts = microserviceUtils.receiptReport(
+//                "MISCELLANEOUS",
+//                getFromDate(),
+//                getToDate(),
+//                effectiveServiceId,
+//                getReceiptNumber(),
+//                true);
+        
+        // Get the count 
+        boolean isCountRequest=true;
+        Integer totalCount=0;
+        totalCount= microserviceUtils.searchReciepts(
+                "MISCELLANEOUS", getFromDate(), getToDate(),
+                (effectiveServiceId !=null && !effectiveServiceId.isEmpty() && !effectiveServiceId.equals("-1") ?effectiveServiceId:null),
+                (getReceiptNumber() != null && !getReceiptNumber().isEmpty())
+                        ? getReceiptNumber() : null,isCountRequest);
+        
+        
+        for (Receipt receipt : receipts) {
+        	
+        	
+            for (org.egov.infra.microservice.models.Bill bill : receipt.getBill()) {
 
-	    //  Fetch receipts
-	    List<Receipt> receipts = microserviceUtils.searchReciepts(
-	            "MISCELLANEOUS",
-	            getFromDate(),
-	            getToDate(),
-//	            effectiveServiceId,
-	            serviceIdToSend,
-	            (getReceiptNumber() != null && !getReceiptNumber().isEmpty())
-	                    ? getReceiptNumber()
-	                    : null,null,null
-	    );
-	    System.out.println("Receipts size: " + receipts.size());
+                for (BillDetail billDetail : bill.getBillDetails()) {
+                	
+                    ReceiptHeader receiptHeader = new ReceiptHeader();
+                    JsonNode additionalDetails = receipt.getAdditionalDetails();
+                	receiptHeader.setWardNo(additionalDetails.get("wardNo")!=null?additionalDetails.get("wardNo").asText():null);
+                    receiptHeader.setFund(additionalDetails.get("fundName")!=null?additionalDetails.get("fundName").asText():null);
+                    receiptHeader.setPaymentId(receipt.getPaymentId());
+                    receiptHeader.setReceiptnumber(billDetail.getReceiptNumber());
+                    receiptHeader.setReceiptdate(new Date(billDetail.getReceiptDate()));
+                    String[] catSer=microserviceUtils.getBusinessServiceNameByCode(billDetail.getBusinessService()).split("\\.");
+                    receiptHeader.setService(catSer[1]);
+                    receiptHeader.setServiceCat(catSer[0]);
+                    receiptHeader.setReferencenumber(billDetail.getBillNumber());
+                    receiptHeader.setReferenceDesc(additionalDetails.get("narration")!=null?additionalDetails.get("narration").asText():null);
+                    receiptHeader.setPaidBy(bill.getPaidBy());
+                    receiptHeader.setTotalAmount(billDetail.getTotalAmount());
+                    receiptHeader.setCurretnStatus(billDetail.getStatus());
+                    receiptHeader.setCurrentreceipttype(billDetail.getReceiptType());
+                    if (null != billDetail.getManualReceiptNumber()) {
+                        receiptHeader.setManualreceiptnumber(billDetail.getManualReceiptNumber());
+                        receiptHeader.setG8data(billDetail.getManualReceiptNumber());
+                    }
+                    if (billDetail.getManualReceiptDate() != null && billDetail.getManualReceiptDate() != 0) {
+                        receiptHeader.setManualreceiptdate(new Date(billDetail.getManualReceiptDate()));
+                        if (null != billDetail.getManualReceiptNumber()) {
+                            receiptHeader.setG8data(billDetail.getManualReceiptNumber()+"/"+new Date(billDetail.getManualReceiptDate()).toString()); 
+                        }
+                        else
+                            receiptHeader.setG8data(new Date(billDetail.getManualReceiptDate()).toString());
+                    }
+                    receiptHeader.setModOfPayment(receipt.getInstrument().getInstrumentType().getName());
 
-	    //  Loop + Mapping
-	    for (Receipt receipt : receipts) {
-	    	 if (receipt.getBill() == null) continue;
+                    JsonNode jsonNode = billDetail.getAdditionalDetails();
+                    BillDetailAdditional additional = null;
+                    try {
+                        if (null != jsonNode)
+                            additional = (BillDetailAdditional) new ObjectMapper().readValue(jsonNode.toString(),
+                                    BillDetailAdditional.class);
+                    } catch (IOException e) {
+                        LOGGER.error("error occured reading value from object mapper" +e.getMessage());
+                    }
+                    if (null != additional) {
+//                        if (null != additional.getBusinessReason()) {
+//                            if (additional.getBusinessReason().contains("-")) {
+//                                receiptHeader.setService(additional.getBusinessReason().split("-")[0]);
+//                            } else {
+//                                receiptHeader.setService(additional.getBusinessReason());
+//                            }
+//                        }
 
-	        JsonNode additionalDetails = receipt.getAdditionalDetails(); 
+						if (null != additional.getNarration())
+							receiptHeader.setReferenceDesc(additional.getNarration());
+						if (null != additional.getPayeeaddress())
+							receiptHeader.setPayeeAddress(additional.getPayeeaddress());
+					}
 
-	        for (org.egov.infra.microservice.models.Bill bill : receipt.getBill()) {
+					receiptList.add(receiptHeader);
 
-	        	if (bill.getBillDetails() == null) continue;
-	            for (BillDetail billDetail : bill.getBillDetails()) {
-	            	
-	                ReceiptHeader rh = new ReceiptHeader();
+				}
+			}
 
-	                rh.setReceiptnumber(billDetail.getReceiptNumber());
-	                rh.setReceiptdate(new Date(billDetail.getReceiptDate()));
-	                
-					
-	                if (additionalDetails != null) {
+		}
 
-	                    if (additionalDetails.get("wardNo") != null) {
-	                        rh.setWardNo(additionalDetails.get("wardNo").asText());
-	                    }
+		if (searchResult == null) {
+			
+			Page page1 = new Page<ReceiptHeader>(page, pageSize, receiptList);
+			searchResult = new EgovPaginatedList(page1, totalCount.intValue());
+		} else {
+			searchResult.getList().clear();
+			searchResult.getList().addAll(receiptList);
+		}
 
-	                    if (additionalDetails.get("fundName") != null) {
-	                        rh.setFund(additionalDetails.get("fundName").asText());
-	                    }
-
-	                    if (additionalDetails.get("department") != null) {
-	                        String deptCode = additionalDetails.get("department").asText();
-	                        rh.setDepartment(dplist.get(deptCode));
-	                    }
-
-	                    if (additionalDetails.get("narration") != null) {
-	                        rh.setReferenceDesc(additionalDetails.get("narration").asText());
-	                    }
-	                }
-	               
-					/*
-					 * if (additionalDetails != null) {
-					 * 
-					 * if (additionalDetails.get("department") != null) { String deptCode =
-					 * additionalDetails.get("department").asText();
-					 * rh.setDepartment(dplist.get(deptCode)); }
-					 * 
-					 * if (additionalDetails.get("fund") != null) {
-					 * rh.setFund(additionalDetails.get("fund").asText()); }
-					 * 
-					 * if (additionalDetails.get("ward") != null) {
-					 * rh.setWardNo(additionalDetails.get("ward").asText()); }
-					 * 
-					 * if (additionalDetails.get("narration") != null) {
-					 * rh.setReferenceDesc(additionalDetails.get("narration").asText()); } }
-					 */
-
-	                //Service split
-	                String[] catSer = microserviceUtils
-	                        .getBusinessServiceNameByCode(billDetail.getBusinessService())
-	                        .split("\\.");
-
-	                rh.setServiceCat(catSer.length > 0 ? catSer[0] : "");
-	                rh.setService(catSer.length > 1 ? catSer[1] : "");
-
-	                rh.setPaidBy(bill.getPaidBy());
-	                rh.setTotalAmount(billDetail.getTotalAmount());
-	                rh.setCurretnStatus(billDetail.getStatus());
-	                rh.setCurrentreceipttype(billDetail.getReceiptType());
-
-	                if (receipt.getInstrument() != null) {
-	                    rh.setModOfPayment(receipt.getInstrument().getInstrumentType().getName());
-	                }
-
-					/*
-					 * // narration if (additionalDetails != null &&
-					 * additionalDetails.get("narration") != null) {
-					 * rh.setReferenceDesc(additionalDetails.get("narration").asText()); }
-					 */
-
-	                if (billDetail.getManualReceiptNumber() != null) {
-	                    rh.setManualreceiptnumber(billDetail.getManualReceiptNumber());
-	                    rh.setG8data(billDetail.getManualReceiptNumber());
-	                }
-
-	                if (billDetail.getManualReceiptDate() != null
-	                        && billDetail.getManualReceiptDate() != 0) {
-	                    rh.setManualreceiptdate(new Date(billDetail.getManualReceiptDate()));
-	                    if (billDetail.getManualReceiptNumber() != null) {
-	                        rh.setG8data(billDetail.getManualReceiptNumber()
-	                                + "/" + new Date(billDetail.getManualReceiptDate()).toString());
-	                    } else {
-	                        rh.setG8data(new Date(billDetail.getManualReceiptDate()).toString());
-	                    }
-	                }
-	                
-	                receiptList.add(rh);
-	            }
-	        }
-	    }
-
-	    // Pagination
-	    if (searchResult == null) {
-	        Page page = new Page<>(1, receiptList.size(), receiptList);
-	        searchResult = new EgovPaginatedList(page, receiptList.size());
-	    } else {
-	        searchResult.getList().clear();
-	        searchResult.getList().addAll(receiptList);
-	    }
-
-	    resultList = searchResult.getList();
-
-	    return SUCCESSNEW;
+		resultList = searchResult.getList();
+		return SUCCESSNEW;
 	}
 	public Map<String, String> getAlldepartment() {
 		List<Object[]> dep = null;
