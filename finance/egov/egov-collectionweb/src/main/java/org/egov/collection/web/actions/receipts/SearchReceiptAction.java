@@ -386,11 +386,11 @@ public class SearchReceiptAction extends SearchFormAction {
 	    HSSFRow rowhead1 = sheet1.createRow(0);
 	    HSSFRow rowhead2 = sheet2.createRow(0);
 	    
-	    
-	    rowhead1.createCell(0).setCellValue("Service");
-	    rowhead1.createCell(0).setCellValue("Total");
+	    rowhead1.createCell(0).setCellValue("Category");
+	    rowhead1.createCell(1).setCellValue("Service");
+	    rowhead1.createCell(2).setCellValue("Total");
 	    rowhead2.createCell(0).setCellValue("Wards");
-	    rowhead2.createCell(0).setCellValue("Total");
+	    rowhead2.createCell(1).setCellValue("Total");
 	    
 
 	    rowhead.createCell(0).setCellValue("Receipt No.");
@@ -416,7 +416,17 @@ public class SearchReceiptAction extends SearchFormAction {
 	    for (Receipt receipt : receipts) {
 	    	
 	    	 mapOfService=receipts.stream().flatMap(rec->rec.getBill().stream()).flatMap(bill->bill.getBillDetails().stream()).collect(Collectors.groupingBy(billdetail->billdetail.getBusinessService(),Collectors.toList()));
-	    	 mapOfWard=receipts.stream().collect(Collectors.groupingBy(rec->rec.getAdditionalDetails().get("wardNo"),Collectors.toList()));
+	    	 mapOfWard = receipts.stream()
+	    			    .collect(Collectors.groupingBy(
+	    			        rec -> {
+	    			            Object wardNo = rec.getAdditionalDetails().get("wardNo");
+	    			            if (wardNo == null || wardNo.toString().trim().isEmpty()) {
+	    			                return "UNKNOWN";
+	    			            }
+	    			            return wardNo.toString().trim();
+	    			        },
+	    			        Collectors.toList()
+	    			    ));
 	    	
 	        for (org.egov.infra.microservice.models.Bill bill : receipt.getBill()) {
 
@@ -593,9 +603,11 @@ public class SearchReceiptAction extends SearchFormAction {
 	    	BigDecimal serviceWiseTotal = billdetails.stream()
 	    	        .map(BillDetail::getTotalAmount)
 	    	        .reduce(BigDecimal.ZERO, BigDecimal::add);
-	    	String ser=billEntry.getKey();
-	    	dataRow.createCell(0).setCellValue(ser);
-	    	dataRow.createCell(1).setCellValue(serviceWiseTotal.doubleValue());
+	    	String[] ser=microserviceUtils
+                    .getBusinessServiceNameByCode(billEntry.getKey()).split("\\.");
+	    	dataRow.createCell(0).setCellValue(ser[0]);
+	    	dataRow.createCell(1).setCellValue(ser[1]);
+	    	dataRow.createCell(2).setCellValue(serviceWiseTotal.doubleValue());
 	    }
 	    
 	    rowNum=1;
