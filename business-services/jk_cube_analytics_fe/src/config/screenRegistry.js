@@ -426,8 +426,55 @@ export const screenRegistry = [
         color: "#302ba0",
         format: "currency",
         measure: "egcl_payment.todaysCollection",
-        // isTodayBased: true,
+        isTodayBased: true,
         isDrillingRequired: true,
+        drilldownPath: [
+          {
+            order: 1,
+            type: "selection",
+            dimension: "egcl_payment.tenantid", // fallback label source
+            label: "Select Tenant",
+            viewOptions: LEVEL1_VIEW_OPTIONS,
+            dataQuery: ({ filters, view }) => ({
+              measures: ["egcl_payment.todaysCollection"],
+              dimensions: [getLevel1Dimension(view)],
+              order: {
+                "egcl_payment.todaysCollection": "desc",
+              },
+            }),
+          },
+          SERVICE_TYPE_STEP,
+          {
+            type: "monthly",
+            label: "Monthly Breakdown (Today)",
+            granularity: "month",
+            order: 2,
+            dataQuery: ({ filters }) => {
+              const level1 = getLevel1Filter(filters);
+              return {
+                measures: ["egcl_payment.todaysCollection"],
+                filters: [
+                  { dimension: level1.dimension, operator: "equals", values: [level1.value] },
+                ],
+              };
+            },
+          },
+          {
+            type: "daily",
+            label: "Daily Breakdown (Today)",
+            granularity: "day",
+            order: 3,
+            dataQuery: ({ filters }) => {
+              const level1 = getLevel1Filter(filters);
+              return {
+                measures: ["egcl_payment.todaysCollection"],
+                filters: [
+                  { dimension: level1.dimension, operator: "equals", values: [level1.value] },
+                ],
+              };
+            },
+          },
+        ],
       },
       {
         id: "topPerformingOrganizationRevenue",
@@ -451,6 +498,282 @@ export const screenRegistry = [
         },
         isDrillingRequired: false,
       },
+      // ==================== NEW: LIVE BILLS / BUDGET KPI CARDS ====================
+      // These 5 cards are backed by live_bills_all, live_budget_all, and
+      // budget_utilization_summary (a combining cube — see its schema file for why a plain
+      // `joins` block between live_bills_all/live_budget_all isn't used). Per spec, none of
+      // these cards has a Tenant/Service Category toggle — they filter only by tenant
+      // (schema_name) and financial year — so unlike the egcl_payment cards above, none of
+      // these define `viewOptions`/`SERVICE_TYPE_STEP`, and their level-1 dataQuery reads the
+      // tenant straight off `filters.schemaName` (no getLevel1Dimension/getLevel1Filter needed).
+      //
+      // live_bills_all has a real date column (bill_date), so Total Expense and Total Budget
+      // Utilized get the same 3-level Tenant → Monthly → Daily drilldown as the egcl_payment
+      // cards, using `kpi.timeDimension` exactly like they do. live_budget_all and
+      // budget_utilization_summary have no date column — only a `financial_year` string — so
+      // Total Budget Allocated and Total Budget Unutilized intentionally stop at a single
+      // Tenant-breakdown level (no monthly/daily is possible without a date field), and use the
+      // new `kpi.staticFilters` hook (see UniversalScreen.jsx) to apply the financial-year
+      // equals-filter at the header-card level instead of a dateRange.
+      //
+      // All 5 set `tenantFilterDimension` so the screen's Organization/ULB dropdown filters
+      // them on the correct cube's own tenant dimension rather than the screen-level default
+      // (egcl_payment.tenantid), which isn't reachable from these unjoined cubes. NOTE:
+      // `tenantFilterUppercase` is left `false` below — verify whether live_bills_all.schema_name
+      // / live_budget_all.schema_name are stored upper- or lower-case (egcl_payment.tenantid
+      // is upper-cased in its own dimension SQL; these new tables may not be) and flip if needed.
+      {
+        id: "egclTotalExpense",
+        label: "Total Expense",
+        icon: <MdCurrencyRupee size={18} color="#302ba0" />,
+        color: "#302ba0",
+        format: "currency",
+        measure: "live_bills_all.totalExpense",
+        timeDimension: "live_bills_all.billDate",
+        tenantFilterDimension: "live_bills_all.schemaName",
+        tenantFilterUppercase: false,
+        isDrillingRequired: true,
+        drilldownPath: [
+          {
+            order: 1,
+            type: "selection",
+            dimension: "live_bills_all.schemaName",
+            label: "Select Tenant",
+            dataQuery: ({ filters }) => ({
+              measures: ["live_bills_all.totalExpense"],
+              dimensions: ["live_bills_all.schemaName"],
+              timeDimensions: [
+                {
+                  dimension: "live_bills_all.billDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+              order: { "live_bills_all.totalExpense": "desc" },
+            }),
+          },
+          {
+            type: "monthly",
+            label: "Monthly Breakdown",
+            granularity: "month",
+            order: 2,
+            dataQuery: ({ filters }) => ({
+              measures: ["live_bills_all.totalExpense"],
+              filters: [
+                {
+                  dimension: "live_bills_all.schemaName",
+                  operator: "equals",
+                  values: [filters.schemaName],
+                },
+              ],
+              timeDimensions: [
+                {
+                  dimension: "live_bills_all.billDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+            }),
+          },
+          {
+            type: "daily",
+            label: "Daily Breakdown",
+            granularity: "day",
+            order: 3,
+            dataQuery: ({ filters }) => ({
+              measures: ["live_bills_all.totalExpense"],
+              filters: [
+                {
+                  dimension: "live_bills_all.schemaName",
+                  operator: "equals",
+                  values: [filters.schemaName],
+                },
+              ],
+              timeDimensions: [
+                {
+                  dimension: "live_bills_all.billDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+            }),
+          },
+        ],
+      },
+      {
+        id: "egclTotalBudgetAllocated",
+        label: "Total Budget Allocated",
+        icon: <BsCashStack size={16} color="#302ba0" />,
+        color: "#302ba0",
+        format: "currency",
+        measure: "live_budget_all.totalBudgetAllocated",
+        // Uses the synthesized financialYearStartDate (see live_budget_all.js) so this plugs
+        // into the exact same kpi.timeDimension + dateRange mechanism as every other card on
+        // this screen — the header query in fetchHeaderKPIs handles this automatically, no
+        // staticFilters hook needed.
+        timeDimension: "live_budget_all.financialYearStartDate",
+        tenantFilterDimension: "live_budget_all.schemaName",
+        tenantFilterUppercase: false,
+        isDrillingRequired: true,
+        drilldownPath: [
+          // Single level only — no monthly/daily breakdown is possible; financialYearStartDate
+          // is one synthetic date per (tenant, financial year), not a real per-transaction date.
+          {
+            order: 1,
+            type: "selection",
+            dimension: "live_budget_all.schemaName",
+            label: "Select Tenant",
+            dataQuery: ({ filters }) => ({
+              measures: ["live_budget_all.totalBudgetAllocated"],
+              dimensions: ["live_budget_all.schemaName"],
+              timeDimensions: [
+                {
+                  dimension: "live_budget_all.financialYearStartDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+              order: { "live_budget_all.totalBudgetAllocated": "desc" },
+            }),
+          },
+        ],
+      },
+      {
+        id: "egclTotalBudgetUtilized",
+        label: "Total Budget Utilized",
+        icon: <BsCashStack size={16} color="#302ba0" />,
+        color: "#302ba0",
+        format: "currency",
+        // Same underlying figure as Total Expense today, exposed via its own measure name
+        // (live_bills_all.totalBudgetUtilized) — see the schema file comment for why.
+        measure: "live_bills_all.totalBudgetUtilized",
+        timeDimension: "live_bills_all.billDate",
+        tenantFilterDimension: "live_bills_all.schemaName",
+        tenantFilterUppercase: false,
+        isDrillingRequired: true,
+        drilldownPath: [
+          {
+            order: 1,
+            type: "selection",
+            dimension: "live_bills_all.schemaName",
+            label: "Select Tenant",
+            dataQuery: ({ filters }) => ({
+              measures: ["live_bills_all.totalBudgetUtilized"],
+              dimensions: ["live_bills_all.schemaName"],
+              timeDimensions: [
+                {
+                  dimension: "live_bills_all.billDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+              order: { "live_bills_all.totalBudgetUtilized": "desc" },
+            }),
+          },
+          {
+            type: "monthly",
+            label: "Monthly Breakdown",
+            granularity: "month",
+            order: 2,
+            dataQuery: ({ filters }) => ({
+              measures: ["live_bills_all.totalBudgetUtilized"],
+              filters: [
+                {
+                  dimension: "live_bills_all.schemaName",
+                  operator: "equals",
+                  values: [filters.schemaName],
+                },
+              ],
+              timeDimensions: [
+                {
+                  dimension: "live_bills_all.billDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+            }),
+          },
+          {
+            type: "daily",
+            label: "Daily Breakdown",
+            granularity: "day",
+            order: 3,
+            dataQuery: ({ filters }) => ({
+              measures: ["live_bills_all.totalBudgetUtilized"],
+              filters: [
+                {
+                  dimension: "live_bills_all.schemaName",
+                  operator: "equals",
+                  values: [filters.schemaName],
+                },
+              ],
+              timeDimensions: [
+                {
+                  dimension: "live_bills_all.billDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+            }),
+          },
+        ],
+      },
+      {
+        id: "egclTotalBudgetUnutilized",
+        label: "Total Budget Unutilized",
+        icon: <BsCashStack size={16} color="#302ba0" />,
+        color: "#302ba0",
+        format: "currency",
+        // Cross-table calculated measure — see budget_utilization_summary.js. Pre-aggregates
+        // live_bills_all and live_budget_all to one row per (schema_name, financial_year)
+        // BEFORE joining them, so summing this measure further never double-counts.
+        measure: "budget_utilization_summary.totalBudgetUnutilized",
+        // Uses the synthesized financialYearStartDate (see budget_utilization_summary.js) —
+        // same pattern as egclTotalBudgetAllocated, no staticFilters hook needed.
+        timeDimension: "budget_utilization_summary.financialYearStartDate",
+        tenantFilterDimension: "budget_utilization_summary.schemaName",
+        tenantFilterUppercase: false,
+        isDrillingRequired: true,
+        drilldownPath: [
+          {
+            order: 1,
+            type: "selection",
+            dimension: "budget_utilization_summary.schemaName",
+            label: "Select Tenant",
+            dataQuery: ({ filters }) => ({
+              measures: ["budget_utilization_summary.totalBudgetUnutilized"],
+              dimensions: ["budget_utilization_summary.schemaName"],
+              timeDimensions: [
+                {
+                  dimension: "budget_utilization_summary.financialYearStartDate",
+                  dateRange: filters?.dateRange || "This year",
+                },
+              ],
+              order: { "budget_utilization_summary.totalBudgetUnutilized": "desc" },
+            }),
+          },
+        ],
+      },
+      {
+        id: "topPerformingOrganizationExpense",
+        label: "Top Performing Organization (Expense)",
+        icon: <FaAward size={18} color="#302ba0" />,
+        color: "#302ba0",
+        format: "org",
+        // Mirrors topPerformingOrganizationRevenue's customQuery + renderValue pattern exactly.
+        customQuery: {
+          measures: ["live_bills_all.totalExpense"],
+          dimensions: ["live_bills_all.schemaName"],
+          order: {
+            "live_bills_all.totalExpense": "desc",
+          },
+          limit: 1, // bump to N for a top-N list instead of top-1
+        },
+        // live_bills_all.billDate is a real time dimension, so this plugs into the existing
+        // customQuery auto-dateRange logic in fetchHeaderKPIs with no further changes needed —
+        // same as topPerformingOrganizationRevenue's timeDimension does today.
+        timeDimension: "live_bills_all.billDate",
+        tenantFilterDimension: "live_bills_all.schemaName",
+        tenantFilterUppercase: false,
+        renderValue: (data) => {
+          return data?.[0]?.["live_bills_all.schemaName"] || "-";
+        },
+        isDrillingRequired: false,
+      },
+     
     ],
 
     // bodyConfig: {

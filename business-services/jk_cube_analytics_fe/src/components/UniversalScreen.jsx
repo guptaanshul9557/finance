@@ -79,8 +79,8 @@ const formatCardLabel = (label, format) => {
   const value = String(label);
 
   // If it starts with "PG.", return everything after it
-  if (value.startsWith("PG.")) {
-    return value.substring(3);
+  if (value.startsWith("PG.") || value.startsWith("pg.")) {
+    return value.substring(3)? value.substring(3).toUpperCase():"";
   }
 
   // If it contains underscores, replace them with spaces
@@ -260,21 +260,30 @@ const UniversalScreen = ({ screenId }) => {
   // Applies the Organization/ULB filter to a header-KPI query, IN PLACE, only when this screen
   // opts in via `screenConfig.tenantFilter`. Screens that don't define it are unaffected — this
   // is a pure no-op for them.
-  const applyTenantFilterToQuery = (query) => {
+  // 🔥 NEW (additive, non-breaking): accepts an optional `kpi` so a KPI backed by a cube that
+  // isn't joined to the screen's default tenantFilter.dimension (e.g. the live_bills_all /
+  // live_budget_all / budget_utilization_summary cubes used by the new Expense & Budget cards)
+  // can point this at its own tenant dimension via `kpi.tenantFilterDimension`. Existing KPIs
+  // never set `kpi.tenantFilterDimension`, so `cfg.dimension` (the screen-level default) is used
+  // exactly as before for all of them — this call is a pure no-op change unless a KPI opts in.
+  const applyTenantFilterToQuery = (query, kpi) => {
     const cfg = screenConfig?.tenantFilter;
-    if (!cfg?.dimension) return query;
+    const dimension = kpi?.tenantFilterDimension || cfg?.dimension;
+    if (!dimension) return query;
 
     const tenantValues = getOrgUlbTenantValues();
     if (!tenantValues || tenantValues.length === 0) return query;
 
-    const values =
-      cfg.uppercase !== false
-        ? tenantValues.map((v) => String(v).toUpperCase())
-        : tenantValues;
+    const uppercase = kpi?.tenantFilterDimension
+      ? kpi?.tenantFilterUppercase !== false
+      : cfg.uppercase !== false;
+    const values = uppercase
+      ? tenantValues.map((v) => String(v).toUpperCase())
+      : tenantValues;
 
     query.filters = [
       ...(query.filters || []),
-      { member: cfg.dimension, operator: "equals", values },
+      { member: dimension, operator: "equals", values },
     ];
     return query;
   };
@@ -311,7 +320,7 @@ const UniversalScreen = ({ screenId }) => {
             limit: 1,
           };
           // await cubejsApi.invalidateCache();
-          applyTenantFilterToQuery(query);
+          applyTenantFilterToQuery(query, kpi);
           const resultSet = await cubejsApi.load(query);
           const data = resultSet.tablePivot();
           console.log({ resultSetDataHdr: data });
@@ -360,11 +369,22 @@ const UniversalScreen = ({ screenId }) => {
               ];
             }
 
+            // 🔥 NEW (additive, non-breaking): lets a KPI attach static equals-filters (e.g.
+            // financial_year = selectedYear on a cube that has no time-typed dimension to drive
+            // the dateRange logic above) without touching the dateRange/timeDimensions machinery.
+            // No existing KPI defines `staticFilters`, so this is a no-op for all of them.
+            if (typeof kpi.staticFilters === "function") {
+              const extraFilters = kpi.staticFilters(selectedYear) || [];
+              if (extraFilters.length) {
+                queryToRun.filters = [...(queryToRun.filters || []), ...extraFilters];
+              }
+            }
+
             console.log(
               `🔍 KPI ${kpi.id} SENDING QUERY:`,
               JSON.stringify(queryToRun, null, 2),
             );
-            applyTenantFilterToQuery(queryToRun);
+            applyTenantFilterToQuery(queryToRun, kpi);
             const resultSet = await cubejsApi.load(queryToRun);
             const data = resultSet.tablePivot();
             console.log(`🔍 KPI ${kpi.id} customQuery response:`, data);
@@ -431,6 +451,17 @@ const UniversalScreen = ({ screenId }) => {
           }
         }
 
+        // 🔥 NEW (additive, non-breaking): same staticFilters hook as the customQuery branch
+        // above, for plain single-measure KPIs whose cube has no time-typed dimension to filter
+        // on (e.g. live_budget_all.totalBudgetAllocated / budget_utilization_summary.totalBudgetUnutilized,
+        // filtered by financial_year instead of a dateRange). No existing KPI sets this.
+        if (typeof kpi.staticFilters === "function") {
+          const extraFilters = kpi.staticFilters(selectedYear) || [];
+          if (extraFilters.length) {
+            query.filters = [...(query.filters || []), ...extraFilters];
+          }
+        }
+
         console.log(`🔍 Fetching KPI ${kpi.id} with measure:`, kpi.measure);
 
         // Defensive: ensure the query has valid measures before calling Cube.js
@@ -449,7 +480,7 @@ const UniversalScreen = ({ screenId }) => {
           continue;
         }
 
-        const resultSet = await cubejsApi.load(applyTenantFilterToQuery(query));
+        const resultSet = await cubejsApi.load(applyTenantFilterToQuery(query, kpi));
         const data = resultSet.tablePivot();
         console.log({ resultSetDatahdr3: data });
         console.log(`🔍 KPI ${kpi.id} Response:`, {
@@ -893,7 +924,7 @@ const UniversalScreen = ({ screenId }) => {
 
             // 4. Load data
             const resultSet = await cubejsApi.load(
-              applyTenantFilterToQuery(query),
+              applyTenantFilterToQuery(query, kpi),
             );
             const data = resultSet.tablePivot();
             console.log({ resultSetData: data });
@@ -1013,7 +1044,7 @@ const UniversalScreen = ({ screenId }) => {
             ],
           };
           const resultSet = await cubejsApi.load(
-            applyTenantFilterToQuery(query),
+            applyTenantFilterToQuery(query, kpi),
           );
           const data = resultSet.tablePivot();
           const row = data[0] || {};
@@ -1234,7 +1265,7 @@ const UniversalScreen = ({ screenId }) => {
           console.log({ level1Query });
 
           const resultSet = await cubejsApi.load(
-            applyTenantFilterToQuery(level1Query),
+            applyTenantFilterToQuery(level1Query, kpi),
           );
 
           const data = resultSet.tablePivot();
@@ -1394,7 +1425,7 @@ const UniversalScreen = ({ screenId }) => {
           }
 
           const resultSet = await cubejsApi.load(
-            applyTenantFilterToQuery(monthlyQuery),
+            applyTenantFilterToQuery(monthlyQuery, kpi),
           );
           //   const query = screenConfig.dataQuery(filterValues);
           // query.measures = [kpi.measure];
@@ -1562,7 +1593,7 @@ const UniversalScreen = ({ screenId }) => {
             dailyQuery.order = { [measureKey]: "desc" };
           }
           const resultSet = await cubejsApi.load(
-            applyTenantFilterToQuery(dailyQuery),
+            applyTenantFilterToQuery(dailyQuery, kpi),
           );
 
           const data = resultSet.tablePivot();
@@ -1572,7 +1603,7 @@ const UniversalScreen = ({ screenId }) => {
           data.forEach((row) => {
             const dayKey = row[`${kpi.timeDimension}.day`];
             if (dayKey) {
-              const measureValue = row[kpi.measure];
+              const measureValue = row[measureKey];
               dailyData[dayKey] = {
                 value:
                   typeof measureValue === "number"
@@ -3703,6 +3734,7 @@ const UniversalScreen = ({ screenId }) => {
     setOrganization("");
     setUlb("");
     setUlbOptions([]);
+    setSelectedYear(screenConfig?.financialYear?.defaultYear || "2026-2027")
   };
 
   // ==================== HANDLE TOGGLE ============================
