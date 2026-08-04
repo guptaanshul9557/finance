@@ -587,8 +587,15 @@ function printResultTable() {
 			window.scroll(0, 0);
 			return false;
 		} */
+		 if (fromdate == "" || todate == "") {
+	            dom.get("error_area").style.display = "block";
+	            dom.get("error_area").innerHTML =
+	                "From Date and To Date are mandatory when Service Category and Service Type are not selected.<br>";
+	            window.scroll(0, 0);
+	            return false;
+	    }
 
-		if (fromdate != "" && todate != "" && fromdate != todate) {
+		 else if (fromdate != "" && todate != "" && fromdate != todate) {
 			if (!checkFdateTdate(fromdate, todate)) {
 				dom.get("comparedatemessage").style.display = "block";
 				window.scroll(0, 0);

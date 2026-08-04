@@ -334,11 +334,13 @@ public class SearchReceiptAction extends SearchFormAction {
 	                    ? serviceCategory + "." + serviceTypeId
 	                    : serviceCategory;
 	        }
-
+	        Date fromDt = getFromDate();
+	        Date toDt = addDays( getToDate(), 1);
+	        
 	        List<Receipt> receipts = microserviceUtils.receiptReport(
 	                "MISCELLANEOUS",
 	                getFromDate(),
-	                getToDate(),
+	                toDt,
 	                effectiveServiceId,
 	                getReceiptNumber(),
 	                true);
@@ -365,6 +367,12 @@ public class SearchReceiptAction extends SearchFormAction {
 	    }
 	}
 
+	public static Date addDays(Date date, int numOfDays) {
+	    Calendar calendar = Calendar.getInstance();
+	    calendar.setTime(date);
+	    calendar.add(Calendar.DATE, numOfDays);
+	    return calendar.getTime();
+	}
 	private byte[] generateReport(List<Receipt> receipts) {
 		
 		Long totalAmount=0L;
@@ -783,6 +791,7 @@ public class SearchReceiptAction extends SearchFormAction {
 		 * if (StringUtils.isEmpty(serviceCategory) || serviceCategory.equals("-1"))
 		 * addActionError(getText("error.select.service.category"));
 		 */
+		
 
 		if (fromDate != null && toDate != null && !fromDate.equals(toDate) && !fromDate.before(toDate))
 			addActionError(getText("common.comparedate.errormessage"));
@@ -792,9 +801,10 @@ public class SearchReceiptAction extends SearchFormAction {
 	
 	@Action(value = "/receipts/searchReceipt-searchReportNew")
 	public String searchReportNew() {
-		validateSearchParams();
-		if (hasErrors())
-			return SUCCESS;
+		 if (getFromDate() == null || getToDate() == null) {
+		    	addActionError("From Date and To Date are required to search receipts.");
+		        return SUCCESSNEW;
+		}
 
 		target = "searchresult";
 		collectionVersion = ApplicationThreadLocals.getCollectionVersion();
