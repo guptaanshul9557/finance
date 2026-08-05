@@ -950,7 +950,7 @@ export const screenRegistry = [
         }
       ],
       dataQuery: (filters, offset, limit, selectedYear) => {
-        const [startYear, endYear] = selectedYear?.split('-');
+        const [startYear, endYear] = selectedYear ? selectedYear.split('-') : [];
         const query = {
           measures: [
             "receipt_register.amountPaid"

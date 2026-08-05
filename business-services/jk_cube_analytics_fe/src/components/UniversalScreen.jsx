@@ -838,7 +838,7 @@ const UniversalScreen = ({ screenId }) => {
         (measureKey ? `${measureKey.split(".")[0]}.systemDate` : undefined);
       console.log(levelIndex, { drilldownPathArray });
 
-      if (levelIndex > drilldownPathArray.length) {
+      if (levelIndex >= drilldownPathArray.length) {
         console.log("✅ Drilldown path completed");
         return;
       }
@@ -3806,10 +3806,15 @@ const UniversalScreen = ({ screenId }) => {
     if (value === null || value === undefined) return "";
 
     switch (type) {
-      case "date":
+      case "timestamp":
         return value ? new Date(value).toLocaleDateString("en-IN") : "";
       case "currency":
         return value ? Number(value) : 0;
+      case "org": {
+        const organization =
+          typeof value === "string" ? value.split(".")[1] : undefined;
+        return organization ? organization.toUpperCase() : String(value);
+      }
       default:
         return value;
     }
@@ -3824,7 +3829,7 @@ const UniversalScreen = ({ screenId }) => {
     setIsExporting(true);
     try {
       // Cube.js has a hard max limit of 50,000 rows per query
-      const query = tableConfig.dataQuery(filters, 0, 50000);
+      const query = tableConfig.dataQuery(filters, 0, 50000, selectedYear);
 
       console.log("📊 Exporting with query:", query);
 
@@ -5107,13 +5112,18 @@ const UniversalScreen = ({ screenId }) => {
                       "Select Department"}
                   </h2>
                   <p className="modal-subtitle">
-                    Financial Year: {departmentListData.year} | Click on any{" "}
-                    {departmentListData.selectionLabel
-                      ?.toLowerCase()
-                      .includes("category")
-                      ? "category"
-                      : "item"}{" "}
-                    to continue
+                    Financial Year: {departmentListData.year}
+                    {selectedKPI?.drilldownPath?.[
+                      (departmentListData?.levelIndex ?? 0) + 1
+                    ]
+                      ? ` | Click on any ${
+                          departmentListData.selectionLabel
+                            ?.toLowerCase()
+                            .includes("category")
+                            ? "category"
+                            : "item"
+                        } to continue`
+                      : ""}
                   </p>
                 </div>
                 <div style={{ display: "flex" }}>
@@ -5155,11 +5165,24 @@ const UniversalScreen = ({ screenId }) => {
                 >
                   {departmentListData.departments.map((dept) => {
                     const dg = selectedKPI?.detailGroup;
-                    const defaultSubtitle = departmentListData.selectionLabel
-                      ?.toLowerCase()
-                      .includes("category")
-                      ? "Click for sub-categories"
-                      : "Click to continue";
+                    // 🔥 NEW: whether the level currently on screen has a further level to drill
+                    // into. Existing 3-level KPIs (selection → monthly → daily) always have one
+                    // here, so this preserves their exact current text/click behavior. KPIs with
+                    // a single-level drilldownPath (e.g. egclTotalBudgetAllocated,
+                    // egclTotalBudgetUnutilized — no date column, so no monthly/daily is
+                    // possible) correctly fall through to the terminal-card branch below.
+                    const hasNextDrilldownLevel = Boolean(
+                      selectedKPI?.drilldownPath?.[
+                        (departmentListData?.levelIndex ?? 0) + 1
+                      ],
+                    );
+                    const defaultSubtitle = !hasNextDrilldownLevel
+                      ? undefined
+                      : departmentListData.selectionLabel
+                            ?.toLowerCase()
+                            .includes("category")
+                        ? "Click for sub-categories"
+                        : "Click to continue";
                     const cardSubtitle =
                       dg?.cardSubtitle ||
                       (dg?.cardFormat &&
@@ -5175,8 +5198,11 @@ const UniversalScreen = ({ screenId }) => {
                         value={formatValue(dept.value, selectedKPI?.format)}
                         subtitle={cardSubtitle}
                         icon={selectedKPI?.icon}
-                        onClick={() =>
-                          handleDepartmentSelect(dept.name, dept.rowItem)
+                        onClick={
+                          hasNextDrilldownLevel
+                            ? () =>
+                                handleDepartmentSelect(dept.name, dept.rowItem)
+                            : undefined
                         }
                         drilldownLevel={1}
                       />
