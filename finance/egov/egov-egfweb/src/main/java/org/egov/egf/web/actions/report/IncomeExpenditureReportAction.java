@@ -61,7 +61,9 @@ import org.egov.commons.Functionary;
 import org.egov.commons.Fund;
 import org.egov.egf.model.Statement;
 import org.egov.infra.admin.master.entity.Boundary;
+import org.egov.infra.admin.master.repository.CityRepository;
 import org.egov.infra.admin.master.service.CityService;
+import org.egov.infra.config.core.ApplicationThreadLocals;
 import org.egov.infra.config.persistence.datasource.routing.annotation.ReadOnly;
 import org.egov.infra.microservice.models.Department;
 import org.egov.infra.reporting.util.ReportUtil;
@@ -127,6 +129,9 @@ public class IncomeExpenditureReportAction extends BaseFormAction {
     private StringBuffer statementheading = new StringBuffer();
     List<CChartOfAccounts> listChartOfAccounts;
     private boolean detailReport = false;
+    
+    @Autowired
+    private CityRepository cityRepository;
    
  @Autowired
  @Qualifier("persistenceService")
@@ -368,7 +373,7 @@ public class IncomeExpenditureReportAction extends BaseFormAction {
     @Action(value = "/report/incomeExpenditureReport-generateIncomeExpenditurePdf")
     public String generateIncomeExpenditurePdf() throws JRException, IOException {
         populateDataSource();
-        final String heading = ReportUtil.getCityName() +" "+(cityService.getCityGrade()==null ? "" :cityService.getCityGrade()) + "\\n" + statementheading.toString();
+        final String heading =cityRepository.findByCode(ApplicationThreadLocals.getTenantID()).getName()+ "\\n" + statementheading.toString();
         final String subtitle = "Report Run Date-" + FORMATDDMMYYYY.format(getTodayDate());
         final JasperPrint jasper = reportHelper.generateIncomeExpenditureReportJasperPrint(incomeExpenditureStatement, heading,
                 getPreviousYearToDate(), getCurrentYearToDate(), subtitle, true);

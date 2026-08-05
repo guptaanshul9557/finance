@@ -85,10 +85,13 @@ import org.egov.egf.model.DepartmentwiseExpenditureReport;
 import org.egov.egf.model.FunctionwiseIE;
 import org.egov.egf.model.ReportSearch;
 import org.egov.egf.model.Statement;
+import org.egov.infra.admin.master.entity.City;
+import org.egov.infra.admin.master.repository.CityRepository;
 import org.egov.infra.config.core.ApplicationThreadLocals;
 import org.egov.infra.exception.ApplicationRuntimeException;
 import org.egov.model.budget.BudgetProposalBean;
 import org.egov.model.report.ReportBean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.awt.*;
 import java.io.ByteArrayInputStream;
@@ -110,7 +113,9 @@ public class ReportHelper {
     private InputStream reportStream;
     private static final Logger LOGGER = Logger.getLogger(ReportHelper.class);
     private static SimpleDateFormat FORMATDDMMYYYY = new SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH);
-
+    
+    @Autowired
+    private CityRepository cityRepository;
     public OutputStream getOutputBytes() {
         return outputBytes;
     }
@@ -646,7 +651,7 @@ public class ReportHelper {
         
         drb.addAutoText("Government of Jammu & Kashmir", AutoText.POSITION_HEADER, AutoText.ALIGNMENT_CENTER, 500, headerStyle);
         drb.addAutoText("Housing and Urban Development Department", AutoText.POSITION_HEADER, AutoText.ALIGNMENT_CENTER, 500, headerStyle);
-        drb.addAutoText(ApplicationThreadLocals.getCityName(),
+        drb.addAutoText(cityRepository.findByCode(ApplicationThreadLocals.getTenantID()).getName(),
                 AutoText.POSITION_HEADER,
                 AutoText.ALIGNMENT_CENTER,
                 500,
