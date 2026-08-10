@@ -420,7 +420,7 @@ public class IncomeExpenditureReportAction extends BaseFormAction {
     @Action(value = "/report/incomeExpenditureReport-generateIncomeExpenditureXls")
     public String generateIncomeExpenditureXls() throws JRException, IOException {
         populateDataSource();
-        final String heading = ReportUtil.getCityName() +" "+(cityService.getCityGrade()==null ? "" :cityService.getCityGrade()) + "\\n" + statementheading.toString();
+        final String heading = cityRepository.findByCode(ApplicationThreadLocals.getTenantID()).getName()+ "\\n" + statementheading.toString();
         final String subtitle = "Report Run Date-" + FORMATDDMMYYYY.format(getTodayDate())
                 + "                                               ";
         final JasperPrint jasper = reportHelper.generateIncomeExpenditureReportJasperPrint(incomeExpenditureStatement, heading,
