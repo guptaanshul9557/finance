@@ -547,12 +547,12 @@ public class SearchReceiptAction extends SearchFormAction {
 	                                : "");
 
 	                dataRow.createCell(7).setCellValue(
-	                        billDetail.getTotalAmount() != null
-	                                ? billDetail.getTotalAmount().doubleValue()
+	                        billDetail.getAmountPaid() != null
+	                                ? billDetail.getAmountPaid().doubleValue()
 	                                : 0);
 	                
-	                totalAmount=totalAmount+(long) (billDetail.getTotalAmount() != null
-                            ? billDetail.getTotalAmount().doubleValue()
+	                totalAmount=totalAmount+(long) (billDetail.getAmountPaid() != null
+                            ? billDetail.getAmountPaid().doubleValue()
                             : 0);
 	                
 	                
