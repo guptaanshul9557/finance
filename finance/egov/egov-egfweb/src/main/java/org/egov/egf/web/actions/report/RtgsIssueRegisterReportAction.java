@@ -248,7 +248,6 @@ public class RtgsIssueRegisterReportAction extends ReportAction {
 		paramMap.put("fundAndBankHeading", fundAndBankHeading);
 		paramMap.put("dateRange", dateRange);
 		paramMap.put("reportRundate", reportRundate);
-		paramMap.put("ulbName", getUlbName());
 		paramMap.put("rtgsDetailsList", rtgsDisplayList);
 		paramMap.put("rtgsReportList", rtgsReportList);
 		return paramMap;
