@@ -58,7 +58,7 @@
  		<%@ include file="/includes/meta.jsp" %>  
  		<meta name="_csrf" content="${_csrf.token}"/>
     	<meta name="_csrf_header" content="${_csrf.headerName}"/>  
-		<title>eGov Financials <decorator:title/></title>
+		<title>JK Financials <decorator:title/></title>
 		<link rel="icon" href="<cdn:url value='/resources/global/images/favicon.png' context='/services/egi'/>" sizes="32x32">
 		<link href="<cdn:url value='/resources/css/budget.css?rnd=${app_release_no}'/>" rel="stylesheet" type="text/css" />
 		<link href="<cdn:url value='/resources/css/commonegovnew.css?rnd=${app_release_no}'/>" rel="stylesheet" type="text/css" />
