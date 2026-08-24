@@ -58,7 +58,7 @@
 <meta http-equiv=Content-Type content="text/html; charset=x-user-defined">
 
 
-	<TITLE>eGov Financials</TITLE>	
+	<TITLE>JK Financials</TITLE>	
 	<LINK rel="stylesheet" type="text/css" href="<c:url value="/commoncss/egov.css" />
 	
 	
@@ -73,7 +73,7 @@
   <TBODY>
               <TR>
                 <TD height=19>
-				<p align="center"><font size="4">Welcome to eGov Financial System</font></TR></TBODY></TABLE>
+				<p align="center"><font size="4">Welcome to JK Financial System</font></TR></TBODY></TABLE>
 
 <TABLE align=center cellSpacing=0 cellPadding=3  summary="" border=0 >
   <TBODY>
