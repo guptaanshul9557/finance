@@ -60,6 +60,7 @@ import org.egov.collection.constants.CollectionConstants;
 import org.egov.collection.entity.ReceiptHeader;
 import org.egov.collection.utils.CollectionsUtil;
 import org.egov.eis.service.AssignmentService;
+import org.egov.infra.admin.master.repository.CityRepository;
 import org.egov.infra.admin.master.service.AppConfigValueService;
 import org.egov.infra.config.core.ApplicationThreadLocals;
 import org.egov.infra.microservice.models.BillAccountDetail;
@@ -153,6 +154,18 @@ public class SearchReceiptAction extends SearchFormAction {
 	private InputStream inputStream;
 	private String receiptType;
 	private String serviceId;
+	private String ulbName;
+
+	public String getUlbName() {
+		return ulbName;
+	}
+
+	public void setUlbName(String ulbName) {
+		this.ulbName = ulbName;
+	}
+	
+	@Autowired
+	private CityRepository cityRepository;
 
 	public static final Locale LOCALE = new Locale("en", "IN");
 	public static final SimpleDateFormat DDMMYYYYFORMAT1 = new SimpleDateFormat("dd/MMM/yyyy", LOCALE);
@@ -654,7 +667,7 @@ public class SearchReceiptAction extends SearchFormAction {
 
 		target = "searchresult";
 		collectionVersion = ApplicationThreadLocals.getCollectionVersion();
-
+        ulbName=cityRepository.findByCode(ApplicationThreadLocals.getTenantID()).getName();
 		List<ReceiptHeader> receiptList = new ArrayList<>();
 		/*
 		 * List<Receipt> receipts = microserviceUtils.searchReciepts("MISCELLANEOUS",

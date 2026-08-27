@@ -147,8 +147,7 @@ function validateNew() {
         <div class="header">
             <h2>Government of Jammu & Kashmir</h2>
             <h3>Housing and Urban Development Department</h3>
-            /* <h4>Department</h4> */
-             <h4>${document.getElementById("ulbName").value}</h4>
+            <h4>${ulbName}</h4>
         </div>
 
         <hr/>
